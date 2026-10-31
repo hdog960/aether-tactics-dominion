@@ -184,17 +184,17 @@ function startOnline(){
 }
 function invite(){const text=location.origin+location.pathname+'?room='+room;if(navigator.share){navigator.share({title:'Aether Tactics',text:'Join my Aether Tactics duel: '+room,url:text}).catch(()=>{})}else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>$('roomstatus').textContent='Invitation copied to clipboard.').catch(()=>window.prompt('Copy this invitation link',text));else window.prompt('Copy this invitation link',text)}
 function join(code,host){
- if(!window.AetherNet){$('roomstatus').textContent='Network module is still loading, or unavailable. Try again with internet access.';return}
+ if(!window.AetherNet?.ready){$('roomstatus').textContent='Network module is still loading, or unavailable. Try again with internet access.';return}
  disconnect();code=code.replace(/[^A-Z0-9]/g,'').toUpperCase().slice(0,8);if(code.length<5){$('roomstatus').textContent='Enter a room code of at least five characters.';return}
  room=code;localSeat=host?0:1;clearSelection();seed('online');
  $('roomid').value=code;$('roomstatus').textContent='Connecting to public signaling relays…';$('invite').classList.toggle('hidden',!host);
- net=window.AetherNet.connect(code,host,{
+ try{net=window.AetherNet.connect(code,host,{
   join:(peer)=>{connected=true;if(host){S.phase='playing';revision++;$('roomstatus').textContent='Friend connected! Battle is ready.';publish()}else{$('roomstatus').textContent='Connected. Receiving match state…'}render()},
   leave:()=>{connected=false;$('roomstatus').textContent='Other player disconnected. Your match remains open for reconnection.';if(host&&S.phase==='playing'){S.phase='waiting';publish()}render()},
   state:(p)=>{if(host||!p?.s||p.s.version!==4)return;S=p.s;revision=p.rev||0;clearSelection();$('roomstatus').textContent=S.phase==='playing'?'Connected! '+(S.turn===1?'Your turn.':'Waiting for host turn.'):'Waiting for the host…';render()},
   intent:(a)=>{if(!host||S.phase!=='playing'||S.turn!==1)return;if(apply(1,a)){clearSelection();revision++;publish();render()}},
   error:(e)=>{$('roomstatus').textContent='Connection issue: '+String(e).slice(0,140)}
- });message('<b>Private room '+code+'</b>',host?'Waiting for your friend to join.':'Waiting to receive the battlefield from your friend.');render();
+ });}catch(error){$('roomstatus').textContent='Could not open room: '+String(error.message||error);return}message('<b>Private room '+code+'</b>',host?'Waiting for your friend to join.':'Waiting to receive the battlefield from your friend.');render();
 }
 const board=$('board');board.innerHTML='';for(let y=0;y<8;y++)for(let x=0;x<7;x++){let b=document.createElement('button');b.type='button';b.dataset.x=x;b.dataset.y=y;board.appendChild(b)}
 board.addEventListener('click',e=>{let b=e.target.closest('button[data-x]');if(b)chooseTile(+b.dataset.x,+b.dataset.y)});
