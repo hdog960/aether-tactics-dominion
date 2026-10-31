@@ -1,42 +1,40 @@
 # Aether Tactics: Dominion
 
-**Current public release: v3.1 — Commander's Hall and Riftfront Conquest**
+**Current release: v3.2 — Celestial Court**
 
-**Play on iPhone:** https://hdog960.github.io/aether-tactics-dominion/
+**Play:** https://hdog960.github.io/aether-tactics-dominion/
 
-A mobile-first, tactical fantasy card battler with a 55-degree isometric battlefield, 32 original cards, upgradeable 24-card decks, a four-region campaign, and experimental private duels.
+A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of seven different 24-card deck strategies from 32 original cards, upgrade your commander and collection, or test experimental private duels.
 
-## Getting started
-1. Open the game in Safari. The **Commander's Hall** lets you choose what to play.
-2. Tap **Story Campaign** or **Map** to select from 12 missions spanning Rune Valley, Frostglass Reach, Ashen Crucible, and Crownfall Sanctum. The first mission is *First Footsteps*.
-3. Choose **Quick Battle** for a fresh solo AI skirmish, or **Private Duel** to host or join a friend's room (experimental).
-4. Use **Cards** to inspect and construct decks; use **Forge** to review XP, gold, achievements, mastery, and upgrade cards.
-5. From a battle, tap **MENU** to return to the Hall, then **Continue Your Battle** to resume.
+## Start here
+- **Play**: Commander's Hall — select Quick Battle, Story Campaign or Private Duel; continue a previously saved solo battle.
+- **Map**: Riftfront Conquest — four illustrated regions with 12 sequential missions and 3 endgame Crown Trials.
+- **Cards**: the Grimoire — browse the 32-card collection or build a custom deck.
+- **Forge**: level, gold, XP, card upgrades and six earnable milestone medallions.
+- **Duel**: experimental peer-to-peer private match invitations.
 
-The Map loads as a scrollable four-region mission selector with objectives, lock/unlock status, sigils, and Crown Trials after completing the story.
+The battlefield uses an angled 55-degree isometric perspective, Aeth springs, tactical movement, high ground, cover, summoning, spells, ritual sacrifices, and innate unit abilities.
 
-## Game systems
-- Tactical positioning, movement, cover, elevation, Aeth springs, spells, sacrifices, and unit abilities
-- 32 card types with seven 24-card deck archetypes, each with counterplay
-- Local commander XP, gold, card duplicates, upgrades, and six achievements
-- Twelve campaign missions with distinct victory objectives and regions; three multi-phase endgame Crown Trials
-- Save/resume support using browser local storage on the same device
-- Private peer-to-peer duel experiments with level equalization; **not production-grade matchmaking**
+## iPhone
+Open in Safari; Share → Add to Home Screen. Updates to `main` publish through GitHub Pages. When a new release is published, reconnect while online to let the service worker replace the cached game assets.
 
-## Important limitations
-- **Online:** WebRTC via public relay signaling may fail across some cellular/Wi-Fi configurations. Two-device live verification is still required. There is no ranked matchmaking, anti-cheat backend, cloud account sync, leaderboards, or server-persisted recovery.
-- **Offline:** Home Screen caching is supported. After an update, reopening the app while online allows the new cache to be installed.
-- **Saves:** Browser device data is local. Clearing Safari website data or using a private tab may lose progress.
-- **Quality assurance:** Automated progression and mission checks passed for v3.0; the v3.1 navigation regression fix has been source and syntax checked, but exact iPhone layout and multiplayer still need hands-on testing.
+## Saves
+Commander progression, card upgrades, and campaign completion are stored in the device's local browser storage. Saved solo match snapshots retain the existing v4 format. Private tabs, clearing website data, or changing devices can lose progress. There is no cloud account synchronization yet.
 
-## Repository layout
-- `index.html`: main release; `v30.html`: parallel entrypoint
-- `v30-shell.js`, `v30-shell.css`: Hall, tabs, campaign selector and Duel hub
-- `v30-campaign-data.js`: region layouts, twelve missions, and three Crown Trials
-- `v30-engine.js`: battle engine, cards, persistence, progression, and AI
-- `v30-scene.js`, `v30-net.js`: renderer and peer networking
-- `sw.js`: local offline asset cache; `manifest.webmanifest`: Home Screen support
-- `V30_RELEASE_AND_TESTING.md`: release and verification notes
-- `BALANCE_AUDIT_v22.md`: prior balance and exploit review
+## Multiplayer caveat
+The Duel Chamber uses experimental peer-to-peer WebRTC and public signaling relays. Real-device, cross-network testing remains necessary. There is no production ranked matchmaking, anti-cheat server, authoritative player account system, or leaderboards.
 
-The existing GitHub Pages domain remains independent of huntermakesgame.com. Source changes on `main` update the hosted game. Historical versions are retained for recovery and reference.
+## Technical structure
+- `index.html` production entrypoint and `v30.html` alternate entry
+- `v30-engine.js` rules, AI, progression, campaign execution, profile, and persistence
+- `v30-campaign-data.js` campaign and region definitions
+- `v30-shell.js` bottom-tab navigation and campaign selector
+- `v30-scene.js` game canvas, `v30-net.js` private duel networking
+- `v32-celestial.css` illustrated v3.2 theme and layout
+- `v32-details.js` presentation-only decoration and accurate trophy display
+- `art/ui-*.svg` seven original self-hosted fantasy scene illustrations
+- `sw.js` offline asset cache, `manifest.webmanifest` Home Screen support
+- `V32_VISUAL_OVERHAUL.md` implementation details and remaining QA
+- `V30_RELEASE_AND_TESTING.md` base campaign tests and `BALANCE_AUDIT_v22.md` earlier balance review
+
+The personal domain `huntermakesgame.com` is not altered by this repository.

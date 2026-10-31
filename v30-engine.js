@@ -151,7 +151,7 @@ function awardMatch(){
 }
 function profileSummary(){
  return {level:profile.level,xp:profile.xp,xpNext:xpNeeded(profile.level),gold:profile.gold,
- wins:profile.wins,matches:profile.matches,last:profile.last}
+ wins:profile.wins,matches:profile.matches,last:profile.last,achievements:{...profile.achievements}}
 }
 
 const rocks=new Set(['0,3','6,3','2,3','4,4']),springs=['1,3','5,4'],high=new Set(['2,2','4,2','3,3','3,4','2,5','4,5']);

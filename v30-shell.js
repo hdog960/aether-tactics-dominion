@@ -25,7 +25,7 @@ function showTab(page,opts={}){
   if(yes)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
  });
  if(page==='cards'){
-  if(!opts.preserveDetail){$('card-guide').click();$('codex-back')?.click()}
+  if(!opts.preserveDetail){$('card-guide').click();$('codex-back')?.click();$('codex-tabs').querySelector('button[data-tab="deck"]')?.click()}
  }else if(!$('codex').classList.contains('hidden'))$('codex-close').click();
  if(page==='forge')$('profile-open').click();
  else if(!$('player-profile').classList.contains('hidden'))$('profile-close').click();
