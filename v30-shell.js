@@ -11,7 +11,7 @@ function closeNested(){
  if(!$('rules-sheet').classList.contains('hidden'))$('rules-close').click();
  if(!$('lobby').classList.contains('hidden'))$('close-lobby').click();
 }
-function showTab(page){
+function showTab(page,opts={}){
  if(!pages.includes(page))return;
  closeNested();
  active=page;game.dataset.tab=page;
@@ -20,8 +20,7 @@ function showTab(page){
   if(yes)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
  });
  if(page==='cards'){
-  $('card-guide').click();
-  $('codex-back')?.click();
+  if(!opts.preserveDetail){$('card-guide').click();$('codex-back')?.click()}
  }else if(!$('codex').classList.contains('hidden'))$('codex-close').click();
  if(page==='forge')$('profile-open').click();
  else if(!$('player-profile').classList.contains('hidden'))$('profile-close').click();
@@ -93,7 +92,11 @@ $('duel-launch').addEventListener('click',()=>{
 });
 $('duel-return').addEventListener('click',()=>showTab('battle'));
 // Shortcut actions open their dedicated tabs, even when triggered from Battle.
-$('card-guide').addEventListener('click',()=>{if(active!=='cards')showTab('cards')});
+$('card-guide').addEventListener('click',()=>{if(active!=='cards')showTab('cards',{preserveDetail:true})});
+$('hand').addEventListener('click',e=>{
+ if(e.target.closest('button[data-card-info]')&&active!=='cards')showTab('cards',{preserveDetail:true});
+});
+$('next-mission').addEventListener('click',()=>showTab('campaign'));
 $('profile-open').addEventListener('click',()=>{if(active!=='forge')showTab('forge')});
 $('codex-profile').addEventListener('click',()=>{if(active!=='forge')showTab('forge')});
 $('result-rewards').addEventListener('click',()=>{if(active!=='forge')showTab('forge')});
