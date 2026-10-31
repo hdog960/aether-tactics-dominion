@@ -656,7 +656,8 @@ function inspectCard(k){
    (d.ability?'<h3>INNATE ABILITY</h3><div class="codex-ability"><strong>✦ '+d.ability+'</strong><p>'+d.abilityText+'</p></div>':'')+
    '<h3>WHAT IT DOES</h3><p>'+info.detail+'</p>'+
    '<h3>TACTICAL TIP</h3><p>'+info.tip+'</p>'+
-   '<p class="codex-ownership">In hand: <b>'+held+'</b> · Still in draw pile: <b>'+remaining+'</b></p>';
+   '<p class="codex-ownership">In hand: <b>'+held+'</b> · Still in draw pile: <b>'+remaining+'</b></p>'+
+ '<div class="codex-card-level">CARD LV '+cardLevel(k)+' · '+(profile.copies[k]||0)+' COPIES HELD <button type="button" data-profile-card="'+k+'">UPGRADES</button></div>';
  codex('codex-title').textContent='CARD DETAILS';
 }
 function openGuide(k=null){
@@ -717,6 +718,43 @@ function closeGuide(){
  codex('codex').classList.add('hidden');guideKey=null;
 }
 
+function profileCardSummary(k){
+ const d=D[k],lv=cardLevel(k),bonus=unitBonuses(k,0);
+ const stats=d.spell?(d.power?'⚡ '+(d.power+spellBonus(k,0))+' DAMAGE':'✧ SUPPORT'):
+  '♥ '+(d.hp+Math.floor((lv-1)/2))+' · ⚔ '+(d.atk+Math.floor((lv-1)/4));
+ return stats;
+}
+function renderProfile(){
+ $('player-level').textContent=profile.level;
+ $('profile-xp-label').textContent=profile.xp+' / '+xpNeeded(profile.level)+' XP';
+ $('profile-xp-meter').style.width=Math.min(100,100*profile.xp/xpNeeded(profile.level))+'%';
+ $('profile-gold').textContent=profile.gold;
+ $('profile-wins').textContent=profile.wins;
+ $('profile-matches').textContent=profile.matches;
+ const m=profile.last;
+ $('profile-reward-text').textContent=m?
+   (m.victory?'VICTORY':'DEFEAT')+' · +'+m.xp+' XP · +'+m.gold+' gold · '+
+    m.rewards.map(k=>D[k]?.name||k).join(', ')+(m.levelUp?' · LEVEL UP!':''):
+    'Finish a match to earn XP, gold and copies of cards from your deck.';
+ const items=CARD_KEYS.slice().sort((a,b)=>cardLevel(b)-cardLevel(a)||D[a].cost-D[b].cost||D[a].name.localeCompare(D[b].name));
+ $('profile-upgrade-list').innerHTML=items.map(k=>{
+  const card=D[k],lv=cardLevel(k),copies=profile.copies[k]||0,cost=cardUpgradeCost(k);
+  return '<div class="profile-card-row" data-card="'+k+'">'+
+   '<span class="profile-card-art">'+guideImage(k)+'</span>'+
+   '<div class="profile-card-meta"><strong>'+card.name+'</strong>'+
+   '<small>LV '+lv+' / '+MAX_CARD_LEVEL+' · '+profileCardSummary(k)+'</small>'+
+   '<span>'+(lv===MAX_CARD_LEVEL?'MAX LEVEL':copies+'/'+cost.copies+' COPIES · '+cost.gold+' GOLD')+'</span></div>'+
+   '<button type="button" data-upgrade="'+k+'"'+(!canUpgrade(k)?' disabled':'')+'>'+
+   (lv===MAX_CARD_LEVEL?'MAX':'↑ UPGRADE')+'</button></div>';
+ }).join('');
+}
+function openProfile(k=null){
+ closeGuide();$('player-profile').classList.remove('hidden');
+ renderProfile();
+ if(k){const target=$('profile-upgrade-list').querySelector('[data-card="'+k+'"]');target?.scrollIntoView?.({block:'nearest'})}
+}
+function closeProfile(){$('player-profile').classList.add('hidden')}
+
 function renderLabels(){
  $('instruction').innerHTML=msg||'<b>Welcome, Commander.</b> Select a card or unit.';
  $('tip').textContent=hint||'Summon, position and conquer.';$('feed').textContent=log||'The Riftfront awaits your orders.';
@@ -728,7 +766,7 @@ function render(){
  $('selfmeter').style.width=100*S.hp[my]/24+'%';$('rivalmeter').style.width=100*S.hp[enemy]/24+'%';
  $('round').textContent=S.round;$('turnlabel').textContent=S.phase==='over'?'MATCH OVER':S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
  $('aeth').textContent=S.energy[my];$('capacity').textContent=' / '+S.cap;
- $('deckcount').textContent='LV '+profile.level+' · '+S.decks[my].length+' DRAW';$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
+ $('deckcount').textContent=S.decks[my].length+' IN DECK';$('profile-open').textContent='LV '+profile.level;$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
  const unit=S.units.find(u=>u.id===chosenUnit),walk=new Set(unit&&!unit.moved&&!unit.rooted?movement(unit).map(z=>K(z.x,z.y)):[]),targets=new Set(unit&&!unit.attacked?[...S.units.filter(u=>u.team!==localSeat),core(enemy)].filter(z=>canAttack(unit,z)).map(z=>K(z.x,z.y)):[]);
  const card=chosenCard>=0?D[S.hands[my][chosenCard]]:null;
  // Spell targets are tile-based too. Make every legal cast square visible
@@ -858,6 +896,20 @@ $('invite').addEventListener('click',invite);
 $('roomid').addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8));
 $('card-guide').addEventListener('click',()=>openGuide());
 $('open-builder').addEventListener('click',openBuilder);
+$('profile-open').addEventListener('click',()=>openProfile());
+$('codex-profile').addEventListener('click',()=>openProfile());
+$('result-rewards').addEventListener('click',()=>openProfile());
+$('profile-close').addEventListener('click',closeProfile);
+$('profile-done').addEventListener('click',closeProfile);
+$('player-profile').addEventListener('click',e=>{if(e.target===$('player-profile'))closeProfile()});
+$('profile-upgrade-list').addEventListener('click',e=>{
+ const b=e.target.closest('button[data-upgrade]');if(!b)return;
+ if(upgradeCard(b.dataset.upgrade)){renderProfile();render();save()}
+});
+$('codex-detail').addEventListener('click',e=>{
+ const b=e.target.closest('button[data-profile-card]');
+ if(b)openProfile(b.dataset.profileCard)
+});
 $('deck-close').addEventListener('click',closeBuilder);
 $('deck-cancel').addEventListener('click',closeBuilder);
 $('deck-save').addEventListener('click',saveBuilder);
@@ -889,7 +941,7 @@ $('codex-filters').addEventListener('click',e=>{
 $('codex-list').addEventListener('click',e=>{
  const button=e.target.closest('button[data-inspect]');if(button)inspectCard(button.dataset.inspect)
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('deck-builder').classList.contains('hidden'))closeBuilder();else if(e.key==='Escape'&&!codex('codex').classList.contains('hidden'))closeGuide()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('player-profile').classList.contains('hidden'))closeProfile();else if(e.key==='Escape'&&!$('deck-builder').classList.contains('hidden'))closeBuilder();else if(e.key==='Escape'&&!codex('codex').classList.contains('hidden'))closeGuide()});
 
 function closeRules(){
  const modal=$('rules-sheet');modal.classList.add('hidden');
@@ -908,7 +960,7 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Escape'&&!$('rules-sheet').classList.contains('hidden')){e.preventDefault();closeRules()}
 });
 window.addEventListener('aether-network-ready',()=>{if($('roomstatus').textContent.includes('loading'))$('roomstatus').textContent='Network ready. Create or join a room.'});
-window.AetherGame={get:()=>S,startAI,startOnline,apply,publish};
+window.AetherGame={get:()=>S,startAI,startOnline,apply,publish,profile:profileSummary,upgradeCard,cardLevel};
 startAI();
 const inviteCode=new URLSearchParams(location.search).get('room');if(inviteCode){startOnline();$('roomid').value=inviteCode.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);$('roomstatus').textContent='Invitation detected. Tap Join Room to connect.'}
 })();
