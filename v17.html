@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aether Tactics: Dominion — Riftfront Duel</title>
+<meta name="theme-color" content="#0c1b2d"><meta name="description" content="Richer detailed 32-bit-era pixel fantasy. A 55° tactical floating island in a luminous rift.">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dominion">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css">
+</head><body><main id="game">
+<header class="battle-header"><div class="battle-brand"><h1 class="logo">AETHER <em>DOMINION</em></h1></div>
+ <nav class="menu" aria-label="Game mode"><button id="mode-ai" class="modebtn active">SOLO</button><button id="mode-online" class="modebtn">DUEL</button></nav>
+ <button id="reset" class="smallbtn" aria-label="Start a new match" title="New match">↻ <span>NEW</span></button></header>
+<section class="lobby hidden" id="lobby"><button type="button" id="close-lobby" class="dismiss-room" aria-label="Close room setup">✕ CLOSE</button>
+ <div class="lobby-title">✦ The Duel Chamber</div>
+ <p>Battle another commander from anywhere. You host, your friend joins using the same room code. No login needed. Both players must keep the game open.</p>
+ <div class="room-controls"><button class="primary" id="make-room">CREATE ROOM</button><input id="roomid" maxlength="8" autocomplete="off" spellcheck="false" placeholder="ROOM CODE" aria-label="Room code"><button class="outline" id="join-room">JOIN</button></div>
+ <div id="roomstatus" class="room-status">Ready for a private two-player duel.</div><button class="outline hidden" id="invite" style="margin-top:8px">↗ SHARE INVITE LINK</button>
+ <p style="margin-bottom:0">Experimental peer-to-peer connection uses public signaling relays. Some cellular networks may block it; if so, try Wi-Fi. Matches pause if either player disconnects.</p>
+</section>
+<section class="hud" aria-label="Match status"><div class="core"><div class="core-line"><label>YOUR CORE</label><div class="hpbig" id="selfhp">24 <small>/24</small></div></div><div class="meter"><i id="selfmeter"></i></div></div>
+ <div class="mid"><div class="round-line"><small>RD</small><b id="round">1</b></div><span id="turnlabel">YOUR TURN</span></div>
+ <div class="core enemy"><div class="core-line"><label>RIVAL CORE</label><div class="hpbig" id="rivalhp">24 <small>/24</small></div></div><div class="meter"><i id="rivalmeter"></i></div></div></section>
+<section class="vista" aria-label="Riftfront battle arena"><div class="sky"><div class="moon"></div><div class="beam"></div><div class="mount back"></div><div class="mount"></div></div><div class="vista-top"><span>✦ RIFTFRONT</span><small>BLUE MOVE · RED ATTACK · VIOLET SPELL</small></div><div class="arena" id="vista-stage"><canvas id="battle-canvas" aria-label="Angled 32-bit-inspired pixel fantasy tactical battlefield" role="img"></canvas><div id="board" class="board" aria-label="Interactive tactical battlefield">Preparing commands...</div></div>
+<div id="gameover" class="overlay hidden"><div class="modal"><div style="font-size:30px">✦</div><h2 id="resulttitle">BATTLE COMPLETE</h2><p id="resultdesc"></p><button id="again" class="primary">FIGHT AGAIN</button></div></div></section>
+<div class="legend"><span>✦ SPRING +1 AETH</span><span>⌃ RAISED +1 DAMAGE</span><span>◈ ROCKS BLOCK SHOTS</span><span>◆ TAP TILES, NOT SPRITES</span></div>
+<section class="command-dock" aria-label="Your cards and turn controls">
+ <div class="hint" role="status" aria-live="polite"><div id="instruction"><b>Select a card or allied tile.</b></div><small id="tip">Summon and conquer.</small></div>
+ <div class="handtop"><div class="hand-label"><strong>HAND</strong><small id="deckcount"></small></div>
+  <div class="hand-tools"><div class="aeth" aria-label="Available Aeth">✦ <span id="aeth">3</span><small id="capacity"> / 3</small></div>
+   <button type="button" id="card-guide" class="guide-open" aria-label="Open the Grimoire collection">▦ GRIMOIRE</button>
+   <button type="button" id="rules" class="guide-help" aria-label="How to play" aria-haspopup="dialog">?</button></div>
+ </div>
+ <div id="hand" class="hand">Preparing cards...</div>
+ <div class="actions"><button id="cycle" aria-label="Redraw selected card">↻ <span>REDRAW</span></button><button id="end" class="end">END TURN <span>→</span></button></div>
+</section>
+<section id="codex" class="codex hidden" role="dialog" aria-modal="true" aria-labelledby="codex-title">
+  <div class="codex-panel">
+    <div class="codex-header"><div><span class="codex-kicker">✧ COMMANDER'S REFERENCE</span><h2 id="codex-title">THE GRIMOIRE</h2></div><button id="codex-close" class="codex-close" type="button" aria-label="Close card information">✕</button></div>
+    <div id="codex-library" class="codex-library">
+      <div id="codex-tabs" class="codex-tabs" role="group" aria-label="Cards to browse">
+        <button type="button" data-tab="hand" class="active">HAND <span id="codex-hand-count">4</span></button>
+        <button type="button" data-tab="deck">COLLECTION <span id="codex-deck-count">21</span></button>
+      </div>
+      <div id="codex-filters" class="codex-filters" role="group" aria-label="Card type"><button type="button" data-filter="all" class="active">ALL</button><button type="button" data-filter="units">UNITS</button><button type="button" data-filter="spells">SPELLS</button></div>
+      <p id="codex-intro" class="codex-intro"></p>
+      <div id="codex-list" class="codex-list" aria-label="Available card descriptions"></div>
+    </div>
+    <div id="codex-detail" class="codex-detail hidden">
+      <button id="codex-back" class="codex-back" type="button">← CARD LIST</button>
+      <div id="codex-detail-body" class="codex-detail-body"></div>
+    </div>
+    <div class="codex-footer"><span class="codex-safe-icon">✓</span> CARD REFERENCE · NO ACTIONS SPENT</div>
+  </div>
+</section>
+
+<div id="feed" class="feed">Riftfront Valley is waking.</div>
+<div class="alert">Early online playtest · The room host adjudicates moves. WebRTC needs a direct connection between the two phones; no server-stored match history yet. Single player saves locally.</div>
+<section id="rules-sheet" class="rules-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+  <div class="rules-panel">
+    <header class="rules-panel-head">
+      <div><span class="rules-eyebrow">✦ FIELD MANUAL</span><h2 id="rules-title">How to Play</h2><p>Quick reference for your next command</p></div>
+      <button id="rules-close" type="button" aria-label="Close game guide">✕</button>
+    </header>
+    <div class="rules-content">
+      <div class="rules-section"><span class="rules-symbol blue">01</span><div><h3>Choose a card, then a tile</h3><p>Tap a card in your hand to summon a unit or prepare a spell. Choose a highlighted ground square—not the character artwork—to use it.</p></div></div>
+      <div class="rules-section"><span class="rules-symbol teal">02</span><div><h3>Move and attack</h3><p>Select an allied tile. Each ready unit can move once and attack once per turn. Blue tiles are moves, red are attacks, and violet tiles are spells.</p></div></div>
+      <div class="rules-section"><span class="rules-symbol gold">03</span><div><h3>Use terrain to your advantage</h3><p>Hold springs for bonus Aeth each turn. Striking downhill from raised ground adds 1 damage. Rocks block ranged attacks.</p></div></div>
+      <div class="rules-section"><span class="rules-symbol rose">04</span><div><h3>Build your army</h3><p>Aeth grows across rounds, up to 10 base capacity. Mythic creatures require sacrifices; inspect any card with its <b>i</b> icon for exact details.</p></div></div>
+      <div class="rules-section"><span class="rules-symbol blue">05</span><div><h3>Win the duel</h3><p>Reduce the opposing Core from 24 HP to zero. Online duels use an experimental direct connection between two players.</p></div></div>
+    </div>
+    <footer class="rules-panel-foot"><button id="rules-done" type="button">BACK TO BATTLE</button></footer>
+  </div>
+</section>
+</main>
+<script defer src="./v05-art.js"></script><script defer src="./v17-engine.js"></script><script defer src="./v14-scene.js"></script><script type="module" src="./v04-net.js"></script>
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
+</body></html>
