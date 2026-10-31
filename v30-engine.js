@@ -1004,6 +1004,7 @@ function renderLabels(){
 function render(){
  if(!S)return;
  const my=localSeat,enemy=1-my,mirror=my===1;
+ if($('battle-mode-tag'))$('battle-mode-tag').textContent=S.mode==='online'?'♜ PRIVATE DUEL':S.missionId?'🗺 CAMPAIGN':'⚔ SOLO BATTLE';
  $('selfhp').innerHTML=S.hp[my]+' <small>/ 24</small>';$('rivalhp').innerHTML=S.hp[enemy]+' <small>/ 24</small>';
  $('selfmeter').style.width=100*S.hp[my]/24+'%';$('rivalmeter').style.width=100*S.hp[enemy]/24+'%';
  const mission=MISSION_BY_ID[S.missionId];
