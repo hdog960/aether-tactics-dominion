@@ -47,3 +47,18 @@ box-shadow:inset 0 1px #b6f5d322}
 @media(max-width:365px){#game{padding:9px 5px 20px}#game .vista-top{height:34px;font-size:9px}#game .vista-top small{font-size:8px}
 #game .portrait{height:117px}#game .portrait img{width:112px;height:142px}
 #game .card{flex-basis:133px}}
+
+/* Pixel-art portrait display safeguards and atmospheric miniature environment */
+#game .portrait{isolation:isolate;overflow:hidden}
+#game .portrait::before{content:"";position:absolute;z-index:0;inset:0;
+background:
+linear-gradient(135deg,transparent 40%,#98bbaf39 40.5%,#98bbaf39 41.5%,transparent 42%),
+linear-gradient(165deg,transparent 53%,#081e335c 54%,transparent 55%),
+linear-gradient(to top,#071a2acf 0%,transparent 51%);
+clip-path:polygon(0 100%,0 32%,11% 35%,15% 11%,20% 33%,27% 29%,30% 0,35% 29%,66% 31%,70% 18%,76% 37%,87% 31%,96% 12%,100% 36%,100% 100%)}
+#game .portrait img{display:block!important;position:absolute!important;z-index:2!important;
+object-fit:contain!important;opacity:1!important;visibility:visible!important;
+image-rendering:pixelated!important;pointer-events:none!important}
+#game .portrait:after{z-index:3}
+#game .card.boss .portrait{box-shadow:inset 0 0 17px #eabf6c55}
+#game .card.spell .portrait{box-shadow:inset 0 0 18px #bb9bff55}
