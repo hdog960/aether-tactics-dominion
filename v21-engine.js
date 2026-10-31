@@ -423,7 +423,7 @@ function aiTurn(){
    let spot=null;
    const enemies=S.units.filter(u=>u.team===0);
    const friends=S.units.filter(u=>u.team===1);
-   if(['ignite','frost','bolt'].includes(q.spell)){
+   if(['ignite','frost','bolt','silence'].includes(q.spell)){
     const opportunities=enemies.filter(u=>validSpellSpot(q,1,u.x,u.y))
      .sort((a,b)=>(a.hp-b.hp)||((b.k==='r'?1:0)-(a.k==='r'?1:0)));
     spot=opportunities.find(u=>q.spell==='frost'?!u.rooted:q.spell==='ignite'?!u.burning:true);
@@ -437,8 +437,21 @@ function aiTurn(){
     spot=friends.filter(u=>u.shield<2).sort((a,b)=>b.atk-a.atk)[0];
    }else if(q.spell==='cleanse'){
     spot=friends.find(u=>u.rooted||u.burning);
-   }else if(q.spell==='rally'){
+   }else if(q.spell==='rally'||q.spell==='bond'){
     spot=friends.find(u=>friends.filter(v=>d(u,v)<=1&&!v.rallied).length>=2);
+   }else if(q.spell==='recall'){
+    if(S.discards[1].some(k=>!D[k].spell&&!D[k].tribute)&&S.hands[1].length<6&&S.echoRound?.[1]!==S.round)
+      spot=friends[0]||core(1);
+   }else if(q.spell==='exchange'){
+    if(S.units.filter(u=>u.team===1).length>=4&&S.exchangeRound?.[1]!==S.round)
+      spot=friends.filter(u=>u.hp<=2)[0];
+   }else if(q.spell==='snare'){
+    const enemy=S.units.filter(v=>v.team===0).sort((a,b)=>a.y-b.y)[0];
+    if(enemy&&!S.traps?.some(v=>v.team===1)){
+     for(const pos of [{x:enemy.x,y:enemy.y-1},{x:enemy.x,y:enemy.y-2}]){
+      if(bounds(pos.x,pos.y)&&validSpellSpot(q,1,pos.x,pos.y)){spot=pos;break}
+     }
+    }
    }else if(q.spell==='dash'){
     spot=friends.find(u=>u.moved&&!u.rooted&&u.dashRound!==S.round&&u.move>=2);
    }
@@ -476,6 +489,7 @@ function aiTurn(){
    if(paths.length&&score(paths[0])>score(u)-.2){
     const path=paths[0];u.x=path.x;u.y=path.y;u.moved=true;u.stride=path.n;afterMove(u);
    }
+   if(!S.units.some(v=>v.id===u.id))continue;
    eligible=goals().filter(v=>canAttack(u,v));
   }
   if(eligible.length){eligible.sort((a,b)=>(a.core?4:0)-(b.core?4:0)||((a.hp||99)-(b.hp||99)));
@@ -547,6 +561,7 @@ function chooseTile(vx,vy){
 
 // GRIMOIRE INFORMATION: matches current card definitions and actual rules.
 // Read-only UI; inspecting cards never submits a move or consumes Aeth.
+const SPELL_LABELS={"heal":"♥ HEAL","shield":"◇ SHIELD","dash":"➜ MOVE","frost":"❄ ROOT","ignite":"🔥 BURN","rally":"⚔ RALLY","cleanse":"◇ CLEANSE","bolt":"⚡ BARRAGE","cross":"☄ AREA","recall":"✦ RECALL","snare":"◇ TRAP 2","bond":"✦ FORMATION","exchange":"✧ RITUAL","silence":"◇ SILENCE"};
 const GUIDE={
  o:{feature:'Draw-and-combo enabler.',detail:'When summoned, draw one additional card if your hand is below five. Great for finding the next piece of a combo.',tip:'Pair with low-cost spells to keep your hand flowing.'},
  y:{feature:'Defensive death-trigger.',detail:'When defeated, gives 2 shield to the nearest surviving allied unit within 2 tiles.',tip:'Position beside your carry to make its defeat still valuable.'},
@@ -609,11 +624,8 @@ function guideDrawList(){
  codex('codex-intro').textContent=guideTab==='hand'?'YOUR AVAILABLE CARDS':'ALL CARDS IN YOUR DECK';
  codex('codex-list').innerHTML=items.length?items.map(k=>{
   const d=D[k],qty=guideTab==='hand'?guideCount(S.hands[localSeat],k):guideCount([...S.decks[localSeat],...S.hands[localSeat],...S.discards[localSeat]],k);
-  const quick=d.spell?(d.spell==='heal'?'♥ HEAL 4':d.spell==='shield'?'◇ SHIELD 4':
-      d.spell==='dash'?'➜ MOVE AGAIN':d.spell==='frost'?'❄ ROOT':d.spell==='ignite'?'🔥 BURN':
-      d.spell==='rally'?'⚔ TEAM BUFF':d.spell==='cleanse'?'◇ CLEANSE':
-      d.spell==='bolt'?'⚡ 3 DAMAGE':'⚡ AREA 3')
-     :'♥ '+d.hp+'  ⚔ '+d.atk+'  ➜ '+d.move;
+  const quick=d.spell?(SPELL_LABELS[d.spell]||'✦ SPELL'):
+     '♥ '+d.hp+'  ⚔ '+d.atk+'  ➜ '+d.move;
   return '<button class="codex-entry" type="button" data-inspect="'+k+'" aria-label="Inspect '+d.name+'">'+
     '<span class="codex-entry-image">'+guideImage(k)+'</span>'+
     '<span class="codex-entry-main"><small>'+d.role.toUpperCase()+'</small>'+
@@ -634,6 +646,11 @@ function guideStats(k){
   if(d.spell==='ignite')extras.push(['🔥','Burn 1']);
   if(d.spell==='rally')extras.push(['⚔','+1 next attack']);
   if(d.spell==='cleanse')extras.push(['◇','Cleanse +2 shield']);
+  if(d.spell==='recall')extras.push(['✦','Recover unit']);
+  if(d.spell==='snare')extras.push(['◇','2 dmg trap']);
+  if(d.spell==='bond')extras.push(['⚔','Formation']);
+  if(d.spell==='exchange')extras.push(['♜','Sacrifice']);
+  if(d.spell==='silence')extras.push(['◇','Counter buffs']);
  }else{
   extras.push(['◈',d.cost+' Aeth'],['♥',d.hp+' health'],['⚔',d.atk+' attack'],
               ['↗',d.range+' range'],['➜',d.move+' move']);
@@ -793,11 +810,8 @@ function render(){
  }
  $('hand').innerHTML=S.hands[my].map((k,i)=>{
   const q=D[k],type=q.spell?'spell':q.tribute?'boss':'unit';
-  const stats=q.spell?(q.spell==='heal'?'♥ HEAL 4':q.spell==='shield'?'◇ SHIELD 4':
-      q.spell==='dash'?'➜ MOVE AGAIN':q.spell==='frost'?'❄ ROOT +1':q.spell==='ignite'?'🔥 BURN +2':
-      q.spell==='rally'?'⚔ +1 ALLIES':q.spell==='cleanse'?'◇ CLEANSE +2':
-      q.spell==='bolt'?'⚡ DAMAGE 3':'⚡ AREA 3')
-    :'♥ '+q.hp+'  ⚔ '+q.atk+'  ↗ '+q.range;
+  const stats=q.spell?(SPELL_LABELS[q.spell]||'✦ SPELL'):
+   '♥ '+q.hp+'  ⚔ '+q.atk+'  ↗ '+q.range;
   const portrait=portraitIndices[k]===undefined?'<img alt="" draggable="false" src="'+Art.get(k)+'">'
     :'<div class="illustrated-portrait" aria-hidden="true" style="--card-index:'+portraitIndices[k]+';--art-pos:'+portraitPositions[k]+'%"></div>';
   return '<div class="card-wrap"><button type="button" class="card '+type+
