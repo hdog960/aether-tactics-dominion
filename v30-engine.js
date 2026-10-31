@@ -96,7 +96,7 @@ function unitBonuses(k,t){const lv=combatLevel(k,t);return{hp:Math.floor(lv/2),a
 function spellBonus(k,t){return Math.min(2,Math.floor(combatLevel(k,t)/2))}
 function awardMatch(){
  if(!S||mode!=='ai'||S.mode!=='ai'||S.phase!=='over'||![0,1,-1].includes(S.winner))return null;
- if(profile.claimed[S.matchId])return profile.last||null;
+ if(profile.claimed[S.matchId])return typeof profile.claimed[S.matchId]==='object'?profile.claimed[S.matchId]:profile.last||null;
  const victory=S.winner===localSeat,drawn=S.winner===-1,rounds=Math.min(12,S.round||1);
  let xp=(victory?95:drawn?38:45)+rounds*3,coins=(victory?85:drawn?35:40)+rounds*3;
  profile.matches++;if(victory)profile.wins++;
@@ -143,7 +143,7 @@ function awardMatch(){
  const record={matchId:S.matchId,victory,drawn,xp,gold:coins,rewards,
    missionTitle,storyClear,stars,newlyEarned,
    levelUp:profile.level>oldLevel,level:profile.level};
- profile.claimed[S.matchId]=1;profile.last=record;
+ profile.claimed[S.matchId]=record;profile.last=record;
  // Keep a limited anti-duplicate history across reloads.
  const ids=Object.keys(profile.claimed);
  if(ids.length>200)for(const id of ids.slice(0,ids.length-200))delete profile.claimed[id];
