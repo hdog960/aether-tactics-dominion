@@ -227,9 +227,29 @@ function renderBattleFX(t){
     ellipse(px,py,2.6+((n*3)%3),2.4,n%2?'#ffe8b4':'#ff8d83');c.restore();
    }
   }
-  if(e.lethal&&p>=impact&&p<.92&&!game?.units?.some(u=>u.id===e.to.id)){
-    const q=clamp01((p-impact)/(.92-impact)),cx=to[0],cy=to[1]-47;
-    drawMagicRing([cx,cy+17],12+55*q,'#f9b6a1',(1-q)*.9);
+  if(e.lethal&&!e.to.core&&!game?.units?.some(u=>u.id===e.to.id)){
+   // The authoritative state removes defeated monsters immediately, but the
+   // visual echo remains through impact and collapses gracefully instead of
+   // popping out of existence before the player even sees the blow.
+   const spriteID=monsterFrames[e.to.k];
+   if(spriteID!==undefined&&monsterAtlas.complete&&monsterAtlas.naturalWidth){
+    const row=seat===0?e.to.y:7-e.to.y;
+    const scale=(.58+row/8*.5)*1.04;
+    const w=128*scale,h=152*scale;
+    const collapse=clamp01((p-impact)/Math.max(.1,.96-impact));
+    const opacity=p<impact?1:Math.pow(1-collapse,1.3);
+    c.save();c.globalAlpha=opacity;
+    const dy=to[1]-h+7*scale+collapse*25*scale;
+    if(p>=impact&&p<impact+.16)c.filter='brightness(2.1) saturate(.45)';
+    else if(e.to.team!==seat)c.filter='hue-rotate(135deg) saturate(1.2) brightness(.91)';
+    c.drawImage(monsterAtlas,spriteID*128,0,128,148,
+     to[0]-w/2,dy,w,h*(1-collapse*.13));
+    c.restore();
+   }
+   if(p>=impact&&p<.91){
+    const q=clamp01((p-impact)/(.91-impact));
+    drawMagicRing([to[0],to[1]-30],12+48*q,'#ffceac',(1-q)*.75);
+   }
   }
   if(e.type==='strike'||e.type==='spell'||e.type==='buff'){
    if(p>=impact&&p<1){
