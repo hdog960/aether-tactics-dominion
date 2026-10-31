@@ -285,45 +285,78 @@ function startStatusTurn(team){
  }
 }
 function validSpellSpot(q,t,x,y){
- const target=entity(x,y);
- if(['shield','heal','dash','cleanse','rally'].includes(q.spell)){
+ const target=entity(x,y),type=q.spell;
+ if(['shield','heal','dash','cleanse','rally','bond','exchange','recall'].includes(type)){
+  if(type==='recall'){
+   const discarded=S.discards[t].some(k=>!D[k].spell&&!D[k].tribute);
+   return discarded&&S.hands[t].length<6&&S.echoRound?.[t]!==S.round&&
+    (!!target&&target.team===t||x===3&&y===(t===0?7:0));
+  }
   if(!target||target.team!==t)return false;
-  if(q.spell==='dash'&&target.dashRound===S.round)return false;
+  if(type==='dash'&&target.dashRound===S.round)return false;
+  if(type==='exchange'&&(S.exchangeRound?.[t]===S.round||S.units.filter(v=>v.team===t).length<2))return false;
   return true;
  }
+ if(type==='snare'){
+  return !target&&!rocks.has(K(x,y))&&!(x===3&&(y===0||y===7))&&
+    !S.traps?.some(v=>v.team===t)&&
+    S.units.some(v=>v.team===t&&d(v,P(x,y))<=2);
+ }
  if(!S.units.some(v=>v.team===t&&d(v,P(x,y))<=3))return false;
- if(['frost','ignite'].includes(q.spell))return !!target&&target.team!==t;
- if(q.spell==='bolt')return target?.team===1-t||(x===3&&y===(t===0?0:7));
- if(q.spell==='cross')return S.units.some(v=>v.team!==t&&d(v,P(x,y))<=1)||d(P(x,y),core(1-t))<=1;
+ if(['frost','ignite','silence'].includes(type))return !!target&&target.team!==t;
+ if(type==='bolt')return target?.team===1-t||(x===3&&y===(t===0?0:7));
+ if(type==='cross')return S.units.some(v=>v.team!==t&&d(v,P(x,y))<=1)||d(P(x,y),core(1-t))<=1;
  return false;
 }
 function resolveSpell(q,t,x,y){
  const target=entity(x,y),type=q.spell;
  if(!validSpellSpot(q,t,x,y))return false;
- if(type==='shield'){target.shield+=4;abilityPulse(target,'shield',4)}
- else if(type==='heal'){const heal=Math.min(4,target.max-target.hp);target.hp+=heal;
-   target.moved=false;target.attacked=false;abilityPulse(target,'heal',heal)}
+ const power=powerFor(q,t),boost=spellBonus(CARD_KEYS.find(k=>D[k]===q),t);
+ if(type==='shield'){const n=4+boost;target.shield+=n;abilityPulse(target,'shield',n)}
+ else if(type==='heal'){const heal=Math.min(4+boost,target.max-target.hp);target.hp+=heal;
+  target.moved=false;target.attacked=false;abilityPulse(target,'heal',heal)}
  else if(type==='dash'){target.moved=false;target.stride=0;target.dashRound=S.round;abilityPulse(target,'dash',0)}
- else if(type==='cleanse'){target.rooted=false;target.burning=false;target.shield+=2;abilityPulse(target,'shield',2)}
+ else if(type==='cleanse'){target.rooted=false;target.burning=false;target.shield+=2+boost;abilityPulse(target,'shield',2+boost)}
  else if(type==='rally'){
   for(const ally of S.units.filter(v=>v.team===t&&d(v,target)<=1)){
-   ally.rallied=1;abilityPulse(ally,'rally',0);
+   ally.rallied=1;abilityPulse(ally,'rally',0)
   }
+ }else if(type==='bond'){
+  for(const ally of S.units.filter(v=>v.team===t&&d(v,target)<=1).slice(0,3)){
+   ally.shield++;ally.rallied=1;abilityPulse(ally,'shield',1)
+  }
+ }else if(type==='recall'){
+  S.echoRound||(S.echoRound=[0,0]);
+  const i=S.discards[t].findLastIndex(k=>!D[k].spell&&!D[k].tribute);
+  if(i<0)return false;
+  const card=S.discards[t].splice(i,1)[0];
+  S.hands[t].push(card);S.echoRound[t]=S.round;
+  fxPush({type:'buff',kind:'rally',to:{x,y,team:t},amount:0});
+ }else if(type==='snare'){
+  S.traps||(S.traps=[]);
+  S.traps.push({team:t,x,y,expires:S.round+3});
+  fxPush({type:'buff',kind:'rally',to:{x,y,team:t},amount:0});
+ }else if(type==='exchange'){
+  S.exchangeRound||(S.exchangeRound=[0,0]);S.exchangeRound[t]=S.round;
+  onSacrifice(t);
+  S.units=S.units.filter(v=>v.id!==target.id);
+  draw(t,2);S.energy[t]=Math.min(10,S.energy[t]+2);
+  fxPush({type:'spell',kind:'exchange',to:fxTarget(target),amount:0});
+ }else if(type==='silence'){
+  target.shield=Math.max(0,target.shield-2-boost);
+  target.rallied=0;target.runeCharge=0;target.oathBonus=0;target.weakened=true;
+  fxPush({type:'spell',kind:'silence',to:fxTarget(target),amount:0});
  }else if(['frost','ignite'].includes(type)){
-  const amount=mitigate(target,q.power,false);fxSpell(target,amount,type,x,y,t);applyDamage(target,amount);
-  if(S.units.some(v=>v.id===target.id)){
-   if(type==='frost')target.rooted=true;
-   if(type==='ignite')target.burning=true;
-  }
+  const amount=mitigate(target,power,false);fxSpell(target,amount,type,x,y,t);applyDamage(target,amount);
+  if(S.units.some(v=>v.id===target.id)){if(type==='frost')target.rooted=true;if(type==='ignite')target.burning=true}
  }else{
   const victims=S.units.filter(v=>v.team!==t&&(type==='bolt'?(v.x===x&&v.y===y):d(v,P(x,y))<=1));
-  for(const victim of [...victims]){const amount=mitigate(victim,q.power,false);fxSpell(victim,amount,type,x,y,t);applyDamage(victim,amount)}
+  for(const victim of [...victims]){const amount=mitigate(victim,power,false);fxSpell(victim,amount,type,x,y,t);applyDamage(victim,amount)}
   const coreHit=type==='bolt'?(x===3&&y===(t===0?0:7)):d(P(x,y),core(1-t))<=1;
-  if(coreHit){const enemyCore=core(1-t);fxSpell(enemyCore,q.power,type,x,y,t);applyDamage(enemyCore,q.power)}
+  if(coreHit){const enemyCore=core(1-t);fxSpell(enemyCore,power,type,x,y,t);applyDamage(enemyCore,power)}
  }
  return true;
 }
-
 function discard(t,idx){let k=S.hands[t].splice(idx,1)[0];S.discards[t].push(k);draw(t,1)}
 function next(t){
  endSupportTurn(t);
@@ -703,8 +736,8 @@ function render(){
  if(card?.spell&&S.energy[my]>=card.cost){
   for(let gy=0;gy<8;gy++)for(let gx=0;gx<7;gx++){
    const u=entity(gx,gy),pos=P(gx,gy);
-   if(['shield','heal','dash','cleanse','rally'].includes(card.spell)){
-    if(u?.team===my)castTiles.add(K(gx,gy));
+   if(['shield','heal','dash','cleanse','rally','bond','exchange','recall'].includes(card.spell)){
+    if(validSpellSpot(card,my,gx,gy))castTiles.add(K(gx,gy));
    }else{
     if(validSpellSpot(card,my,gx,gy))castTiles.add(K(gx,gy));
    }
