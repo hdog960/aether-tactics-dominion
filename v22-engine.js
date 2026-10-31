@@ -37,11 +37,11 @@ F:{name:'Fateful Exchange',cost:2,spell:'exchange',role:'Ritual',desc:'Sacrifice
 G:{name:'Null Chime',cost:2,spell:'silence',role:'Hex',desc:'Strip enemy shield and weaken its next attack.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
-const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw two and regain 1 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"o":{"desc":"Recover your most recently cast spell to the top of your deck."}};
+const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"o":{"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
 for(const [k,patch]of Object.entries(BALANCE_PATCH))Object.assign(D[k],patch);
 const ABILITIES={"v":{"name":"Forward Guard","desc":"Once each round, moving next to an enemy gives this Vanguard 1 shield (never stacks above 1)."},"b":{"name":"Prism Cover","desc":"Adjacent friendly units take 1 less damage from basic attacks (minimum 1). Multiple Bulwarks do not stack."},"r":{"name":"Longshot","desc":"Basic attacks at exactly 3 tiles deal +1 damage if this Ranger has not moved this turn."},"s":{"name":"Pack Hunter","desc":"Deal +1 damage to an enemy unit if another friendly unit is adjacent to that enemy."},"f":{"name":"Slipstream","desc":"Once each round after moving, give 1 shield to an adjacent ally with fewer than 2 shield."},"g":{"name":"Stoneheart","desc":"The first hit received each round deals 1 less damage (minimum 1), including spells."},"t":{"name":"Aftershock","desc":"After each basic attack on a unit, deal 1 splash damage to one different enemy unit adjacent to the target."},"l":{"name":"Tidal Brand","desc":"A basic attack on a surviving enemy unit marks it; the next allied basic attack against that enemy gains +1 damage. The mark expires at your next turn."},"c":{"name":"Searing Shot","desc":"Basic attacks burn enemies for 1 damage at the start of their next turn. Burn does not stack."},"j":{"name":"Entangling Strike","desc":"Basic attacks root their target for its next turn. Rooted units can attack but cannot move."},"p":{"name":"Soothing Current","desc":"At the end of your turn, heal 1 HP on the most injured adjacent ally."},"k":{"name":"Thunder Charge","desc":"After moving 2 squares, deal +1 damage with your next basic attack that turn."},"d":{"name":"Aeth Spark","desc":"Summoning this Familiar refunds 1 Aeth, making its net cost 1."}};
 Object.assign(ABILITIES,{
- o:{name:'Margin Note',desc:'On summon, draw one additional card if your hand has fewer than five.'},
+ o:{name:'Margin Note',desc:'Once per round, recycle the last spent spell on summon; otherwise gain 1 shield.'},
  y:{name:'Parting Lantern',desc:'On defeat, grant 2 shield to the closest surviving ally, within 2 tiles.'},
  z:{name:'Rune Echo',desc:'Your first spell cast each round gives this unit +1 on its next attack that round.'},
  A:{name:'Dusk Harvest',desc:'If this unit defeats another creature with a basic attack, restore 2 health (up to maximum).'},
@@ -132,7 +132,7 @@ function unit(k,team,x,y,ready=false){
  return{id:S.next++,k,team,x,y,hp,max:hp,atk,move:e.move,range:e.range,shield:e.shield||0,fly:!!e.fly,moved:!ready,attacked:!ready}
 }
 function draw(t,n=1,allowReshuffle=false){
- for(let i=0;i<n&&S.hands[t].length<4;i++){
+ for(let i=0;i<n&&S.hands[t].length<5;i++){
   if(!S.decks[t].length){
    if(!allowReshuffle||!S.discards[t].length)break;
    S.decks[t]=shuffle(S.discards[t]);S.discards[t]=[];
@@ -304,7 +304,7 @@ function validSpellSpot(q,t,x,y){
  if(['shield','heal','dash','cleanse','rally','bond','exchange','recall'].includes(type)){
   if(type==='recall'){
    const discarded=S.discards[t].some(k=>!D[k].spell&&!D[k].tribute);
-   return discarded&&S.hands[t].length<=4&&S.echoRound?.[t]!==S.round&&
+   return discarded&&S.hands[t].length<=5&&S.echoRound?.[t]!==S.round&&
     (!!target&&target.team===t||x===3&&y===(t===0?7:0));
   }
   if(!target||target.team!==t)return false;
@@ -357,7 +357,7 @@ function resolveSpell(q,t,x,y){
   S.exchangeRound||(S.exchangeRound=[0,0]);S.exchangeRound[t]=S.round;
   onSacrifice(t);
   S.units=S.units.filter(v=>v.id!==target.id);
-  S.energy[t]=Math.min(10,S.energy[t]+1);
+  S.energy[t]=Math.min(10,S.energy[t]+2);
   fxPush({type:'spell',kind:'exchange',to:fxTarget(target),amount:0});
  }else if(type==='silence'){
   target.shield=Math.max(0,target.shield-3-boost);
@@ -586,16 +586,16 @@ function chooseTile(vx,vy){
 // Read-only UI; inspecting cards never submits a move or consumes Aeth.
 const SPELL_LABELS={"heal":"♥ HEAL","shield":"◇ SHIELD","dash":"➜ MOVE","frost":"❄ ROOT","ignite":"🔥 BURN","rally":"⚔ RALLY","cleanse":"◇ CLEANSE","bolt":"⚡ BARRAGE","cross":"☄ AREA","recall":"✦ RECALL","snare":"◇ TRAP 2","bond":"✦ FORMATION","exchange":"✧ RITUAL","silence":"◇ SILENCE"};
 const GUIDE={
- o:{feature:'Draw-and-combo enabler.',detail:'When summoned, draw one additional card if your hand is below five. Great for finding the next piece of a combo.',tip:'Pair with low-cost spells to keep your hand flowing.'},
+ o:{feature:'Spell-recycling specialist.',detail:'On summon, return the most recently spent spell to the top of your deck, once per round. If there is no spell to retrieve, gain 1 shield.',tip:'Cast a useful spell, then summon Echo Scribe to bring it back in the coming draw.'},
  y:{feature:'Defensive death-trigger.',detail:'When defeated, gives 2 shield to the nearest surviving allied unit within 2 tiles.',tip:'Position beside your carry to make its defeat still valuable.'},
  z:{feature:'Spell-linked attacker.',detail:'The first spell you cast each round empowers this unit’s next basic attack by 1 damage, only for that round.',tip:'Cast a utility spell before committing its attack.'},
  A:{feature:'Sustain after a finishing blow.',detail:'When its basic attack defeats an enemy creature, heal this unit for up to 2 health.',tip:'Use it to finish wounded enemies instead of starting every fight.'},
  B:{feature:'Sacrifice synergy.',detail:'When you sacrifice an ally to summon a mythic or for Fateful Exchange, gain 2 shield and +1 next basic attack, once per round.',tip:'Build around sacrifice cards without relying only on mythics.'},
  C:{feature:'Recover from the spent-card pile.',detail:'Return your most recently discarded non-mythic creature card to your hand, up to five cards. May be used once per round.',tip:'Recycle a key defender or combo creature after playing it.'},
- D:{feature:'Delayed hidden-area control.',detail:'Place a snare on an empty accessible tile within 2 of an ally. The next enemy stepping or summoning onto it takes 2 damage. One snare per player; expires after 3 rounds.',tip:'Predict an opponent’s route toward a spring.'},
+ D:{feature:'Delayed hidden-area control.',detail:'Place a concealed snare on an empty tile within 2 of an ally. The next enemy entering it takes 3 damage. One per player; lasts four rounds.',tip:'Predict an opponent’s route toward a spring.'},
  E:{feature:'Small-group formation payoff.',detail:'Up to three allies within one tile of your selected ally gain 1 shield and +1 on their next attack. Extra attack does not stack.',tip:'Arrange a compact formation, then cast before attacking.'},
- F:{feature:'Trade a creature for more options.',detail:'Sacrifice a friendly creature (you must have at least two) to draw 2 cards and regain 2 Aeth. Usable once per round.',tip:'Trade a nearly defeated cheap ally into extra choices.'},
- G:{feature:'Disrupt an empowered target.',detail:'Strip up to 2 shield from an enemy and remove attack boosts. Their next basic attack deals 1 less damage, to a minimum of 1.',tip:'Counter a large attack setup before it is used.'},
+ F:{feature:'Trade a creature for more options.',detail:'Sacrifice an allied unit to draw up to two cards and regain 2 Aeth. Costs 3 Aeth, for a net cost of 1 Aeth plus the unit. Once per round.',tip:'Trade a nearly defeated cheap ally into extra choices.'},
+ G:{feature:'Disrupt an empowered target.',detail:'Strip up to 3 shield and remove attack bonuses. The target’s next basic attack deals 2 less damage, minimum 1.',tip:'Counter a large attack setup before it is used.'},
 
  c:{feature:'Ranged elemental pressure.',detail:'Basic attacks burn a target for 1 additional damage at the start of its next turn. Burn does not stack.',tip:'Keep enemies burning while controlling their movement.'},
  j:{feature:'Lock down enemy advances.',detail:'Basic attacks root the target for its next turn. The victim may still attack but cannot move.',tip:'Block a dangerous rush near a choke point.'},
@@ -614,12 +614,12 @@ const GUIDE={
  s:{feature:'High-damage mobile assassin.',detail:'Moves up to 3 tiles and strikes for 3 base damage from 1 tile away.',tip:'Use its speed to reach vulnerable enemy support units.'},
  f:{feature:'Flying, evasive pathing.',detail:'Moves up to 3 tiles and can travel over obstructing terrain. Attacks adjacent enemies.',tip:'Fly around blockers to pressure weak back-line targets.'},
  g:{feature:'Durable heavy melee monster.',detail:'9 health, 2 attack, and 1 tile of movement. Excellent at holding a vital square.',tip:'Control an Aeth spring or hold a lane while ranged units attack.'},
- t:{feature:'Massive mythic assault unit.',detail:'Requires sacrificing 2 of your other units before summoning. Has 13 health and 5 base attack.',tip:'Summon after establishing a board presence; protect your sacrifices.'},
+ t:{feature:'Massive mythic assault unit.',detail:'Requires sacrificing 1 allied unit before summoning. Has 14 health, 5 attack, and splash damage.',tip:'Advance slowly behind defenders, then punish grouped enemies.'},
  l:{feature:'Mobile mythic ranged threat.',detail:'Requires sacrificing 1 allied unit. Flies, moves up to 2 tiles and attacks from 2 tiles away.',tip:'Use its reach and mobility to pressure the opposing Core.'},
  a:{feature:'3 direct spell damage.',detail:'Target an enemy monster or enemy Core within 3 tiles of any of your units. Deals 3 damage instantly.',tip:'Finish a damaged monster or reach the rival Core without moving a unit.'},
  m:{feature:'3 damage over a cross-shaped area.',detail:'Choose a tile within 3 tiles of any friendly unit. Enemies and the enemy Core on that tile and its 4 orthogonal neighbors take 3 damage.',tip:'Aim at packed opponents to strike several enemies in one cast.'},
  w:{feature:'Add 4 protective shield points.',detail:'Cast on any allied unit. Shields absorb incoming damage before health and can be added to existing shield.',tip:'Defend a high-value Ranger or a unit already holding an important tile.'},
- h:{feature:'Restore health and refresh actions.',detail:'Heal an allied unit by up to 4 (without exceeding maximum health). That unit can move and attack again this turn.',tip:'Use on an injured attacker after it has already acted for an extra action.'}
+ h:{feature:'Heal and renew an ally.',detail:'Restore up to 3 health and refresh its move and attack, at most once per unit per round. Requires the unit to be injured or to have acted.',tip:'Restore a key ally, or earn one extra attack at a meaningful Aeth cost.'}
 };
 let guideTab='hand',guideKey=null,guideFilter='all';
 const codex=(id)=>$(id),guideImage=k=>(portraitIndices[k]===undefined
@@ -662,15 +662,15 @@ function guideStats(k){
  if(d.spell){
   extras.push(['✦','SPELL'],['◈',''+d.cost+' Aeth']);
   if(d.power)extras.push(['⚡',d.power+' damage']);
-  if(d.spell==='heal')extras.push(['♥','Up to 4 HP']);
-  if(d.spell==='shield')extras.push(['◇','4 shield']);
+  if(d.spell==='heal')extras.push(['♥','3 HP, once/round']);
+  if(d.spell==='shield')extras.push(['◇','4 shield (max 5)']);
   if(d.spell==='dash')extras.push(['➜','Move again']);
   if(d.spell==='frost')extras.push(['❄','Root next turn']);
   if(d.spell==='ignite')extras.push(['🔥','Burn 1']);
   if(d.spell==='rally')extras.push(['⚔','+1 next attack']);
   if(d.spell==='cleanse')extras.push(['◇','Cleanse +2 shield']);
   if(d.spell==='recall')extras.push(['✦','Recover unit']);
-  if(d.spell==='snare')extras.push(['◇','2 dmg trap']);
+  if(d.spell==='snare')extras.push(['◇','3 dmg trap']);
   if(d.spell==='bond')extras.push(['⚔','Formation']);
   if(d.spell==='exchange')extras.push(['♜','Sacrifice']);
   if(d.spell==='silence')extras.push(['◇','Counter buffs']);
