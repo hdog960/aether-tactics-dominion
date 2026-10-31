@@ -88,7 +88,7 @@ function upgradeCard(k){
 }
 // Solo upgrades are deliberately gentle. Competitive online battles run base
 // stats so a veteran cannot overpower a new opponent through progression.
-function combatLevel(k,t){return mode==='ai'&&t===0?(S?.cardRanks?.[k]||1):1}
+function combatLevel(k,t){return mode==='ai'?(t===0?(S?.cardRanks?.[k]||1):(S?.aiTier||1)):1}
 function unitBonuses(k,t){const lv=combatLevel(k,t);return{hp:Math.floor(lv/2),atk:Math.floor((lv-1)/4)}}
 function spellBonus(k,t){return Math.min(2,Math.floor(combatLevel(k,t)/2))}
 function awardMatch(){
@@ -143,7 +143,9 @@ function draw(t,n=1,allowReshuffle=false){
 function seed(m){
  const aiStyle=m==='ai'?Object.keys(PACKS)[Math.floor(Math.random()*Object.keys(PACKS).length)]:'Balanced';
  const cardRanks=Object.fromEntries(CARD_KEYS.map(k=>[k,cardLevel(k)]));
- S={version:4,rewardPool:chosenDeck.slice(),cardRanks,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
+ const averageRank=chosenDeck.reduce((sum,k)=>sum+(cardRanks[k]||1),0)/chosenDeck.length;
+ const aiTier=Math.max(1,Math.min(MAX_CARD_LEVEL,Math.floor(averageRank+.15)));
+ S={version:4,rewardPool:chosenDeck.slice(),cardRanks,aiTier,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
  S.units.push(unit('v',0,2,6,true),unit('r',0,4,6,true),unit('v',1,2,1,true),unit('b',1,4,1,true));
  for(let t=0;t<2;t++){for(let k of ['v','r','a']){let i=S.decks[t].indexOf(k);if(i>=0){S.decks[t].splice(i,1);S.hands[t].push(k)}}draw(t,Math.max(0,4-S.hands[t].length))}
 }
@@ -775,7 +777,7 @@ function closeGuide(){
 
 function profileCardSummary(k){
  const d=D[k],lv=cardLevel(k),bonus=unitBonuses(k,0);
- const stats=d.spell?(d.power?'⚡ '+(d.power+spellBonus(k,0))+' DAMAGE':'✧ SUPPORT'):
+ const stats=d.spell?(d.power?'⚡ '+(d.power+Math.min(2,Math.floor(lv/2)))+' DAMAGE':'✧ SUPPORT'):
   '♥ '+(d.hp+Math.floor(lv/2))+' · ⚔ '+(d.atk+Math.floor((lv-1)/4));
  return stats;
 }
