@@ -1,0 +1,165 @@
+/* v3.0 — persistent five-tab mobile shell. Battle remains a single-screen game.
+   Panels are pages, not stacked popups. The nav is always in the bottom safe zone. */
+#game{--docknav:58px;position:relative!important;box-sizing:border-box}
+#game>.bottom-tabs{
+ order:50!important;flex:0 0 var(--docknav)!important;height:var(--docknav)!important;
+ width:100%;position:relative;z-index:130;
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
+ align-items:stretch;box-sizing:border-box;
+ margin:4px 0 0!important;padding:4px 3px max(3px,env(safe-area-inset-bottom,0px))!important;
+ border:1px solid #45737a;border-radius:13px 13px 10px 10px;
+ background:linear-gradient(180deg,#173c4e,#091b2b);
+ box-shadow:0 -5px 14px #0006;
+}
+#game>.bottom-tabs button{
+ min-width:0!important;display:flex;flex-direction:column;
+ justify-content:center;align-items:center;gap:2px;
+ padding:2px 0!important;margin:0!important;
+ color:#adc7c8;background:transparent;border:1px solid transparent;
+ border-radius:9px;box-shadow:none;letter-spacing:.3px;
+ font:850 clamp(8px,2.05vw,10px)/1.08 system-ui;
+}
+#game>.bottom-tabs button .nav-icon{font:900 19px/1 system-ui}
+#game>.bottom-tabs button.selected{
+ color:#ffdfa5;border:1px solid #806d55;
+ background:linear-gradient(#34556a,#214151);
+ box-shadow:inset 0 2px #e5bd7540;
+}
+#game>.bottom-tabs button:active{background:#3b6771}
+#game:not([data-tab="battle"])>.battle-header,
+#game:not([data-tab="battle"])>.hud,
+#game:not([data-tab="battle"])>.vista,
+#game:not([data-tab="battle"])>.legend,
+#game:not([data-tab="battle"])>.command-dock{display:none!important}
+#game[data-tab="battle"]>.tab-page{display:none!important}
+#game[data-tab="battle"]>.codex,#game[data-tab="battle"]>.player-profile{display:none!important}
+#game[data-tab="campaign"]>.tab-page:not(#campaign-screen),
+#game[data-tab="duel"]>.tab-page:not(#duel-screen),
+#game[data-tab="cards"]>.tab-page,
+#game[data-tab="forge"]>.tab-page{display:none!important}
+#game:not([data-tab="campaign"])>#campaign-screen,
+#game:not([data-tab="duel"])>#duel-screen{display:none!important}
+#game>.tab-page{
+ order:0;flex:1 1 0;min-height:0;overflow-y:auto;
+ -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+ padding:8px 6px 12px!important;background:
+ radial-gradient(circle at 50% 0%,#26495d,#081a2b 75%);
+}
+#game .page-top{padding:13px 12px 12px;background:#183847;
+ border:1px solid #48747a;border-radius:12px;margin-bottom:10px}
+#game .eyebrow{font:850 9px system-ui;color:#93dace;letter-spacing:1.3px}
+#game .page-top h2{font:900 23px/1.05 Georgia,serif;margin:5px 0 7px!important;color:#f4d6a0}
+#game .page-top p{font:11px/1.46 system-ui;color:#bbd8d1;margin:0!important}
+#game .campaign-meta{
+ display:flex;align-items:center;justify-content:space-between;
+ padding:9px 12px;margin:0 0 11px;background:#102f3b;
+ border:1px solid #365f68;border-radius:9px;color:#dbd5b9;
+ font:850 10px system-ui;letter-spacing:.5px;
+}
+#game .campaign-regions{display:flex;flex-direction:column;gap:12px}
+#game .campaign-region{background:#122e42;border:1px solid #466e76;
+ border-radius:13px;overflow:hidden;box-shadow:0 4px 10px #0003}
+#game .region-banner{
+ padding:14px 14px 11px;min-height:75px;
+ background:linear-gradient(110deg,var(--region-start,#20465b),var(--region-end,#162c46));
+ display:flex;align-items:flex-end;justify-content:space-between;gap:8px;
+}
+#game .region-banner span{color:#bbf0e1;font:850 9px system-ui;letter-spacing:1px}
+#game .region-banner h3{font:900 19px/1.15 Georgia,serif;color:#ffdfab;margin:4px 0!important}
+#game .region-banner em{font:850 10px system-ui;color:#e5d9ba;white-space:nowrap}
+#game .campaign-nodes{display:flex;flex-direction:column;gap:7px;padding:9px}
+#game .mission-node{
+ display:grid;grid-template-columns:35px minmax(0,1fr) auto;
+ align-items:center;gap:8px;
+ min-height:63px;text-align:left;padding:7px 9px!important;
+ border:1px solid #446f7b;border-radius:9px;background:#173b4b;
+ color:#d7ebdf;
+}
+#game .mission-node:disabled{opacity:.45;filter:saturate(.6)}
+#game .mission-node.done{border-color:#8b996b;background:#2a4c48}
+#game .mission-node.current{border-color:#e3bf8d;background:#264e57}
+#game .mission-node .mission-symbol{
+ width:31px;height:31px;display:grid;place-items:center;
+ border-radius:8px;border:1px solid #658c89;background:#0d2b3e;font-size:17px;
+}
+#game .mission-info{min-width:0}
+#game .mission-info strong{display:block;color:#f4ddaf;font:850 13px Georgia,serif}
+#game .mission-info small{display:block;color:#a9cbc6;font:10px/1.25 system-ui;margin-top:3px}
+#game .mission-node .mission-status{font:900 10px system-ui;color:#f0d19d;white-space:nowrap}
+#game .trials-section{margin-top:15px;padding:12px;border:1px solid #96735b;
+ border-radius:13px;background:linear-gradient(145deg,#392f47,#142d42)}
+#game .trials-head>span{color:#f9ca97;font:850 9px system-ui;letter-spacing:1.1px}
+#game .trials-head h3{font:900 20px Georgia,serif;color:#f4d09f;margin:5px 0!important}
+#game .trials-head p{color:#c5c0cc;font:11px/1.35 system-ui}
+#game .trial-list{display:grid;gap:7px}
+#game .trial-node{display:flex;justify-content:space-between;align-items:center;gap:8px;
+ padding:11px 10px!important;border:1px solid #776d86;border-radius:8px;
+ color:#f3d9ad;background:#302f48;font:850 12px Georgia,serif}
+#game .trial-node small{color:#c8b8ca;font:9px system-ui}
+#game .trial-node:disabled{opacity:.45}
+#game .duel-features{display:grid;gap:10px;margin:12px 0}
+#game .duel-features>div{padding:12px;border:1px solid #436e75;
+ border-radius:10px;background:#123746}
+#game .duel-features b{color:#f3d49f;font:850 12px system-ui}
+#game .duel-features p{color:#b4d1c8;font:11px/1.45 system-ui;margin:6px 0 0!important}
+#game .main-cta,#game .secondary-cta{
+ display:block;width:100%;padding:13px!important;margin:8px 0!important;
+ border:1px solid #e8ce9f;border-radius:9px;font:900 12px system-ui;
+ background:#e1c290;color:#1a2d39;
+}
+#game .secondary-cta{background:#244657;color:#d9e4d9;border-color:#6a8d8c}
+#game .duel-note{color:#9cafb2;font:10px/1.4 system-ui;padding:9px 12px}
+/* Turn Grimoire and profile into persistent full-height destinations. */
+#game[data-tab="cards"]>#codex,
+#game[data-tab="forge"]>#player-profile{
+ display:flex!important;position:relative!important;inset:auto!important;
+ order:0;flex:1 1 0!important;max-height:none!important;min-height:0!important;
+ width:100%!important;align-items:stretch!important;justify-content:stretch!important;
+ padding:0!important;background:transparent!important;
+ border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+#game[data-tab="cards"]>#codex .codex-panel,
+#game[data-tab="forge"]>#player-profile .profile-panel{
+ width:100%!important;max-width:none!important;
+ height:100%!important;max-height:100%!important;min-height:0!important;
+ margin:0!important;border:0!important;
+ border-radius:12px!important;box-shadow:none!important;
+}
+#game[data-tab="cards"] #codex .codex-library,
+#game[data-tab="cards"] #codex .codex-detail{
+ flex:1 1 auto!important;min-height:0!important;
+ max-height:none!important;
+}
+#game[data-tab="cards"] #codex .codex-list{
+ flex:1 1 auto!important;max-height:none!important;min-height:0!important;
+ overflow-y:auto!important;
+}
+#game[data-tab="cards"] .codex-close,
+#game[data-tab="forge"] .profile-head button#profile-close{
+ display:none!important;
+}
+/* Keep deck builder and connection modal inside the main content, above nav. */
+#game>#deck-builder,#game>#rules-sheet{
+ bottom:calc(var(--docknav) + 5px)!important;
+ z-index:145;
+}
+#game>.lobby:not(.hidden){
+ position:absolute!important;z-index:150;inset:8px 5px calc(var(--docknav) + 6px)!important;
+ overflow-y:auto!important;max-height:none!important;
+ border-radius:13px!important;
+}
+@media (max-width:720px),(max-height:540px){
+ #game{height:100dvh!important;max-height:100dvh!important;overflow:hidden!important;
+ padding:calc(4px + env(safe-area-inset-top,0px)) 6px 3px!important}
+ #game>.bottom-tabs{--docknav:58px}
+ #game>.vista{min-height:100px!important}
+ #game>.command-dock{flex-shrink:0}
+ #game .codex-header{padding:9px 10px!important}
+}
+@media(max-height:640px){
+ #game{--docknav:48px}
+ #game>.bottom-tabs{margin-top:2px!important;padding-top:2px!important;padding-bottom:2px!important}
+ #game>.bottom-tabs button .nav-icon{font-size:16px}
+ #game>.bottom-tabs button{font-size:8px}
+ #game .command-dock .hand{flex-basis:95px!important;height:95px!important;max-height:95px!important}
+}
