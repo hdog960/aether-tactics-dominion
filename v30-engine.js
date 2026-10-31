@@ -98,7 +98,7 @@ function awardMatch(){
  if(!S||mode!=='ai'||S.mode!=='ai'||S.phase!=='over'||![0,1,-1].includes(S.winner))return null;
  if(profile.claimed[S.matchId])return profile.last||null;
  const victory=S.winner===localSeat,drawn=S.winner===-1,rounds=Math.min(12,S.round||1);
- const xp=(victory?95:drawn?38:45)+rounds*3,coins=(victory?85:drawn?35:40)+rounds*3;
+ let xp=(victory?95:drawn?38:45)+rounds*3,coins=(victory?85:drawn?35:40)+rounds*3;
  profile.matches++;if(victory)profile.wins++;
  profile.gold+=coins;profile.xp+=xp;
  const oldLevel=profile.level;
@@ -111,7 +111,37 @@ function awardMatch(){
   const k=pool.length?pool[Math.floor(Math.random()*pool.length)]:CARD_KEYS[Math.floor(Math.random()*CARD_KEYS.length)];
   if(!D[k])continue;profile.copies[k]=(profile.copies[k]||0)+1;rewards.push(k);
  }
+ // First campaign clears unlock stages, one-time rewards and replayable stars.
+ let storyClear=false,stars=0,missionTitle='';
+ const mission=MISSION_BY_ID[S.missionId];
+ if(mission&&victory){
+  missionTitle=mission.name;
+  stars=S.round<=Math.ceil((mission.rounds||24)*.52)&&S.hp[0]>=19?3:
+   S.round<=Math.ceil((mission.rounds||24)*.78)&&S.hp[0]>=13?2:1;
+  profile.campaign.stars[mission.id]=Math.max(profile.campaign.stars[mission.id]||0,stars);
+  profile.campaign.best[mission.id]=Math.min(profile.campaign.best[mission.id]||99,S.round);
+  if(!profile.campaign.completed.includes(mission.id)){
+   profile.campaign.completed.push(mission.id);storyClear=true;
+   xp+=mission.bonusXP;coins+=mission.bonusGold;
+   profile.xp+=mission.bonusXP;profile.gold+=mission.bonusGold;
+   if(mission.card&&D[mission.card]){profile.copies[mission.card]=(profile.copies[mission.card]||0)+1;rewards.push(mission.card)}
+  }
+ }
+ const played=S.usedCards?.[0]||[];
+ for(const k of played)if(D[k])profile.mastery[k]=(profile.mastery[k]||0)+1;
+ const achievementChecks={
+  firstVictory:profile.wins>=1,fieldTactician:new Set(played).size>=5,
+  pathfinder:profile.campaign.completed.length>=4,
+  relicSeeker:profile.campaign.completed.length>=12,
+  crownBreaker:CONQUEST.trials.every(t=>profile.campaign.completed.includes(t.id)),
+  collector:CARD_KEYS.filter(k=>cardLevel(k)>=2).length>=8
+ };
+ const newlyEarned=[];
+ for(const [key,unlocked]of Object.entries(achievementChecks))
+  if(unlocked&&!profile.achievements[key]){profile.achievements[key]=1;newlyEarned.push(key)}
+ while(profile.xp>=xpNeeded(profile.level)&&profile.level<100){profile.xp-=xpNeeded(profile.level);profile.level++}
  const record={matchId:S.matchId,victory,drawn,xp,gold:coins,rewards,
+   missionTitle,storyClear,stars,newlyEarned,
    levelUp:profile.level>oldLevel,level:profile.level};
  profile.claimed[S.matchId]=1;profile.last=record;
  // Keep a limited anti-duplicate history across reloads.
@@ -148,7 +178,7 @@ function seed(m){
  const cardRanks=Object.fromEntries(CARD_KEYS.map(k=>[k,cardLevel(k)]));
  const averageRank=chosenDeck.reduce((sum,k)=>sum+(cardRanks[k]||1),0)/chosenDeck.length;
  const aiTier=Math.max(1,Math.min(MAX_CARD_LEVEL,Math.floor(averageRank+.15)));
- S={version:4,rewardPool:chosenDeck.slice(),cardRanks,aiTier,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
+ S={version:4,usedCards:[[],[]],rewardPool:chosenDeck.slice(),cardRanks,aiTier,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
  S.units.push(unit('v',0,2,6,true),unit('r',0,4,6,true),unit('v',1,2,1,true),unit('b',1,4,1,true));
  for(let t=0;t<2;t++){for(let k of ['v','r','a']){let i=S.decks[t].indexOf(k);if(i>=0){S.decks[t].splice(i,1);S.hands[t].push(k)}}draw(t,Math.max(0,4-S.hands[t].length))}
 }
@@ -503,7 +533,9 @@ function next(t){
  if(t===1){S.round++;S.cap=Math.min(10,2+S.round);
   if(S.missionId){
    commanderReinforce();missionCheck(t);if(S.phase!=='playing')return;
-   if(S.round>(S.missionRoundLimit||ROUND_LIMIT)){endByScore();return}
+   if(S.round>(S.missionRoundLimit||ROUND_LIMIT)){
+    S.winner=1;S.phase='over';log='The enemy held out until the mission timer expired.';return
+   }
   }else if(S.round>ROUND_LIMIT){endByScore();return}
  }
  S.turn=1-t;S.energy[S.turn]=Math.min(10,S.cap+onSpring(S.turn));
@@ -546,6 +578,7 @@ function apply(t,a){
    onFriendlySpell(t);
    log=q.name+' cast!';
   }
+  if(!S.usedCards)S.usedCards=[[],[]];S.usedCards[t].push(k);
   S.energy[t]-=q.cost;if(k==='F')S.energy[t]=Math.min(10,S.energy[t]+2);if(k==='d'&&S.sparkRound?.[t]!==S.round){S.sparkRound||(S.sparkRound=[0,0]);S.sparkRound[t]=S.round;S.energy[t]=Math.min(10,S.energy[t]+1)}
   discard(t,idx);
   if(k==='F')draw(t,2+Math.min(1,spellBonus(k,t)));
@@ -902,8 +935,12 @@ function renderProfile(){
  const m=profile.last;
  $('profile-reward-text').textContent=m?
    (m.drawn?'DRAW':m.victory?'VICTORY':'DEFEAT')+' · +'+m.xp+' XP · +'+m.gold+' gold · '+
-    m.rewards.map(k=>D[k]?.name||k).join(', ')+(m.levelUp?' · LEVEL UP!':''):
+    m.rewards.map(k=>D[k]?.name||k).join(', ')+(m.missionTitle?' · '+m.missionTitle+(m.storyClear?' FIRST CLEAR':'')+' · '+m.stars+' SIGILS':'')+(m.levelUp?' · LEVEL UP!':''):
     'Finish a match to earn XP, gold and copies of cards from your deck.';
+ if($('profile-achievements')){
+  const earned=Object.keys(profile.achievements).filter(k=>profile.achievements[k]);
+  $('profile-achievements').textContent='MILESTONES · '+earned.length+'/6  '+earned.map(k=>k.replace(/([A-Z])/g,' $1').toUpperCase()).join(' ✦ ');
+ }
  const items=CARD_KEYS.slice().sort((a,b)=>cardLevel(b)-cardLevel(a)||D[a].cost-D[b].cost||D[a].name.localeCompare(D[b].name));
  $('profile-upgrade-list').innerHTML=items.map(k=>{
   const card=D[k],lv=cardLevel(k),copies=profile.copies[k]||0,cost=cardUpgradeCost(k);
@@ -911,7 +948,7 @@ function renderProfile(){
    '<span class="profile-card-art">'+guideImage(k)+'</span>'+
    '<div class="profile-card-meta"><strong>'+card.name+'</strong>'+
    '<small>LV '+lv+' / '+MAX_CARD_LEVEL+' · '+profileCardSummary(k)+'</small>'+
-   '<span>'+(lv===MAX_CARD_LEVEL?'MAX LEVEL':copies+'/'+cost.copies+' COPIES · '+cost.gold+' GOLD')+'</span></div>'+
+   '<span>'+(lv===MAX_CARD_LEVEL?'MAX LEVEL':copies+'/'+cost.copies+' COPIES · '+cost.gold+' GOLD')+'</span><span class="mastery-label">✦ MASTERY '+(profile.mastery[k]||0)+' USES</span></div>'+
    '<button type="button" data-upgrade="'+k+'"'+(!canUpgrade(k)?' disabled':'')+'>'+
    (lv===MAX_CARD_LEVEL?'MAX':'↑ UPGRADE')+'</button></div>';
  }).join('');
