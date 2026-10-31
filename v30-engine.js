@@ -430,7 +430,11 @@ function fxSpell(target,n,spell,x,y,t){
  fxPush({type:'spell',kind:spell,from:{x,y,team:t},to:fxTarget(target),
    amount:dealt,blocked,lethal:target.core?S.hp[target.team]<=n:target.hp<=n-blocked});
 }
-function applyDamage(target,n){if(target.core){S.hp[target.team]=Math.max(0,S.hp[target.team]-n);if(S.hp[target.team]===0){S.phase='over';S.winner=1-target.team}}else{let absorb=Math.min(target.shield,n);target.shield-=absorb;target.hp-=n-absorb;if(target.hp<=0){onUnitDeath(target);S.units=S.units.filter(u=>u.id!==target.id)}}}
+function applyDamage(target,n){if(target.core){
+  const objectiveCore=S.missionId&&target.team===1&&S.missionGoal!=='assault';
+  S.hp[target.team]=Math.max(objectiveCore?1:0,S.hp[target.team]-n);
+  if(S.hp[target.team]===0){S.phase='over';S.winner=1-target.team}
+ }else{let absorb=Math.min(target.shield,n);target.shield-=absorb;target.hp-=n-absorb;if(target.hp<=0){onUnitDeath(target);S.units=S.units.filter(u=>u.id!==target.id)}}}
 
 function endSupportTurn(team){
  const supports=S.units.filter(u=>u.team===team&&u.k==='p');
