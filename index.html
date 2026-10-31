@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#0c1b2d"><meta name="description" content="Richer detailed 32-bit-era pixel fantasy. A 55° tactical floating island in a luminous rift.">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dominion">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css"><link rel="stylesheet" href="./v20-expansion.css"><link rel="stylesheet" href="./v21-progression.css">
+<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css"><link rel="stylesheet" href="./v20-expansion.css"><link rel="stylesheet" href="./v21-progression.css"><link rel="stylesheet" href="./v22-balance.css">
 </head><body><main id="game">
 <header class="battle-header"><div class="battle-brand"><h1 class="logo">AETHER <em>DOMINION</em></h1></div>
  <nav class="menu" aria-label="Game mode"><button id="mode-ai" class="modebtn active">SOLO</button><button id="mode-online" class="modebtn">DUEL</button></nav>
@@ -101,12 +101,12 @@
       <div class="rules-section"><span class="rules-symbol teal">02</span><div><h3>Move and attack</h3><p>Select an allied tile. Each ready unit can move once and attack once per turn. Blue tiles are moves, red are attacks, and violet tiles are spells.</p></div></div>
       <div class="rules-section"><span class="rules-symbol gold">03</span><div><h3>Use terrain to your advantage</h3><p>Hold springs for bonus Aeth each turn. Striking downhill from raised ground adds 1 damage. Rocks block ranged attacks.</p></div></div>
       <div class="rules-section"><span class="rules-symbol rose">04</span><div><h3>Build your army</h3><p>Aeth grows across rounds, up to 10 base capacity. Mythic creatures require sacrifices; inspect any card with its <b>i</b> icon for exact details.</p></div></div>
-      <div class="rules-section"><span class="rules-symbol blue">05</span><div><h3>Win the duel</h3><p>Reduce the opposing Core from 24 HP to zero. Online duels use an experimental direct connection between two players.</p></div></div>
+      <div class="rules-section"><span class="rules-symbol blue">05</span><div><h3>Win the duel</h3><p>Reduce the opposing Core from 24 HP to zero. After 24 rounds, score remaining Core HP first, then held springs and surviving units. Exact ties are draws. Online duels are experimental.</p></div></div>
     </div>
     <footer class="rules-panel-foot"><button id="rules-done" type="button">BACK TO BATTLE</button></footer>
   </div>
 </section>
 </main>
-<script defer src="./v21-art.js"></script><script defer src="./v21-engine.js"></script><script defer src="./v21-scene.js"></script><script type="module" src="./v21-net.js"></script>
+<script defer src="./v21-art.js"></script><script defer src="./v22-engine.js"></script><script defer src="./v21-scene.js"></script><script type="module" src="./v22-net.js"></script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
 </body></html>
