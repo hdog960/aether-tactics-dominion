@@ -92,10 +92,10 @@ function combatLevel(k,t){return mode==='ai'&&t===0?(S?.cardRanks?.[k]||1):1}
 function unitBonuses(k,t){const lv=combatLevel(k,t);return{hp:Math.floor(lv/2),atk:Math.floor((lv-1)/4)}}
 function spellBonus(k,t){return Math.min(2,Math.floor(combatLevel(k,t)/2))}
 function awardMatch(){
- if(!S||mode!=='ai'||S.mode!=='ai'||S.phase!=='over'||(S.winner!==0&&S.winner!==1))return null;
+ if(!S||mode!=='ai'||S.mode!=='ai'||S.phase!=='over'||![0,1,-1].includes(S.winner))return null;
  if(profile.claimed[S.matchId])return profile.last||null;
- const victory=S.winner===localSeat,rounds=Math.min(12,S.round||1);
- const xp=(victory?95:45)+rounds*3,coins=(victory?85:40)+rounds*3;
+ const victory=S.winner===localSeat,drawn=S.winner===-1,rounds=Math.min(12,S.round||1);
+ const xp=(victory?95:drawn?38:45)+rounds*3,coins=(victory?85:drawn?35:40)+rounds*3;
  profile.matches++;if(victory)profile.wins++;
  profile.gold+=coins;profile.xp+=xp;
  const oldLevel=profile.level;
@@ -108,7 +108,7 @@ function awardMatch(){
   const k=pool.length?pool[Math.floor(Math.random()*pool.length)]:CARD_KEYS[Math.floor(Math.random()*CARD_KEYS.length)];
   if(!D[k])continue;profile.copies[k]=(profile.copies[k]||0)+1;rewards.push(k);
  }
- const record={matchId:S.matchId,victory,xp,gold:coins,rewards,
+ const record={matchId:S.matchId,victory,drawn,xp,gold:coins,rewards,
    levelUp:profile.level>oldLevel,level:profile.level};
  profile.claimed[S.matchId]=1;profile.last=record;
  // Keep a limited anti-duplicate history across reloads.
@@ -185,7 +185,19 @@ function trapImpact(u){
  const impact=trap.damage||3;fxSpell(u,impact,'snare',u.x,u.y,trap.team);applyDamage(u,impact);
  log='Veil Snare triggered for '+impact+' damage!';
 }
-const MAX_SHIELD=5;
+const MAX_SHIELD=5,ROUND_LIMIT=24;
+function matchValue(team){
+ const friends=S.units.filter(u=>u.team===team);
+ return S.hp[team]*100+onSpring(team)*20+
+  friends.reduce((sum,u)=>sum+(u.hp/Math.max(1,u.max))*4+(u.shield||0)*.25,0);
+}
+function endByScore(){
+ const a=matchValue(0),b=matchValue(1);
+ S.winner=Math.abs(a-b)<.001?-1:a>b?0:1;
+ S.phase='over';S.resolvedByScore=true;
+ log=S.winner===-1?'Riftfront ends in a draw.':'The Riftfront is decided by core health and board control.';
+}
+
 function grantShield(u,n){const old=Math.min(MAX_SHIELD,Math.max(0,u.shield||0));u.shield=Math.min(MAX_SHIELD,old+Math.max(0,n));return u.shield-old}
 function powerFor(q,t){const k=CARD_KEYS.find(k=>D[k]===q);return(q.power||0)+spellBonus(k,t)}
 
@@ -376,7 +388,7 @@ function resolveSpell(q,t,x,y){
 function discard(t,idx){let k=S.hands[t].splice(idx,1)[0];S.discards[t].push(k);draw(t,1)}
 function next(t){
  endSupportTurn(t);
- if(t===1){S.round++;S.cap=Math.min(10,2+S.round)}
+ if(t===1){S.round++;S.cap=Math.min(10,2+S.round);if(S.round>ROUND_LIMIT){endByScore();return}}
  S.turn=1-t;S.energy[S.turn]=Math.min(10,S.cap+onSpring(S.turn));
  S.cycled[S.turn]=false;
  S.units.filter(u=>u.team===S.turn).forEach(u=>{u.moved=false;u.attacked=false;u.stride=0;u.runeCharge=0});
@@ -772,7 +784,7 @@ function renderProfile(){
  $('profile-matches').textContent=profile.matches;
  const m=profile.last;
  $('profile-reward-text').textContent=m?
-   (m.victory?'VICTORY':'DEFEAT')+' · +'+m.xp+' XP · +'+m.gold+' gold · '+
+   (m.drawn?'DRAW':m.victory?'VICTORY':'DEFEAT')+' · +'+m.xp+' XP · +'+m.gold+' gold · '+
     m.rewards.map(k=>D[k]?.name||k).join(', ')+(m.levelUp?' · LEVEL UP!':''):
     'Finish a match to earn XP, gold and copies of cards from your deck.';
  const items=CARD_KEYS.slice().sort((a,b)=>cardLevel(b)-cardLevel(a)||D[a].cost-D[b].cost||D[a].name.localeCompare(D[b].name));
@@ -850,8 +862,8 @@ function render(){
  if(window.AetherScene?.sync)window.AetherScene.sync(S,my,{unit:chosenUnit,card:chosenCard,focus:inspectedTile,tributes:tributes.slice()});
  if(S.phase==='over'){
   const reward=awardMatch();
-  $('resulttitle').textContent=S.winner===my?'DOMINION ACHIEVED':'CORE SHATTERED';
-  $('resultdesc').textContent=(S.winner===my?'Your army captured the Riftfront.':'Your army was defeated.')+' Round '+S.round+'.'+(mode==='ai'&&reward?'  ✦ +'+reward.xp+' XP · +'+reward.gold+' gold · '+reward.rewards.length+' card copies'+(reward.levelUp?' · LEVEL UP!':''):'');
+  $('resulttitle').textContent=S.winner===-1?'RIFTFRONT DRAW':S.winner===my?'DOMINION ACHIEVED':'CORE SHATTERED';
+  $('resultdesc').textContent=(S.winner===-1?'Both armies remain evenly matched.':S.winner===my?'Your army captured the Riftfront.':'Your army was defeated.')+' Round '+S.round+'.'+(mode==='ai'&&reward?'  ✦ +'+reward.xp+' XP · +'+reward.gold+' gold · '+reward.rewards.length+' card copies'+(reward.levelUp?' · LEVEL UP!':''):'');
   if(!victoryVisible&&victoryDelay===null){
    // Let the winning blow land, damage number rise and defeated unit fade
    // before a full-screen result panel hides the battlefield.
