@@ -60,22 +60,82 @@ function loadDeck(){try{const d=JSON.parse(localStorage.getItem(DECK_STORE));if(
 let chosenDeck=loadDeck(),draftDeck=chosenDeck.slice();
 function persistDeck(){try{localStorage.setItem(DECK_STORE,JSON.stringify(chosenDeck))}catch(e){}}
 
+// Independent persistent progression. Match snapshots remain v4-compatible.
+// Local-only profile; server-backed authentication and anti-cheat are future work.
+const PROFILE_STORE='aether-dominion-profile-v21',MAX_CARD_LEVEL=8;
+function freshProfile(){return{version:1,level:1,xp:0,gold:0,matches:0,wins:0,
+ copies:{v:2,r:2,a:2},levels:{},claimed:{},last:null}}
+function loadProfile(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(PROFILE_STORE));if(!saved||saved.version!==1)return freshProfile();
+  return{...freshProfile(),...saved,levels:saved.levels||{},copies:saved.copies||{},claimed:saved.claimed||{}};
+ }catch(e){return freshProfile()}
+}
+let profile=loadProfile();
+function saveProfile(){try{localStorage.setItem(PROFILE_STORE,JSON.stringify(profile))}catch(e){}}
+function xpNeeded(level){return 90+(level-1)*45}
+function cardLevel(k){return Math.max(1,Math.min(MAX_CARD_LEVEL,profile.levels[k]||1))}
+function cardUpgradeCost(k){const lv=cardLevel(k);return{copies:lv+1,gold:lv*60}}
+function canUpgrade(k){const cost=cardUpgradeCost(k);return CARD_KEYS.includes(k)&&cardLevel(k)<MAX_CARD_LEVEL&&profile.gold>=cost.gold&&(profile.copies[k]||0)>=cost.copies}
+function upgradeCard(k){
+ if(!canUpgrade(k))return false;
+ const cost=cardUpgradeCost(k);profile.gold-=cost.gold;profile.copies[k]-=cost.copies;
+ profile.levels[k]=cardLevel(k)+1;saveProfile();return true;
+}
+// Solo upgrades are deliberately gentle. Competitive online battles run base
+// stats so a veteran cannot overpower a new opponent through progression.
+function combatLevel(k,t){return mode==='ai'&&t===0?cardLevel(k):1}
+function unitBonuses(k,t){const lv=combatLevel(k,t);return{hp:Math.floor((lv-1)/2),atk:Math.floor((lv-1)/4)}}
+function spellBonus(k,t){return Math.min(2,Math.floor((combatLevel(k,t)-1)/3))}
+function awardMatch(){
+ if(!S||S.phase!=='over'||!S.winner&&S.winner!==0)return null;
+ if(profile.claimed[S.matchId])return profile.last||null;
+ const victory=S.winner===localSeat,rounds=Math.min(12,S.round||1);
+ const xp=(victory?95:45)+rounds*3,coins=(victory?85:40)+rounds*3;
+ profile.matches++;if(victory)profile.wins++;
+ profile.gold+=coins;profile.xp+=xp;
+ const oldLevel=profile.level;
+ while(profile.xp>=xpNeeded(profile.level)&&profile.level<100){
+  profile.xp-=xpNeeded(profile.level);profile.level++;
+ }
+ const rewards=[];
+ const pool=[...(S.decks[localSeat]||[]),...(S.hands[localSeat]||[]),...(S.discards[localSeat]||[])];
+ for(let i=0;i<(victory?3:2);i++){
+  const k=pool.length?pool[Math.floor(Math.random()*pool.length)]:CARD_KEYS[Math.floor(Math.random()*CARD_KEYS.length)];
+  if(!D[k])continue;profile.copies[k]=(profile.copies[k]||0)+1;rewards.push(k);
+ }
+ const record={matchId:S.matchId,victory,xp,gold:coins,rewards,
+   levelUp:profile.level>oldLevel,level:profile.level};
+ profile.claimed[S.matchId]=1;profile.last=record;
+ // Keep a limited anti-duplicate history across reloads.
+ const ids=Object.keys(profile.claimed);
+ if(ids.length>200)for(const id of ids.slice(0,ids.length-200))delete profile.claimed[id];
+ saveProfile();return record;
+}
+function profileSummary(){
+ return {level:profile.level,xp:profile.xp,xpNext:xpNeeded(profile.level),gold:profile.gold,
+ wins:profile.wins,matches:profile.matches,last:profile.last}
+}
+
 const rocks=new Set(['0,3','6,3','2,3','4,4']),springs=['1,3','5,4'],high=new Set(['2,2','4,2','3,3','3,4','2,5','4,5']);
 let S=null,localSeat=0,mode='ai',net=null,room='',chosenUnit=null,chosenCard=-1,inspectedTile=null,tributes=[],msg='',hint='',log='',connected=false,revision=0;
 let victoryDelay=null,victoryVisible=false;
 const K=(x,y)=>x+','+y,P=(x,y)=>({x,y}),d=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y),bounds=(x,y)=>x>=0&&x<7&&y>=0&&y<8;
 const entity=(x,y)=>S.units.find(u=>u.x===x&&u.y===y),core=t=>({core:true,team:t,x:3,y:t===0?7:0});
 function shuffle(arr){let a=arr.slice();for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a}
-function unit(k,team,x,y,ready=false){let e=D[k];return{id:S.next++,k,team,x,y,hp:e.hp,max:e.hp,atk:e.atk,move:e.move,range:e.range,shield:e.shield||0,fly:!!e.fly,moved:!ready,attacked:!ready}}
+function unit(k,team,x,y,ready=false){
+ let e=D[k],bonuses=unitBonuses(k,team),hp=e.hp+bonuses.hp,atk=e.atk+bonuses.atk;
+ return{id:S.next++,k,team,x,y,hp,max:hp,atk,move:e.move,range:e.range,shield:e.shield||0,fly:!!e.fly,moved:!ready,attacked:!ready}
+}
 function draw(t,n=1){for(let i=0;i<n;i++){if(!S.decks[t].length){S.decks[t]=shuffle(S.discards[t]);S.discards[t]=[]}if(S.decks[t].length)S.hands[t].push(S.decks[t].pop())}}
 function seed(m){
  const aiStyle=m==='ai'?Object.keys(PACKS)[Math.floor(Math.random()*Object.keys(PACKS).length)]:'Balanced';
- S={version:4,mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],cycled:[false,false],winner:null};
+ S={version:4,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
  S.units.push(unit('v',0,2,6,true),unit('r',0,4,6,true),unit('v',1,2,1,true),unit('b',1,4,1,true));
  for(let t=0;t<2;t++){for(let k of ['v','r','a']){let i=S.decks[t].indexOf(k);if(i>=0){S.decks[t].splice(i,1);S.hands[t].push(k)}}draw(t,Math.max(0,4-S.hands[t].length))}
 }
 function save(){if(mode!=='ai'||!S)return;try{localStorage.setItem('aether-dominion-v04',JSON.stringify(S))}catch(e){}}
-function load(){try{let x=JSON.parse(localStorage.getItem('aether-dominion-v04'));if(x?.version===4&&x?.mode==='ai'&&Array.isArray(x.units)&&x.units.length<30){S=x;return true}}catch(e){}return false}
+function load(){try{let x=JSON.parse(localStorage.getItem('aether-dominion-v04'));if(x?.version===4&&x?.mode==='ai'&&Array.isArray(x.units)&&x.units.length<30){S=x;if(!S.matchId)S.matchId='legacy-'+Date.now();if(!Array.isArray(S.traps))S.traps=[];return true}}catch(e){}return false}
 const onSpring=t=>springs.filter(k=>{let [x,y]=k.split(',').map(Number);return entity(x,y)?.team===t}).length;
 function deploy(t,x,y){if(!bounds(x,y)||rocks.has(K(x,y))||entity(x,y)||(x===3&&(y===0||y===7)))return false;if(t===0&&y>=5||t===1&&y<=2)return true;return springs.some(k=>{let [sx,sy]=k.split(',').map(Number);return entity(sx,sy)?.team===t&&d(P(sx,sy),P(x,y))<=1})}
 function movement(u){let queue=[{x:u.x,y:u.y,n:0}],seen=new Set([K(u.x,u.y)]),out=[];while(queue.length){let z=queue.shift();if(z.n>0)out.push(z);if(z.n>=u.move)continue;for(let [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){let x=z.x+dx,y=z.y+dy,k=K(x,y);if(!bounds(x,y)||seen.has(k)||entity(x,y)||(rocks.has(k)&&!u.fly)||(x===3&&(y===0||y===7)))continue;seen.add(k);queue.push({x,y,n:z.n+1})}}return out}
@@ -590,7 +650,7 @@ function render(){
  $('selfmeter').style.width=100*S.hp[my]/24+'%';$('rivalmeter').style.width=100*S.hp[enemy]/24+'%';
  $('round').textContent=S.round;$('turnlabel').textContent=S.phase==='over'?'MATCH OVER':S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
  $('aeth').textContent=S.energy[my];$('capacity').textContent=' / '+S.cap;
- $('deckcount').textContent=S.decks[my].length+' IN DRAW PILE';$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
+ $('deckcount').textContent='LV '+profile.level+' · '+S.decks[my].length+' DRAW';$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
  const unit=S.units.find(u=>u.id===chosenUnit),walk=new Set(unit&&!unit.moved&&!unit.rooted?movement(unit).map(z=>K(z.x,z.y)):[]),targets=new Set(unit&&!unit.attacked?[...S.units.filter(u=>u.team!==localSeat),core(enemy)].filter(z=>canAttack(unit,z)).map(z=>K(z.x,z.y)):[]);
  const card=chosenCard>=0?D[S.hands[my][chosenCard]]:null;
  // Spell targets are tile-based too. Make every legal cast square visible
@@ -636,8 +696,9 @@ function render(){
  renderLabels();
  if(window.AetherScene?.sync)window.AetherScene.sync(S,my,{unit:chosenUnit,card:chosenCard,focus:inspectedTile,tributes:tributes.slice()});
  if(S.phase==='over'){
+  const reward=awardMatch();
   $('resulttitle').textContent=S.winner===my?'DOMINION ACHIEVED':'CORE SHATTERED';
-  $('resultdesc').textContent=(S.winner===my?'Your army captured the Riftfront.':'Your army was defeated.')+' Round '+S.round+'.';
+  $('resultdesc').textContent=(S.winner===my?'Your army captured the Riftfront.':'Your army was defeated.')+' Round '+S.round+'.'+(mode==='ai'&&reward?'  ✦ +'+reward.xp+' XP · +'+reward.gold+' gold · '+reward.rewards.length+' card copies'+(reward.levelUp?' · LEVEL UP!':''):'');
   if(!victoryVisible&&victoryDelay===null){
    // Let the winning blow land, damage number rise and defeated unit fade
    // before a full-screen result panel hides the battlefield.
