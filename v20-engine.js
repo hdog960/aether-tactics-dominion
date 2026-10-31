@@ -643,7 +643,30 @@ function join(code,host){
  room=code;localSeat=host?0:1;clearSelection();seed('online');
  $('roomid').value=code;$('roomstatus').textContent='Connecting to public signaling relays…';$('invite').classList.toggle('hidden',!host);
  try{net=window.AetherNet.connect(code,host,{
-  join:(peer)=>{connected=true;$('lobby').classList.add('hidden');if(host){S.phase='playing';revision++;$('roomstatus').textContent='Friend connected! Battle is ready.';publish()}else{$('roomstatus').textContent='Connected. Receiving match state…'}render()},
+  join:(peer)=>{
+   connected=true;$('lobby').classList.add('hidden');
+   if(host){
+    const progressed=S.round>1||S.turn!==0||S.units.length!==4||(S.fxSeq||0)>0;
+    S.phase=progressed?'playing':'waiting';
+    $('roomstatus').textContent=progressed?'Friend reconnected.':'Friend connected; receiving their chosen deck…';
+    if(progressed){revision++;publish()}
+   }else{
+    $('roomstatus').textContent='Connected. Sending your deck…';
+    net?.sendLoadout(chosenDeck.slice());
+   }
+   render()
+  },
+  loadout:(cards)=>{
+   if(!host||!checkDeck(cards))return;
+   // Host installs the guest's deck before any play. Never replace a live deck.
+   if(S.round>1||S.units.length!==4||(S.fxSeq||0)>0)return;
+   S.decks[1]=shuffle(cards);S.hands[1]=[];S.discards[1]=[];
+   for(const k of ['v','r','a']){const i=S.decks[1].indexOf(k);if(i>=0){S.decks[1].splice(i,1);S.hands[1].push(k)}}
+   draw(1,Math.max(0,4-S.hands[1].length));
+   S.phase='playing';revision++;
+   $('roomstatus').textContent='Both decks accepted! Battle ready.';
+   publish();render();
+  },
   leave:()=>{connected=false;$('roomstatus').textContent='Other player disconnected. Your match remains open for reconnection.';if(host&&S.phase==='playing'){S.phase='waiting';publish()}render()},
   state:(p)=>{if(host||!p?.s||p.s.version!==4)return;S=p.s;revision=p.rev||0;clearSelection();$('roomstatus').textContent=S.phase==='playing'?'Connected! '+(S.turn===1?'Your turn.':'Waiting for host turn.'):'Waiting for the host…';render()},
   intent:(a)=>{if(!host||S.phase!=='playing'||S.turn!==1)return;if(apply(1,a)){clearSelection();revision++;publish();render()}},
