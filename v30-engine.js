@@ -499,7 +499,7 @@ function validSpellSpot(q,t,x,y){
   if(type==='dash'&&target.dashRound===S.round)return false;
   if(type==='heal'&&(target.renewedRound===S.round||target.hp>=target.max&&!target.moved&&!target.attacked))return false;
   if(type==='shield'&&target.shield>=MAX_SHIELD)return false;
-  if(type==='exchange'&&(S.exchangeRound?.[t]===S.round||S.units.filter(v=>v.team===t).length<2))return false;
+  if(type==='exchange'&&(S.exchangeRound?.[t]===S.round||S.units.filter(v=>v.team===t).length<2||target.id===S.championId))return false;
   return true;
  }
  if(type==='snare'){
