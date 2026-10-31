@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css"><link rel="stylesheet" href="./v20-expansion.css"><link rel="stylesheet" href="./v21-progression.css"><link rel="stylesheet" href="./v22-balance.css"><link rel="stylesheet" href="./v30-shell.css">
 </head><body><main id="game" data-tab="battle">
 <header class="battle-header"><div class="battle-brand"><h1 class="logo">AETHER <em>DOMINION</em></h1></div>
- <nav class="menu" aria-label="Game mode"><button id="mode-ai" class="modebtn active">SOLO</button><button id="mode-online" class="modebtn">DUEL</button></nav>
+ <nav class="menu" aria-label="Game mode"><button id="mode-ai" class="modebtn active">SOLO</button><button id="mode-online" class="modebtn">DUEL</button></nav><div id="battle-mode-tag" class="battle-mode-tag">⚔ SOLO BATTLE</div>
  <button id="reset" class="smallbtn" aria-label="Start a new match" title="New match">↻ <span>NEW</span></button></header>
 <section class="lobby hidden" id="lobby"><button type="button" id="close-lobby" class="dismiss-room" aria-label="Close room setup">✕ CLOSE</button>
  <div class="lobby-title">✦ The Duel Chamber</div>
@@ -43,6 +43,7 @@
  <div class="duel-features"><div><b>⚔ PRIVATE DUEL</b><p>Host or join using a shareable room code.</p></div><div><b>◇ FAIR PLAY</b><p>Card levels are equalized, and both decks are verified by the host.</p></div><div><b>◈ CONNECTION STATUS</b><p id="duel-connection">Not connected. Direct peer-to-peer play is experimental.</p></div></div>
  <button id="duel-launch" type="button" class="main-cta">OPEN DUEL CHAMBER</button>
  <button id="duel-return" type="button" class="secondary-cta">RETURN TO BATTLE</button>
+ <button id="duel-solo" type="button" class="secondary-cta">RESTORE SOLO BATTLE</button>
  <div class="duel-note">Two physical devices and their network connection are required to verify live duels. No ranked matchmaking or remote account saves.</div>
 </section>
 <nav id="bottom-tabs" class="bottom-tabs" aria-label="Main game navigation">
