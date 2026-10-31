@@ -168,6 +168,7 @@ function render(){
  }
  $('hand').innerHTML=S.hands[my].map((k,i)=>{let q=D[k];return '<button class="card '+(q.spell?'spell':q.tribute?'boss':'')+(chosenCard===i?' picked':'')+(q.cost>S.energy[my]||S.turn!==my?' cant':'')+'" data-card="'+i+'"><div class="cardtop"><span class="cost">'+q.cost+'</span><span>'+(q.tribute?'MYTHIC '+q.tribute+' TRIBUTE':q.role)+'</span></div><div class="portrait"><img alt="" draggable="false" src="'+Art.get(k)+'"></div><div class="cardname">'+q.name+'</div><div class="carddesc">'+q.desc+'</div><div class="cardstats">'+(q.spell?'✦ INSTANT SPELL':'♥ '+q.hp+' &nbsp; ⚔ '+q.atk+' &nbsp; ↗ '+q.range)+'</div></button>'}).join('');
  renderLabels();
+ if(window.AetherScene?.sync)window.AetherScene.sync(S,my,{unit:chosenUnit,card:chosenCard,tributes:tributes.slice()});
  if(S.phase==='over'){$('resulttitle').textContent=S.winner===my?'DOMINION ACHIEVED':'CORE SHATTERED';$('resultdesc').textContent=(S.winner===my?'Your army captured the Riftfront.':'Your army was defeated.')+' Round '+S.round+'.';$('gameover').classList.remove('hidden')}else $('gameover').classList.add('hidden');
 }
 function publish(){if(net&&mode==='online'&&localSeat===0){net.state({s:S,rev:revision});}}
