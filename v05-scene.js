@@ -168,5 +168,6 @@ cn.addEventListener('pointerup',e=>{
 });
 const intro=document.getElementById('vista-stage');if(intro)intro.classList.add('scene-ready');
 window.AetherScene={sync(s,my,choice){game=s;seat=my;selected=choice?.unit;selectedCard=choice?.card;tributes=choice?.tributes||[]}};
+const initial=window.AetherGame?.get?.();if(initial)window.AetherScene.sync(initial,0,{unit:null,card:-1,tributes:[]});
 requestAnimationFrame(draw);
 })();
