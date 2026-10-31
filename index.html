@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#0c1b2d"><meta name="description" content="Richer detailed 32-bit-era pixel fantasy. A 55° tactical floating island in a luminous rift.">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dominion">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css"><link rel="stylesheet" href="./v20-expansion.css">
+<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css"><link rel="stylesheet" href="./v20-expansion.css"><link rel="stylesheet" href="./v21-progression.css">
 </head><body><main id="game">
 <header class="battle-header"><div class="battle-brand"><h1 class="logo">AETHER <em>DOMINION</em></h1></div>
  <nav class="menu" aria-label="Game mode"><button id="mode-ai" class="modebtn active">SOLO</button><button id="mode-online" class="modebtn">DUEL</button></nav>
@@ -20,12 +20,12 @@
  <div class="mid"><div class="round-line"><small>RD</small><b id="round">1</b></div><span id="turnlabel">YOUR TURN</span></div>
  <div class="core enemy"><div class="core-line"><label>RIVAL CORE</label><div class="hpbig" id="rivalhp">24 <small>/24</small></div></div><div class="meter"><i id="rivalmeter"></i></div></div></section>
 <section class="vista" aria-label="Riftfront battle arena"><div class="sky"><div class="moon"></div><div class="beam"></div><div class="mount back"></div><div class="mount"></div></div><div class="vista-top"><span>✦ RIFTFRONT</span><small>BLUE MOVE · RED ATTACK · VIOLET SPELL</small></div><div class="arena" id="vista-stage"><canvas id="battle-canvas" aria-label="Angled 32-bit-inspired pixel fantasy tactical battlefield" role="img"></canvas><div id="board" class="board" aria-label="Interactive tactical battlefield">Preparing commands...</div></div>
-<div id="gameover" class="overlay hidden"><div class="modal"><div style="font-size:30px">✦</div><h2 id="resulttitle">BATTLE COMPLETE</h2><p id="resultdesc"></p><button id="again" class="primary">FIGHT AGAIN</button></div></div></section>
+<div id="gameover" class="overlay hidden"><div class="modal"><div style="font-size:30px">✦</div><h2 id="resulttitle">BATTLE COMPLETE</h2><p id="resultdesc"></p><button id="result-rewards" type="button" class="result-rewards">★ REWARDS & PROGRESS</button><button id="again" class="primary">FIGHT AGAIN</button></div></div></section>
 <div class="legend"><span>✦ SPRING +1 AETH</span><span>⌃ RAISED +1 DAMAGE</span><span>◈ ROCKS BLOCK SHOTS</span><span>◆ TAP TILES, NOT SPRITES</span></div>
 <section class="command-dock" aria-label="Your cards and turn controls">
  <div class="hint" role="status" aria-live="polite"><div id="instruction"><b>Select a card or allied tile.</b></div><small id="tip">Summon and conquer.</small></div>
  <div class="handtop"><div class="hand-label"><strong>HAND</strong><small id="deckcount"></small></div>
-  <div class="hand-tools"><div class="aeth" aria-label="Available Aeth">✦ <span id="aeth">3</span><small id="capacity"> / 3</small></div>
+  <div class="hand-tools"><button id="profile-open" type="button" class="profile-open" aria-label="Your player XP and card upgrades">LV 1</button><div class="aeth" aria-label="Available Aeth">✦ <span id="aeth">3</span><small id="capacity"> / 3</small></div>
    <button type="button" id="card-guide" class="guide-open" aria-label="Open the Grimoire collection">▦ GRIMOIRE</button>
    <button type="button" id="rules" class="guide-help" aria-label="How to play" aria-haspopup="dialog">?</button></div>
  </div>
@@ -34,7 +34,7 @@
 </section>
 <section id="codex" class="codex hidden" role="dialog" aria-modal="true" aria-labelledby="codex-title">
   <div class="codex-panel">
-    <div class="codex-header"><div><span class="codex-kicker">✧ COMMANDER'S REFERENCE</span><h2 id="codex-title">THE GRIMOIRE</h2></div><button type="button" id="open-builder" class="build-deck-launch">⚒ BUILD DECK</button><button id="codex-close" class="codex-close" type="button" aria-label="Close card information">✕</button></div>
+    <div class="codex-header"><div><span class="codex-kicker">✧ COMMANDER'S REFERENCE</span><h2 id="codex-title">THE GRIMOIRE</h2></div><button type="button" id="codex-profile" class="build-deck-launch">★ LEVELS</button><button type="button" id="open-builder" class="build-deck-launch">⚒ BUILD DECK</button><button id="codex-close" class="codex-close" type="button" aria-label="Close card information">✕</button></div>
     <div id="codex-library" class="codex-library">
       <div id="codex-tabs" class="codex-tabs" role="group" aria-label="Cards to browse">
         <button type="button" data-tab="hand" class="active">HAND <span id="codex-hand-count">4</span></button>
@@ -62,12 +62,30 @@
    <button type="button" data-preset="Fortress">FORTRESS<small>Defensive</small></button>
    <button type="button" data-preset="Arcane">ARCANE<small>Spellcraft</small></button>
    <button type="button" data-preset="Skirmish">SKIRMISH<small>Mobility</small></button>
+   <button type="button" data-preset="Echo">ECHO<small>Recursion</small></button>
+   <button type="button" data-preset="Ritual">RITUAL<small>Sacrifice</small></button>
   </div>
   <div class="deck-tallies"><b><span id="deck-size">24/24</span> CARDS</b><span><b id="deck-unit-count">16</b> UNITS</span><span><b id="deck-spell-count">8</b> SPELLS</span></div>
   <p class="deck-instructions">Tap − to remove cards, then + to replace them. Up to 3 copies each; at least 12 units and 3 unit types; at most 2 mythics.</p>
   <div id="deck-cards" class="deck-cards" aria-label="Choose the contents of your deck"></div>
  </div>
  <footer class="deck-bottom"><p id="deck-validation" role="status">Deck ready.</p><div class="deck-buttons"><button type="button" id="deck-cancel">CANCEL</button><button type="button" id="deck-save">SAVE FOR NEXT MATCH</button></div></footer>
+ </div>
+</section>
+<section id="player-profile" class="player-profile hidden" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+ <div class="profile-panel">
+  <header class="profile-head"><div><span>✦ COMMANDER PROGRESSION</span><h2 id="profile-title">YOUR LEGACY</h2></div><button id="profile-close" type="button" aria-label="Close profile">✕</button></header>
+  <div class="profile-body">
+   <section class="profile-level-card">
+    <div class="profile-rank"><div class="profile-level-number">LV <b id="player-level">1</b></div><div><strong>COMMANDER LEVEL</strong><small id="profile-xp-label">0 / 90 XP</small></div></div>
+    <div class="profile-xp-bar"><i id="profile-xp-meter"></i></div>
+    <div class="profile-currencies"><span>◈ <b id="profile-gold">0</b> GOLD</span><span>⚔ <b id="profile-wins">0</b> WINS</span><span>◆ <b id="profile-matches">0</b> MATCHES</span></div>
+   </section>
+   <section class="profile-rewards"><h3>LATEST MATCH</h3><p id="profile-reward-text">Complete a match to earn XP, gold and card copies.</p></section>
+   <div class="profile-upgrade-heading"><h3>CARD UPGRADES</h3><p>Collect card copies from matches, then spend gold to upgrade. Every card is available at level 1.</p></div>
+   <div id="profile-upgrade-list" class="profile-upgrade-list" aria-label="Card upgrades"></div>
+  </div>
+  <footer class="profile-footer"><span>Upgrades affect solo matches only. Duels use equal stats.</span><button id="profile-done" type="button">BACK TO GAME</button></footer>
  </div>
 </section>
 <div id="feed" class="feed">Riftfront Valley is waking.</div>
@@ -89,6 +107,6 @@
   </div>
 </section>
 </main>
-<script defer src="./v20-art.js"></script><script defer src="./v20-engine.js"></script><script defer src="./v20-scene.js"></script><script type="module" src="./v20-net.js"></script>
+<script defer src="./v21-art.js"></script><script defer src="./v21-engine.js"></script><script defer src="./v21-scene.js"></script><script type="module" src="./v21-net.js"></script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
 </body></html>
