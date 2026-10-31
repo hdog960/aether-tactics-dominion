@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aether Tactics: Dominion — Riftfront Duel</title>
+<meta name="theme-color" content="#0c1b2d"><meta name="description" content="Richer detailed 32-bit-era pixel fantasy. A 55° tactical floating island in a luminous rift.">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dominion">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css">
+</head><body><main id="game">
+<header><div><div class="eyebrow">✧ The Shattered Planes · Act I</div><h1 class="logo">AETHER TACTICS<em>DOMINION</em></h1><div class="subtitle">Animation Polish · v1.3</div></div><button id="reset" class="smallbtn">↻ NEW MATCH</button></header>
+<div class="menu"><button id="mode-ai" class="modebtn active">⚔ Solo Campaign</button><button id="mode-online" class="modebtn">✦ Online Duel</button></div>
+<section class="lobby hidden" id="lobby"><button type="button" id="close-lobby" class="dismiss-room" aria-label="Close room setup">✕ CLOSE</button>
+ <div class="lobby-title">✦ The Duel Chamber</div>
+ <p>Battle another commander from anywhere. You host, your friend joins using the same room code. No login needed. Both players must keep the game open.</p>
+ <div class="room-controls"><button class="primary" id="make-room">CREATE ROOM</button><input id="roomid" maxlength="8" autocomplete="off" spellcheck="false" placeholder="ROOM CODE" aria-label="Room code"><button class="outline" id="join-room">JOIN</button></div>
+ <div id="roomstatus" class="room-status">Ready for a private two-player duel.</div><button class="outline hidden" id="invite" style="margin-top:8px">↗ SHARE INVITE LINK</button>
+ <p style="margin-bottom:0">Experimental peer-to-peer connection uses public signaling relays. Some cellular networks may block it; if so, try Wi-Fi. Matches pause if either player disconnects.</p>
+</section>
+<section class="hud"><div class="core"><label>✦ YOUR AETH CORE</label><div class="hpbig" id="selfhp">24 <small>/24</small></div><div class="meter"><i id="selfmeter"></i></div></div><div class="mid"><small>ROUND</small><b id="round">1</b><span id="turnlabel">YOUR TURN</span></div><div class="core enemy"><label>✧ RIVAL CORE</label><div class="hpbig" id="rivalhp">24 <small>/24</small></div><div class="meter"><i id="rivalmeter"></i></div></div></section>
+<section class="vista" aria-label="Riftfront battle arena"><div class="sky"><div class="moon"></div><div class="beam"></div><div class="mount back"></div><div class="mount"></div></div><div class="vista-top"><span>✦ THE LUMINOUS RIFT</span><small>55° NATURAL STONE ARENA · 7 × 8</small></div><div class="arena" id="vista-stage"><canvas id="battle-canvas" aria-label="Angled 32-bit-inspired pixel fantasy tactical battlefield" role="img"></canvas><div id="board" class="board" aria-label="Interactive tactical battlefield">Preparing commands...</div></div>
+<div id="gameover" class="overlay hidden"><div class="modal"><div style="font-size:30px">✦</div><h2 id="resulttitle">BATTLE COMPLETE</h2><p id="resultdesc"></p><button id="again" class="primary">FIGHT AGAIN</button></div></div></section>
+<div class="legend"><span>✦ SPRING +1 AETH</span><span>⌃ RAISED +1 DAMAGE</span><span>◈ ROCKS BLOCK SHOTS</span><span>◆ TAP TO COMMAND</span></div>
+<div class="hint"><div id="instruction"><b>Preparing battle...</b></div><small id="tip">Summon your units and conquer the rival Core.</small></div>
+<div class="handtop"><strong>THE GRIMOIRE <small id="deckcount"></small></strong><div class="aeth">✦ <span id="aeth">3</span><small id="capacity"> / 3</small></div></div>
+<div id="hand" class="hand">Preparing cards...</div>
+<div class="actions"><button id="cycle">↻ REDRAW</button><button id="end" class="end">END TURN →</button><button id="rules">? RULES</button></div>
+<div id="feed" class="feed">Riftfront Valley is waking.</div>
+<div class="alert">Early online playtest · The room host adjudicates moves. WebRTC needs a direct connection between the two phones; no server-stored match history yet. Single player saves locally.</div>
+</main>
+<script defer src="./v05-art.js"></script><script defer src="./v13-engine.js"></script><script defer src="./v13-scene.js"></script><script type="module" src="./v04-net.js"></script>
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
+</body></html>
