@@ -1024,8 +1024,12 @@ function render(){
  if(window.AetherScene?.sync)window.AetherScene.sync(S,my,{unit:chosenUnit,card:chosenCard,focus:inspectedTile,tributes:tributes.slice()});
  if(S.phase==='over'){
   const reward=awardMatch();
+  if($('next-mission'))$('next-mission').classList.toggle('hidden',!S.missionId||S.winner!==0);
   $('resulttitle').textContent=S.winner===-1?'RIFTFRONT DRAW':S.winner===my?'DOMINION ACHIEVED':'CORE SHATTERED';
-  $('resultdesc').textContent=(S.winner===-1?'Both armies remain evenly matched.':S.winner===my?'Your army captured the Riftfront.':'Your army was defeated.')+' Round '+S.round+'.'+(mode==='ai'&&reward?'  ✦ +'+reward.xp+' XP · +'+reward.gold+' gold · '+reward.rewards.length+' card copies'+(reward.levelUp?' · LEVEL UP!':''):'');
+  $('resultdesc').textContent=(S.winner===-1?'Both armies remain evenly matched.':S.winner===my?'Your army captured the Riftfront.':'Your army was defeated.')+' Round '+S.round+'.'+(mode==='ai'&&reward?
+  '  ✦ +'+reward.xp+' XP · +'+reward.gold+' gold · '+reward.rewards.length+' card copies'+
+  (reward.missionTitle?' · '+reward.missionTitle+(reward.storyClear?' FIRST CLEAR':'')+' · '+reward.stars+'★':'')+
+  (reward.levelUp?' · LEVEL UP!':''):'');
   if(!victoryVisible&&victoryDelay===null){
    // Let the winning blow land, damage number rise and defeated unit fade
    // before a full-screen result panel hides the battlefield.
@@ -1102,8 +1106,17 @@ $('hand').addEventListener('click',e=>{
 });
 $('end').addEventListener('click',()=>intent({op:'end'}));
 $('cycle').addEventListener('click',()=>{if(chosenCard<0){message('<b>Select a card to redraw.</b>');return}intent({op:'cycle',idx:chosenCard})});
-$('reset').addEventListener('click',()=>{if(mode==='online'){if(confirm('Leave this duel and return to solo play?'))startAI()}else if(confirm('Start a fresh solo battle?')){seed('ai');clearSelection();save();render()}});
-$('again').addEventListener('click',()=>{if(mode==='online'){startOnline()}else{seed('ai');clearSelection();save();render()}});
+$('reset').addEventListener('click',()=>{
+ if(mode==='online'){if(confirm('Leave this duel and return to solo play?'))startAI()}
+ else if(confirm(S.missionId?'Restart this campaign mission?':'Start a fresh solo battle?')){
+  if(S.missionId)startMission(S.missionId);else{seed('ai');clearSelection();save();render()}
+ }
+});
+$('again').addEventListener('click',()=>{
+ if(mode==='online')startOnline();
+ else if(S.missionId)startMission(S.missionId);
+ else {seed('ai');clearSelection();save();render()}
+});
 $('mode-ai').addEventListener('click',startAI);$('mode-online').addEventListener('click',()=>{if(mode==='online'){$('lobby').classList.toggle('hidden');return}startOnline()});$('close-lobby').addEventListener('click',()=>{$('lobby').classList.add('hidden')});
 $('make-room').addEventListener('click',()=>{let alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',code='';const bytes=new Uint8Array(6);crypto.getRandomValues(bytes);for(let b of bytes)code+=alphabet[b%alphabet.length];join(code,true)});
 $('join-room').addEventListener('click',()=>join($('roomid').value,false));
