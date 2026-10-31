@@ -37,9 +37,9 @@ F:{name:'Fateful Exchange',cost:2,spell:'exchange',role:'Ritual',desc:'Sacrifice
 G:{name:'Null Chime',cost:2,spell:'silence',role:'Hex',desc:'Strip enemy shield and weaken its next attack.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
-const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"o":{"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
+const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"o":{"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
 for(const [k,patch]of Object.entries(BALANCE_PATCH))Object.assign(D[k],patch);
-const ABILITIES={"v":{"name":"Forward Guard","desc":"Once each round, moving next to an enemy gives this Vanguard 1 shield (never stacks above 1)."},"b":{"name":"Prism Cover","desc":"Adjacent friendly units take 1 less damage from basic attacks (minimum 1). Multiple Bulwarks do not stack."},"r":{"name":"Longshot","desc":"Basic attacks at exactly 3 tiles deal +1 damage if this Ranger has not moved this turn."},"s":{"name":"Pack Hunter","desc":"Deal +1 damage to an enemy unit if another friendly unit is adjacent to that enemy."},"f":{"name":"Slipstream","desc":"Once each round after moving, give 1 shield to an adjacent ally with fewer than 2 shield."},"g":{"name":"Stoneheart","desc":"The first hit received each round deals 1 less damage (minimum 1), including spells."},"t":{"name":"Aftershock","desc":"After each basic attack on a unit, deal 1 splash damage to one different enemy unit adjacent to the target."},"l":{"name":"Tidal Brand","desc":"A basic attack on a surviving enemy unit marks it; the next allied basic attack against that enemy gains +1 damage. The mark expires at your next turn."},"c":{"name":"Searing Shot","desc":"Basic attacks burn enemies for 1 damage at the start of their next turn. Burn does not stack."},"j":{"name":"Entangling Strike","desc":"Basic attacks root their target for its next turn. Rooted units can attack but cannot move."},"p":{"name":"Soothing Current","desc":"At the end of your turn, heal 1 HP on the most injured adjacent ally."},"k":{"name":"Thunder Charge","desc":"After moving 2 squares, deal +1 damage with your next basic attack that turn."},"d":{"name":"Aeth Spark","desc":"Summoning this Familiar refunds 1 Aeth, making its net cost 1."}};
+const ABILITIES={"v":{"name":"Forward Guard","desc":"Once each round, moving next to an enemy gives this Vanguard 1 shield (never stacks above 1)."},"b":{"name":"Prism Cover","desc":"Adjacent friendly units take 1 less damage from basic attacks (minimum 1). Multiple Bulwarks do not stack."},"r":{"name":"Longshot","desc":"Basic attacks at exactly 3 tiles deal +1 damage if this Ranger has not moved this turn."},"s":{"name":"Pack Hunter","desc":"Deal +1 damage to an enemy unit if another friendly unit is adjacent to that enemy."},"f":{"name":"Slipstream","desc":"Once each round after moving, give 1 shield to an adjacent ally with fewer than 2 shield."},"g":{"name":"Stoneheart","desc":"The first hit received each round deals 1 less damage (minimum 1), including spells."},"t":{"name":"Aftershock","desc":"After each basic attack on a unit, deal 1 splash damage to one different enemy unit adjacent to the target."},"l":{"name":"Tidal Brand","desc":"A basic attack on a surviving enemy unit marks it; the next allied basic attack against that enemy gains +1 damage. The mark expires at your next turn."},"c":{"name":"Searing Shot","desc":"Basic attacks burn enemies for 1 damage at the start of their next turn. Burn does not stack."},"j":{"name":"Entangling Strike","desc":"Basic attacks root their target for its next turn. Rooted units can attack but cannot move."},"p":{"name":"Soothing Current","desc":"At the end of your turn, heal 1 HP on the most injured adjacent ally."},"k":{"name":"Thunder Charge","desc":"After moving 2 squares, deal +1 damage with your next basic attack that turn."},"d":{"name":"Aeth Spark","desc":"The first Wisp summoned each round refunds 1 Aeth; later Wisps cost 2."}};
 Object.assign(ABILITIES,{
  o:{name:'Margin Note',desc:'Once per round, recycle the last spent spell on summon; otherwise gain 1 shield.'},
  y:{name:'Parting Lantern',desc:'On defeat, grant 2 shield to the closest surviving ally, within 2 tiles.'},
@@ -103,7 +103,7 @@ function awardMatch(){
   profile.xp-=xpNeeded(profile.level);profile.level++;
  }
  const rewards=[];
- const pool=[...(S.decks[localSeat]||[]),...(S.hands[localSeat]||[]),...(S.discards[localSeat]||[])];
+ const pool=Array.isArray(S.rewardPool)&&S.rewardPool.length?S.rewardPool:[...(S.decks[localSeat]||[]),...(S.hands[localSeat]||[]),...(S.discards[localSeat]||[]),...S.units.filter(u=>u.team===localSeat).map(u=>u.k)];
  for(let i=0;i<(victory?3:2);i++){
   const k=pool.length?pool[Math.floor(Math.random()*pool.length)]:CARD_KEYS[Math.floor(Math.random()*CARD_KEYS.length)];
   if(!D[k])continue;profile.copies[k]=(profile.copies[k]||0)+1;rewards.push(k);
@@ -143,12 +143,12 @@ function draw(t,n=1,allowReshuffle=false){
 function seed(m){
  const aiStyle=m==='ai'?Object.keys(PACKS)[Math.floor(Math.random()*Object.keys(PACKS).length)]:'Balanced';
  const cardRanks=Object.fromEntries(CARD_KEYS.map(k=>[k,cardLevel(k)]));
- S={version:4,cardRanks,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
+ S={version:4,rewardPool:chosenDeck.slice(),cardRanks,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
  S.units.push(unit('v',0,2,6,true),unit('r',0,4,6,true),unit('v',1,2,1,true),unit('b',1,4,1,true));
  for(let t=0;t<2;t++){for(let k of ['v','r','a']){let i=S.decks[t].indexOf(k);if(i>=0){S.decks[t].splice(i,1);S.hands[t].push(k)}}draw(t,Math.max(0,4-S.hands[t].length))}
 }
 function save(){if(mode!=='ai'||!S)return;try{localStorage.setItem('aether-dominion-v04',JSON.stringify(S))}catch(e){}}
-function load(){try{let x=JSON.parse(localStorage.getItem('aether-dominion-v04'));if(x?.version===4&&x?.mode==='ai'&&Array.isArray(x.units)&&x.units.length<30){S=x;let migrated=false;if(!S.matchId){S.matchId='legacy-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);migrated=true}if(!Array.isArray(S.traps)){S.traps=[];migrated=true}if(migrated)save();return true}}catch(e){}return false}
+function load(){try{let x=JSON.parse(localStorage.getItem('aether-dominion-v04'));if(x?.version===4&&x?.mode==='ai'&&Array.isArray(x.units)&&x.units.length<30){S=x;let migrated=false;if(!S.matchId){S.matchId='legacy-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);migrated=true}if(!Array.isArray(S.traps)){S.traps=[];migrated=true}for(const u of S.units){if((u.shield||0)>5){u.shield=5;migrated=true}}if(migrated)save();return true}}catch(e){}return false}
 const onSpring=t=>springs.filter(k=>{let [x,y]=k.split(',').map(Number);return entity(x,y)?.team===t}).length;
 function deploy(t,x,y){if(!bounds(x,y)||rocks.has(K(x,y))||entity(x,y)||(x===3&&(y===0||y===7)))return false;if(t===0&&y>=5||t===1&&y<=2)return true;return springs.some(k=>{let [sx,sy]=k.split(',').map(Number);return entity(sx,sy)?.team===t&&d(P(sx,sy),P(x,y))<=1})}
 function movement(u){let queue=[{x:u.x,y:u.y,n:0}],seen=new Set([K(u.x,u.y)]),out=[];while(queue.length){let z=queue.shift();if(z.n>0)out.push(z);if(z.n>=u.move)continue;for(let [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){let x=z.x+dx,y=z.y+dy,k=K(x,y);if(!bounds(x,y)||seen.has(k)||entity(x,y)||(rocks.has(k)&&!u.fly)||(x===3&&(y===0||y===7)))continue;seen.add(k);queue.push({x,y,n:z.n+1})}}return out}
@@ -186,7 +186,7 @@ function trapImpact(u){
  log='Veil Snare triggered for '+impact+' damage!';
 }
 const MAX_SHIELD=5;
-function grantShield(u,n){const old=u.shield||0;u.shield=Math.min(MAX_SHIELD,old+Math.max(0,n));return u.shield-old}
+function grantShield(u,n){const old=Math.min(MAX_SHIELD,Math.max(0,u.shield||0));u.shield=Math.min(MAX_SHIELD,old+Math.max(0,n));return u.shield-old}
 function powerFor(q,t){const k=CARD_KEYS.find(k=>D[k]===q);return(q.power||0)+spellBonus(k,t)}
 
 function afterMove(u){
@@ -418,7 +418,7 @@ function apply(t,a){
    onFriendlySpell(t);
    log=q.name+' cast!';
   }
-  S.energy[t]-=q.cost;if(k==='d')S.energy[t]=Math.min(10,S.energy[t]+1);
+  S.energy[t]-=q.cost;if(k==='d'&&S.sparkRound?.[t]!==S.round){S.sparkRound||(S.sparkRound=[0,0]);S.sparkRound[t]=S.round;S.energy[t]=Math.min(10,S.energy[t]+1)}
   discard(t,idx);
   if(k==='F')draw(t,2+Math.min(1,spellBonus(k,t)));
  }else if(a.op==='cycle'){
@@ -601,7 +601,7 @@ const GUIDE={
  j:{feature:'Lock down enemy advances.',detail:'Basic attacks root the target for its next turn. The victim may still attack but cannot move.',tip:'Block a dangerous rush near a choke point.'},
  p:{feature:'Long-term healing support.',detail:'At the end of your turn, automatically heal 1 HP on the most injured adjacent ally.',tip:'Keep behind your shielded front line.'},
  k:{feature:'Mobile burst attacker.',detail:'Move 2 tiles before attacking to gain +1 damage on that strike.',tip:'Plan a long path ending in melee range.'},
- d:{feature:'Economical flying scout.',detail:'Fly up to 3 tiles; summoning refunds 1 Aeth immediately.',tip:'Secure springs or facilitate a second summon.'},
+ d:{feature:'Economical flying scout.',detail:'Fly up to 3 tiles. The first Wisp summoned each round refunds 1 Aeth; additional Wisps cost 2 that round.',tip:'Secure springs or facilitate a second summon.'},
  q:{feature:'Extra tactical repositioning.',detail:'Refresh an allied unit’s movement, once per round per target. Attacks are not refreshed.',tip:'Escape a blocker or move twice to secure a spring.'},
  e:{feature:'Disrupt an advancing enemy.',detail:'Deal 1 damage and prevent the target moving during its next turn.',tip:'Root an attacker while your ranged units reposition.'},
  i:{feature:'Fire damage over time.',detail:'Deal 2 damage and burn the target for 1 additional damage at the start of its next turn.',tip:'Finish wounded targets or pressure durable monsters.'},
