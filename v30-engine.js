@@ -179,6 +179,7 @@ function seed(m){
  const averageRank=chosenDeck.reduce((sum,k)=>sum+(cardRanks[k]||1),0)/chosenDeck.length;
  const aiTier=Math.max(1,Math.min(MAX_CARD_LEVEL,Math.floor(averageRank+.15)));
  S={version:4,usedCards:[[],[]],rewardPool:chosenDeck.slice(),cardRanks,aiTier,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
+ setArena('verdant');
  S.units.push(unit('v',0,2,6,true),unit('r',0,4,6,true),unit('v',1,2,1,true),unit('b',1,4,1,true));
  for(let t=0;t<2;t++){for(let k of ['v','r','a']){let i=S.decks[t].indexOf(k);if(i>=0){S.decks[t].splice(i,1);S.hands[t].push(k)}}draw(t,Math.max(0,4-S.hands[t].length))}
 }
@@ -209,7 +210,7 @@ function setArena(id='verdant'){
 }
 function missionWin(){
  if(!S||S.phase!=='playing')return;
- S.phase='over';S.winner=0;S.missionSuccess=true;log='Objective completed! '+MISSION_BY_ID[S.missionId]?.name;
+ S.phase='over';S.winner=0;S.missionSuccess=true;log='Objective completed! '+(MISSION_BY_ID[S.missionId]?.name||'');
 }
 function missionCheck(t){
  if(!S?.missionId||S.phase!=='playing')return;
@@ -969,6 +970,13 @@ function render(){
  const my=localSeat,enemy=1-my,mirror=my===1;
  $('selfhp').innerHTML=S.hp[my]+' <small>/ 24</small>';$('rivalhp').innerHTML=S.hp[enemy]+' <small>/ 24</small>';
  $('selfmeter').style.width=100*S.hp[my]/24+'%';$('rivalmeter').style.width=100*S.hp[enemy]/24+'%';
+ const mission=MISSION_BY_ID[S.missionId];
+ if($('arena-label'))$('arena-label').textContent=mission?'✦ '+mission.name.toUpperCase():'✦ RIFTFRONT';
+ if($('arena-details'))$('arena-details').textContent=mission?
+  mission.objective==='capture'?'SPRINGS '+(S.missionProgress||0)+'/'+mission.needed:
+  mission.objective==='defend'?'SURVIVE TO ROUND '+mission.needed:
+  mission.objective==='hunt'?'DEFEAT BOSS · '+(S.units.find(u=>u.id===S.championId)?.hp||0)+' HP':
+  'BREAK ENEMY CORE': 'BLUE MOVE · RED ATTACK · VIOLET SPELL';
  $('round').textContent=S.round;$('turnlabel').textContent=S.phase==='over'?'MATCH OVER':S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
  $('aeth').textContent=S.energy[my];$('capacity').textContent=' / '+S.cap;
  $('deckcount').textContent=S.decks[my].length+' IN DECK';$('profile-open').textContent='LV '+profile.level;$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
@@ -1075,10 +1083,14 @@ function join(code,host){
    $('roomstatus').textContent='Both decks accepted! Battle ready.';
    publish();render();
   },
-  leave:()=>{connected=false;$('roomstatus').textContent='Other player disconnected. Your match remains open for reconnection.';if(host&&S.phase==='playing'){S.phase='waiting';publish()}render()},
-  state:(p)=>{if(host||!p?.s||p.s.version!==4)return;S=p.s;revision=p.rev||0;clearSelection();$('roomstatus').textContent=S.phase==='playing'?'Connected! '+(S.turn===1?'Your turn.':'Waiting for host turn.'):'Waiting for the host…';render()},
+  leave:()=>{connected=false;$('roomstatus').textContent='Other player disconnected. Your match is paused for reconnection.';if(host&&S.phase==='playing'){S.phase='waiting';revision++;publish()}render()},
+  state:(p)=>{
+   if(host||!p?.s||p.s.version!==4||p.s.mode!=='online'||!Array.isArray(p.s.units)||p.s.units.length>30)return;
+   if(!Number.isInteger(p.rev)||p.rev<revision)return;
+   S=p.s;revision=p.rev;clearSelection();$('roomstatus').textContent=S.phase==='playing'?'Connected! '+(S.turn===1?'Your turn.':'Waiting for host turn.'):'Waiting for the host…';render()},
   intent:(a)=>{if(!host||S.phase!=='playing'||S.turn!==1)return;if(apply(1,a)){clearSelection();revision++;publish();render()}},
-  error:(e)=>{$('roomstatus').textContent='Connection issue: '+String(e).slice(0,140)}
+  error:(e)=>{$('roomstatus').textContent='Connection issue: '+String(e).slice(0,140)},
+  quality:(ms)=>{$('roomstatus').textContent='Connected · '+ms+' ms ping'}
  });}catch(error){$('roomstatus').textContent='Could not open room: '+String(error.message||error);return}message('<b>Private room '+code+'</b>',host?'Waiting for your friend to join.':'Waiting to receive the battlefield from your friend.');render();
 }
 const board=$('board');board.innerHTML='';for(let y=0;y<8;y++)for(let x=0;x<7;x++){let b=document.createElement('button');b.type='button';b.dataset.x=x;b.dataset.y=y;board.appendChild(b)}
