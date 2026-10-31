@@ -87,7 +87,7 @@ function upgradeCard(k){
 // stats so a veteran cannot overpower a new opponent through progression.
 function combatLevel(k,t){return mode==='ai'&&t===0?(S?.cardRanks?.[k]||1):1}
 function unitBonuses(k,t){const lv=combatLevel(k,t);return{hp:Math.floor(lv/2),atk:Math.floor((lv-1)/4)}}
-function spellBonus(k,t){return Math.min(2,Math.floor((combatLevel(k,t)-1)/3))}
+function spellBonus(k,t){return Math.min(2,Math.floor(combatLevel(k,t)/2))}
 function awardMatch(){
  if(!S||S.phase!=='over'||!S.winner&&S.winner!==0)return null;
  if(profile.claimed[S.matchId])return profile.last||null;
@@ -171,8 +171,8 @@ function trapImpact(u){
  const list=S.traps||[],i=list.findIndex(t=>t.team!==u.team&&t.x===u.x&&t.y===u.y);
  if(i<0)return;
  const trap=list.splice(i,1)[0];
- fxSpell(u,2,'snare',u.x,u.y,trap.team);applyDamage(u,2);
- log='Veil Snare triggered for 2 damage!';
+ const impact=trap.damage||2;fxSpell(u,impact,'snare',u.x,u.y,trap.team);applyDamage(u,impact);
+ log='Veil Snare triggered for '+impact+' damage!';
 }
 function powerFor(q,t){const k=CARD_KEYS.find(k=>D[k]===q);return(q.power||0)+spellBonus(k,t)}
 
@@ -317,32 +317,32 @@ function resolveSpell(q,t,x,y){
  if(type==='shield'){const n=4+boost;target.shield+=n;abilityPulse(target,'shield',n)}
  else if(type==='heal'){const heal=Math.min(4+boost,target.max-target.hp);target.hp+=heal;
   target.moved=false;target.attacked=false;abilityPulse(target,'heal',heal)}
- else if(type==='dash'){target.moved=false;target.stride=0;target.dashRound=S.round;abilityPulse(target,'dash',0)}
+ else if(type==='dash'){target.moved=false;target.stride=0;target.dashRound=S.round;if(boost)target.shield+=boost;abilityPulse(target,'dash',0)}
  else if(type==='cleanse'){target.rooted=false;target.burning=false;target.shield+=2+boost;abilityPulse(target,'shield',2+boost)}
  else if(type==='rally'){
   for(const ally of S.units.filter(v=>v.team===t&&d(v,target)<=1)){
-   ally.rallied=1;abilityPulse(ally,'rally',0)
+   ally.rallied=1;if(boost)ally.shield+=boost;abilityPulse(ally,'rally',0)
   }
  }else if(type==='bond'){
   for(const ally of S.units.filter(v=>v.team===t&&d(v,target)<=1).slice(0,3)){
-   ally.shield++;ally.rallied=1;abilityPulse(ally,'shield',1)
+   ally.shield+=1+boost;ally.rallied=1;abilityPulse(ally,'shield',1+boost)
   }
  }else if(type==='recall'){
   S.echoRound||(S.echoRound=[0,0]);
   const i=S.discards[t].findLastIndex(k=>!D[k].spell&&!D[k].tribute);
   if(i<0)return false;
   const card=S.discards[t].splice(i,1)[0];
-  S.hands[t].push(card);S.echoRound[t]=S.round;
+  S.hands[t].push(card);S.echoRound[t]=S.round;S.energy[t]=Math.min(10,S.energy[t]+Math.min(1,boost));
   fxPush({type:'buff',kind:'rally',to:{x,y,team:t},amount:0});
  }else if(type==='snare'){
   S.traps||(S.traps=[]);
-  S.traps.push({team:t,x,y,expires:S.round+3});
+  S.traps.push({team:t,x,y,expires:S.round+3,damage:2+boost});
   fxPush({type:'buff',kind:'rally',to:{x,y,team:t},amount:0});
  }else if(type==='exchange'){
   S.exchangeRound||(S.exchangeRound=[0,0]);S.exchangeRound[t]=S.round;
   onSacrifice(t);
   S.units=S.units.filter(v=>v.id!==target.id);
-  draw(t,2);S.energy[t]=Math.min(10,S.energy[t]+2);
+  draw(t,2+Math.min(1,boost));S.energy[t]=Math.min(10,S.energy[t]+2);
   fxPush({type:'spell',kind:'exchange',to:fxTarget(target),amount:0});
  }else if(type==='silence'){
   target.shield=Math.max(0,target.shield-2-boost);
