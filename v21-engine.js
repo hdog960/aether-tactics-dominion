@@ -146,6 +146,34 @@ function canAttack(a,b){return b&&a.team!==b.team&&d(a,b)<=a.range&&los(a,b)}
 function abilityPulse(target,kind,amount){
  fxPush({type:'buff',kind,to:fxTarget(target),amount});
 }
+function nearestAlly(u,radius=2){
+ return S.units.filter(v=>v.team===u.team&&v.id!==u.id&&d(v,u)<=radius)
+   .sort((a,b)=>d(a,u)-d(b,u)||a.hp/a.max-b.hp/b.max||a.id-b.id)[0]||null;
+}
+function onUnitDeath(u){
+ if(u.k==='y'){const ally=nearestAlly(u,2);
+  if(ally){ally.shield+=2;abilityPulse(ally,'shield',2)}
+ }
+}
+function onSacrifice(t){
+ for(const u of S.units.filter(v=>v.team===t&&v.k==='B'&&v.oathRound!==S.round)){
+  u.oathRound=S.round;u.shield+=2;u.oathBonus=1;abilityPulse(u,'shield',2);
+ }
+}
+function onFriendlySpell(t){
+ for(const u of S.units.filter(v=>v.team===t&&v.k==='z'&&v.runeRound!==S.round)){
+  u.runeRound=S.round;u.runeCharge=1;abilityPulse(u,'rally',0);
+ }
+}
+function trapImpact(u){
+ const list=S.traps||[],i=list.findIndex(t=>t.team!==u.team&&t.x===u.x&&t.y===u.y);
+ if(i<0)return;
+ const trap=list.splice(i,1)[0];
+ fxSpell(u,2,'snare',u.x,u.y,trap.team);applyDamage(u,2);
+ log='Veil Snare triggered for 2 damage!';
+}
+function powerFor(q,t){const k=CARD_KEYS.find(k=>D[k]===q);return(q.power||0)+spellBonus(k,t)}
+
 function afterMove(u){
  if(u.k==='v'&&u.braceRound!==S.round&&u.shield<1&&
     S.units.some(v=>v.team!==u.team&&d(v,u)===1)){
@@ -160,12 +188,16 @@ function afterMove(u){
    abilityPulse(ally,'shield',1);log='Slipstream: '+D[ally.k].name+' receives a shield.';
   }
  }
+ trapImpact(u);
 }
 function damage(u,target){
  let n=u.atk+(high.has(K(u.x,u.y))&&!high.has(K(target.x,target.y))?1:0);
  if(u.k==='r'&&!u.moved&&d(u,target)===3)n++;
  if(u.k==='s'&&!target.core&&S.units.some(v=>v.team===u.team&&v.id!==u.id&&d(v,target)===1))n++;
  if(u.k==='k'&&u.stride>=2)n++;
+ if(u.k==='z'&&u.runeCharge){n++;u.runeCharge=0}
+ if(u.k==='B'&&u.oathBonus){n++;u.oathBonus=0}
+ if(u.weakened){n=Math.max(1,n-1);u.weakened=false}
  if(u.rallied){n++;u.rallied=0;}
  if(!target.core&&target.brandedFor===u.team){n++;delete target.brandedFor}
  return n;
@@ -182,7 +214,13 @@ function mitigate(target,n,physical){
 }
 function basicStrike(attacker,target){
  const raw=damage(attacker,target),actual=mitigate(target,raw,true);
- fxStrike(attacker,target,actual);applyDamage(target,actual);
+ fxStrike(attacker,target,actual);
+ const wasUnit=!target.core&&S.units.some(v=>v.id===target.id);
+ applyDamage(target,actual);
+ if(wasUnit&&attacker.k==='A'&&!S.units.some(v=>v.id===target.id)){
+  const heal=Math.min(2,attacker.max-attacker.hp);attacker.hp+=heal;
+  if(heal)abilityPulse(attacker,'heal',heal);
+ }
  // Leviathan's mark is not allowed to affect cores or already defeated units.
  if(!target.core&&S.units.some(v=>v.id===target.id)){
   if(attacker.k==='c')target.burning=true;
@@ -226,7 +264,7 @@ function fxSpell(target,n,spell,x,y,t){
  fxPush({type:'spell',kind:spell,from:{x,y,team:t},to:fxTarget(target),
    amount:dealt,blocked,lethal:target.core?S.hp[target.team]<=n:target.hp<=n-blocked});
 }
-function applyDamage(target,n){if(target.core){S.hp[target.team]=Math.max(0,S.hp[target.team]-n);if(S.hp[target.team]===0){S.phase='over';S.winner=1-target.team}}else{let absorb=Math.min(target.shield,n);target.shield-=absorb;target.hp-=n-absorb;if(target.hp<=0)S.units=S.units.filter(u=>u.id!==target.id)}}
+function applyDamage(target,n){if(target.core){S.hp[target.team]=Math.max(0,S.hp[target.team]-n);if(S.hp[target.team]===0){S.phase='over';S.winner=1-target.team}}else{let absorb=Math.min(target.shield,n);target.shield-=absorb;target.hp-=n-absorb;if(target.hp<=0){onUnitDeath(target);S.units=S.units.filter(u=>u.id!==target.id)}}}
 
 function endSupportTurn(team){
  const supports=S.units.filter(u=>u.team===team&&u.k==='p');
@@ -292,8 +330,9 @@ function next(t){
  if(t===1){S.round++;S.cap=Math.min(10,2+S.round)}
  S.turn=1-t;S.energy[S.turn]=Math.min(10,S.cap+onSpring(S.turn));
  S.cycled[S.turn]=false;
- S.units.filter(u=>u.team===S.turn).forEach(u=>{u.moved=false;u.attacked=false;u.stride=0});
+ S.units.filter(u=>u.team===S.turn).forEach(u=>{u.moved=false;u.attacked=false;u.stride=0;u.runeCharge=0});
  S.units.forEach(u=>{if(u.brandedFor===S.turn)delete u.brandedFor});
+ S.traps=(S.traps||[]).filter(v=>v.expires>=S.round);
  startStatusTurn(S.turn);
  draw(S.turn,Math.max(0,4-S.hands[S.turn].length));
 }
@@ -314,9 +353,14 @@ function apply(t,a){
    let tribute=q.tribute||0,ids=a.tributes||[];
    if(!Array.isArray(ids)||ids.length!==tribute||new Set(ids).size!==ids.length||!ids.every(id=>S.units.some(v=>v.id===id&&v.team===t)))return false;
    if(S.units.filter(v=>v.team===t).length-tribute>=8||!deploy(t,x,y))return false;
-   S.units=S.units.filter(v=>!ids.includes(v.id));S.units.push(unit(k,t,x,y));log=q.name+' summoned!';
+   if(tribute)onSacrifice(t);
+   S.units=S.units.filter(v=>!ids.includes(v.id));S.units.push(unit(k,t,x,y));
+   if(k==='o'&&S.hands[t].length<5)draw(t,1);
+   trapImpact(S.units[S.units.length-1]);
+   log=q.name+' summoned!';
   }else{
    if(!resolveSpell(q,t,x,y))return false;
+   onFriendlySpell(t);
    log=q.name+' cast!';
   }
   S.energy[t]-=q.cost;if(k==='d')S.energy[t]=Math.min(10,S.energy[t]+1);discard(t,idx);
