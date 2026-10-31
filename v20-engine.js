@@ -52,7 +52,8 @@ function shuffle(arr){let a=arr.slice();for(let i=a.length-1;i>0;i--){let j=Math
 function unit(k,team,x,y,ready=false){let e=D[k];return{id:S.next++,k,team,x,y,hp:e.hp,max:e.hp,atk:e.atk,move:e.move,range:e.range,shield:e.shield||0,fly:!!e.fly,moved:!ready,attacked:!ready}}
 function draw(t,n=1){for(let i=0;i<n;i++){if(!S.decks[t].length){S.decks[t]=shuffle(S.discards[t]);S.discards[t]=[]}if(S.decks[t].length)S.hands[t].push(S.decks[t].pop())}}
 function seed(m){
- S={version:4,mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],decks:[shuffle(chosenDeck),shuffle(PACKS.Balanced)],discards:[[],[]],cycled:[false,false],winner:null};
+ const aiStyle=m==='ai'?Object.keys(PACKS)[Math.floor(Math.random()*Object.keys(PACKS).length)]:'Balanced';
+ S={version:4,mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],cycled:[false,false],winner:null};
  S.units.push(unit('v',0,2,6,true),unit('r',0,4,6,true),unit('v',1,2,1,true),unit('b',1,4,1,true));
  for(let t=0;t<2;t++){for(let k of ['v','r','a']){let i=S.decks[t].indexOf(k);if(i>=0){S.decks[t].splice(i,1);S.hands[t].push(k)}}draw(t,Math.max(0,4-S.hands[t].length))}
 }
@@ -258,25 +259,76 @@ function intent(a){if(!S||S.phase!=='playing'||S.turn!==localSeat){message('<b>N
 }
 function aiTurn(){
  if(S.phase!=='playing'||S.turn!==1)return;
- let spots=[];for(let y=1;y<=2;y++)for(let x=0;x<7;x++)if(deploy(1,x,y))spots.push(P(x,y));
- if(S.units.filter(u=>u.team===1).length<7&&spots.length){
-  let type=shuffle(['v','r','s','b','f','g']).find(k=>D[k].cost<=S.energy[1]);
-  if(type){let sp=spots[Math.floor(Math.random()*spots.length)];S.units.push(unit(type,1,sp.x,sp.y));S.energy[1]-=D[type].cost}
+ // AI plays its actual deck rather than conjuring arbitrary units for free.
+ // Each preset has different card concentrations and therefore tactics.
+ const trySpell=()=>{
+  for(let idx=0;idx<S.hands[1].length;idx++){
+   const q=D[S.hands[1][idx]];
+   if(!q.spell||q.cost>S.energy[1])continue;
+   let spot=null;
+   const enemies=S.units.filter(u=>u.team===0);
+   const friends=S.units.filter(u=>u.team===1);
+   if(['ignite','frost','bolt'].includes(q.spell)){
+    const opportunities=enemies.filter(u=>validSpellSpot(q,1,u.x,u.y))
+     .sort((a,b)=>(a.hp-b.hp)||((b.k==='r'?1:0)-(a.k==='r'?1:0)));
+    spot=opportunities.find(u=>q.spell==='frost'?!u.rooted:q.spell==='ignite'?!u.burning:true);
+   }else if(q.spell==='cross'){
+    const targets=enemies.filter(u=>validSpellSpot(q,1,u.x,u.y));
+    targets.sort((a,b)=>enemies.filter(v=>d(v,b)<=1).length-enemies.filter(v=>d(v,a)<=1).length);
+    if(targets.length&&enemies.filter(v=>d(v,targets[0])<=1).length>=2)spot=targets[0];
+   }else if(q.spell==='heal'){
+    spot=friends.filter(u=>u.hp<=u.max-2).sort((a,b)=>(a.hp/a.max)-(b.hp/b.max))[0];
+   }else if(q.spell==='shield'){
+    spot=friends.filter(u=>u.shield<2).sort((a,b)=>b.atk-a.atk)[0];
+   }else if(q.spell==='cleanse'){
+    spot=friends.find(u=>u.rooted||u.burning);
+   }else if(q.spell==='rally'){
+    spot=friends.find(u=>friends.filter(v=>d(u,v)<=1&&!v.rallied).length>=2);
+   }else if(q.spell==='dash'){
+    spot=friends.find(u=>u.moved&&!u.rooted&&u.dashRound!==S.round&&u.move>=2);
+   }
+   if(spot&&apply(1,{op:'card',idx,x:spot.x,y:spot.y,tributes:[]}))return true;
+  }
+  return false;
+ };
+ trySpell();
+ // Summon at most one creature per AI turn; respect Aeth, legal squares,
+ // the eight-unit cap and every mythic sacrifice.
+ let positions=[];for(let y=1;y<=2;y++)for(let x=0;x<7;x++)if(deploy(1,x,y))positions.push(P(x,y));
+ if(S.units.filter(u=>u.team===1).length<8&&positions.length){
+  const choices=S.hands[1].map((k,idx)=>({k,idx,q:D[k]}))
+   .filter(o=>!o.q.spell&&o.q.cost<=S.energy[1])
+   .sort((a,b)=>(b.q.cost-a.q.cost)||a.idx-b.idx);
+  for(const o of choices){
+   const tribute=o.q.tribute||0;
+   const sacrificial=S.units.filter(u=>u.team===1&&!u.attacked)
+      .sort((a,b)=>a.hp-b.hp||a.atk-b.atk);
+   if(sacrificial.length<tribute||S.units.filter(u=>u.team===1).length-tribute>=8)continue;
+   const ids=sacrificial.slice(0,tribute).map(u=>u.id);
+   positions.sort((a,b)=>Math.min(...S.units.filter(v=>v.team===0).map(v=>d(a,v)))-
+                          Math.min(...S.units.filter(v=>v.team===0).map(v=>d(b,v))));
+   if(apply(1,{op:'card',idx:o.idx,x:positions[0].x,y:positions[0].y,tributes:ids}))break;
+  }
  }
- for(let u of [...S.units].filter(u=>u.team===1)){
+ for(const u of [...S.units].filter(u=>u.team===1)){
   if(S.phase==='over')break;
-  let goals=()=>[...S.units.filter(v=>v.team===0),core(0)];
+  const goals=()=>[...S.units.filter(v=>v.team===0),core(0)];
   let eligible=goals().filter(v=>canAttack(u,v));
   if(!eligible.length&&!u.moved&&!u.rooted){
-   let paths=movement(u);
-   let score=z=>-Math.min(...goals().map(v=>d(z,v)))+(!entity(z.x,z.y)&&springs.includes(K(z.x,z.y))?2.5:0);
+   const paths=movement(u),score=z=>-Math.min(...goals().map(v=>d(z,v)))+
+     (springs.includes(K(z.x,z.y))?2.5:0);
    paths.sort((a,b)=>score(b)-score(a));
-   if(paths.length&&score(paths[0])>score(u)-.2){const path=paths[0];u.x=path.x;u.y=path.y;u.moved=true;u.stride=path.n;afterMove(u)}
+   if(paths.length&&score(paths[0])>score(u)-.2){
+    const path=paths[0];u.x=path.x;u.y=path.y;u.moved=true;u.stride=path.n;afterMove(u);
+   }
    eligible=goals().filter(v=>canAttack(u,v));
   }
-  if(eligible.length){eligible.sort((a,b)=>(a.core?4:0)-(b.core?4:0)||((a.hp||99)-(b.hp||99)));let tar=eligible[0];basicStrike(u,tar);u.attacked=true}
+  if(eligible.length){eligible.sort((a,b)=>(a.core?4:0)-(b.core?4:0)||((a.hp||99)-(b.hp||99)));
+   basicStrike(u,eligible[0]);u.attacked=true;
+  }
  }
- if(S.phase==='playing')next(1);log='The rival army advances.'
+ if(S.phase==='playing')next(1);
+ log='Rival '+(S.aiStyle||'Balanced')+' army advances.';
 }
 function message(m,h){msg=m;hint=h||'Select a card or friendly unit.';renderLabels()}
 function clearSelection(){chosenCard=-1;chosenUnit=null;inspectedTile=null;tributes=[]}
