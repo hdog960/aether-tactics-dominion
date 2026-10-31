@@ -334,10 +334,10 @@ function drawHighlightLayer(t){
  for(let y=0;y<8;y++)for(let x=0;x<7;x++){
   const btn=board.children[y*7+x];if(!btn)continue;
   const flags=btn.className||'';
-  if(!flags.includes('showdeploy')&&!flags.includes('showmove')&&!flags.includes('showattack')&&!flags.includes('selected')&&!flags.includes('focused')&&!flags.includes('tribute'))continue;
+  if(!flags.includes('showdeploy')&&!flags.includes('showmove')&&!flags.includes('showattack')&&!flags.includes('showcast')&&!flags.includes('selected')&&!flags.includes('focused')&&!flags.includes('tribute'))continue;
   const raise=flags.includes('high')?13:0,pts=tile(x,y,raise),point=center(x,y);point[1]-=raise;
   const deploy=flags.includes('showdeploy'),attack=flags.includes('showattack')||flags.includes('tribute'),picked=flags.includes('selected')||flags.includes('focused');
-  const glow=attack?'#ffafb2':picked?'#ffe3a2':'#9bffe0';
+  const glow=flags.includes('showcast')?'#d7b2ff':attack?'#ffafb2':picked?'#ffe3a2':'#9bffe0';
   const alpha=.64+.18*Math.sin(t/270+x*.7+y*.4);
   c.save();c.globalAlpha=alpha;
   poly(pts,deploy?'#73ffd83b':'#5ed6ff21',glow,deploy?5:4);
@@ -357,7 +357,7 @@ function drawTacticalMarkers(t){
   if(!btn)continue;
   const flags=btn.className||'';
   const selectedHere=flags.includes('selected'),focused=flags.includes('focused');
-  const canMove=flags.includes('showmove'),canAttack=flags.includes('showattack');
+  const canMove=flags.includes('showmove'),canAttack=flags.includes('showattack'),canCast=flags.includes('showcast');
   const isDeploy=flags.includes('showdeploy');
   const yy=seat===0?row:7-row,xx=seat===0?x:6-x;
   const occupant=game.units.find(u=>u.x===xx&&u.y===yy);
@@ -369,14 +369,14 @@ function drawTacticalMarkers(t){
    ellipse(p[0]+16,p[1]+7,8,4,occupant.team===seat?'#113d42':'#512b44');
    ellipse(p[0]+16,p[1]+6,5,2.5,occupant.team===seat?'#8ffff0':'#ffa8c1');
   }
-  if(canMove||canAttack||isDeploy){
-   const color=canAttack?'#ff9da5':canMove?'#94e9ff':'#a2ffdf';
+  if(canMove||canAttack||canCast||isDeploy){
+   const color=canCast?'#dab8ff':canAttack?'#ff9da5':canMove?'#94e9ff':'#a2ffdf';
    const x1=p[0]-18,y1=p[1]+8;
    c.save();c.globalAlpha=.84+.11*Math.sin(t/280+x*1.4);
    c.fillStyle='#10253dcc';c.strokeStyle=color;c.lineWidth=2;
    c.beginPath();c.arc(x1,y1,8,0,Math.PI*2);c.fill();c.stroke();
    c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';
-   c.fillStyle=color;c.fillText(canAttack?'×':canMove?'→':'+',x1,y1+.5);
+   c.fillStyle=color;c.fillText(canCast?'✦':canAttack?'×':canMove?'→':'+',x1,y1+.5);
    c.restore();
   }
   if(selectedHere||focused){
