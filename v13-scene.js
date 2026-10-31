@@ -11,7 +11,7 @@ let floorValid=false;
 let game=null,seat=0,selected=null,selectedCard=-1,tributes=[],frames=0,last=0;
 // Logical positions are snapshotted BEFORE state changes reach the renderer.
 // That allows client-side walk motion without delaying multiplayer-authoritative moves.
-const lastPositions=new Map(),movements=new Map();
+const lastPositions=new Map(),movements=new Map(),healthTweens=new Map();
 const cache=new Map(),particles=Array.from({length:56},(_,i)=>({x:(i*479+71)%W,y:(i*337+161)%H,phase:i*2.12,speed:0.13+(i%5)*.075}));
 // Art assets are committed binary image files, not runtime-generated mockups.
 const scenic=new Image(),groundTexture=new Image(),monsterAtlas=new Image();
@@ -163,6 +163,16 @@ function unitPose(u,t){
  return{dx:Math.max(-28,Math.min(28,dx)),dy:Math.max(-15,Math.min(15,dy)),
   flash,rotate:Math.max(-.13,Math.min(.13,rotate))};
 }
+
+function shownHealth(unit,t){
+ const h=healthTweens.get(unit.id);
+ if(!h)return unit.hp;
+ if(t<=h.start)return h.from;
+ const p=clamp01((t-h.start)/h.duration),ease=p*p*(3-2*p);
+ if(p>=1){healthTweens.delete(unit.id);return h.to}
+ return h.from+(h.to-h.from)*ease;
+}
+
 function drawMagicRing(pt,rad,color,alpha=1){
  c.save();c.globalAlpha=alpha;c.strokeStyle=color;c.lineWidth=3;
  c.beginPath();c.ellipse(pt[0],pt[1]-12,rad,rad*.43,0,0,Math.PI*2);c.stroke();
@@ -425,7 +435,7 @@ function drawUnit(view,t){
    c.save();c.imageSmoothingEnabled=false;
    c.drawImage(art,z[0]-ww/2,z[1]-hh+18*scale+Math.sin(t/410+u.id)*2.1,ww,hh);c.restore()
   }
-  const bw=36+16*(y/8),percent=Math.max(0,u.hp/u.max),by=z[1]-152*scale-7*scale;
+  const bw=36+16*(y/8),percent=Math.max(0,shownHealth(u,t)/u.max),by=z[1]-152*scale-7*scale;
   if(pose.flash>.15){c.save();c.globalAlpha=pose.flash*.5;
    c.fillStyle='#ffdd9f';c.fillRect(z[0]-bw/2-3,by-7,bw+6,11);c.restore()}
   c.fillStyle='#102b3a';c.fillRect(z[0]-bw/2-2,by-5,bw+4,8);
@@ -505,8 +515,8 @@ const intro=document.getElementById('vista-stage');if(intro)intro.classList.add(
 window.AetherScene={sync(s,my,choice){
  // Update movement before queuing attacks: the actor finishes stepping into
  // position before its sword swing/projectile begins.
- if(my!==seat){lastPositions.clear();movements.clear();floorValid=false;activeFx.length=0;fxInitialized=false}
- const now=performance.now(),live=new Set();
+ if(my!==seat){lastPositions.clear();movements.clear();healthTweens.clear();floorValid=false;activeFx.length=0;fxInitialized=false}
+ const now=performance.now(),live=new Set(),hpChanges=[];
  for(const unit of s.units){
   live.add(unit.id);
   const prev=lastPositions.get(unit.id);
@@ -518,15 +528,27 @@ window.AetherScene={sync(s,my,choice){
    movements.set(unit.id,{fromX,fromY,fromLift:oldTile?.className.includes('high')?13:0,
      start:now,duration:Math.min(720,340+dist*105),steps:Math.max(1,dist)});
   }
-  lastPositions.set(unit.id,{x:unit.x,y:unit.y,team:unit.team});
+  if(prev&&prev.hp!==unit.hp){
+   hpChanges.push({unit,from:shownHealth({id:unit.id,hp:prev.hp},now)});
+  }
+  lastPositions.set(unit.id,{x:unit.x,y:unit.y,team:unit.team,hp:unit.hp});
  }
- for(const id of lastPositions.keys())if(!live.has(id)){lastPositions.delete(id);movements.delete(id)}
+ for(const id of lastPositions.keys())if(!live.has(id)){lastPositions.delete(id);movements.delete(id);healthTweens.delete(id)}
  const seq=s.fxSeq||0;
  if(!fxInitialized||seq<fxSeen){fxInitialized=true;fxSeen=seq;activeFx.length=0}
  else{
   const next=(s.fxEvents||[]).filter(e=>e.id>fxSeen).sort((a,b)=>a.id-b.id);
   for(let i=0;i<next.length;i++)newFx(next[i],now,i);
   fxSeen=seq;
+ }
+ // Drain HP when the blow visually connects, not at the moment the game state
+ // advances. Preserve an ongoing tween when consecutive attacks overlap.
+ for(const h of hpChanges){
+  const matches=activeFx.filter(f=>f.data.to?.id===h.unit.id&&
+   (f.data.type==='strike'||f.data.type==='spell')&&f.born>=now-100);
+  const hit=matches[matches.length-1];
+  const start=hit?Math.max(now,hit.born+fxImpact(hit)*hit.duration-25):now+100;
+  healthTweens.set(h.unit.id,{from:h.from,to:h.unit.hp,start,duration:290});
  }
  game=s;seat=my;selected=choice?.unit;selectedCard=choice?.card;tributes=choice?.tributes||[];
 },activeWalks:()=>movements.size,activeCombat:()=>activeFx.length};
