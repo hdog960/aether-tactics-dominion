@@ -49,6 +49,7 @@ const portraitIndices={v:0,r:1,b:2,s:3,f:4,g:5,a:6};
 const portraitPositions={v:0,r:16.6667,b:33.3333,s:50,f:66.6667,g:83.3333,a:100};
 const OLD_POOL=['v','v','v','b','b','r','r','s','s','f','f','g','t','l','a','a','a','m','w','w','h'];
 const PACKS={"Balanced":["v","v","v","b","b","r","r","s","s","f","f","g","t","l","a","a","a","m","w","w","h","c","p","e"],"Assault":["v","v","v","s","s","s","k","k","k","d","d","d","j","j","f","f","r","r","a","a","a","q","q","q"],"Fortress":["b","b","b","g","g","g","p","p","p","j","j","v","v","v","r","r","c","c","w","w","w","h","h","x"],"Arcane":["r","r","r","c","c","c","p","p","p","d","d","d","b","b","v","v","a","a","a","m","m","i","i","n"],"Skirmish":["f","f","f","s","s","s","k","k","k","d","d","r","r","r","v","v","l","j","q","q","e","e","a","a"]};
+Object.assign(PACKS,{"Echo":["v","v","o","o","o","z","z","z","p","p","b","b","r","r","d","d","y","y","C","C","E","E","q","x"],"Ritual":["v","v","v","B","B","B","y","y","A","A","o","o","j","j","t","l","F","F","C","C","D","D","G","w"]});
 const CARD_KEYS=Object.keys(D),DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
 function checkDeck(deck){
  if(!Array.isArray(deck)||deck.length!==DECK_SIZE||deck.some(k=>!CARD_KEYS.includes(k)))return false;
