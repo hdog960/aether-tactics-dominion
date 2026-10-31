@@ -229,7 +229,7 @@ function terrainTurn(team){
   if(region.hazard==='ember'){
    fxSpell(u,1,'ignite',u.x,u.y,1-team);applyDamage(u,1);
   }else if(region.hazard==='frost'){
-   u.rooted=true;fxPush({type:'buff',kind:'frost',to:fxTarget(u),amount:0});
+   u.frosted=true;fxPush({type:'buff',kind:'frost',to:fxTarget(u),amount:0});
   }else if(region.hazard==='arcane'){
    if(u.shield>0)u.shield=Math.max(0,u.shield-1);
    else {fxSpell(u,1,'silence',u.x,u.y,1-team);applyDamage(u,1)}
@@ -285,7 +285,7 @@ function save(){if(mode!=='ai'||!S)return;try{localStorage.setItem('aether-domin
 function load(){try{let x=JSON.parse(localStorage.getItem('aether-dominion-v04'));if(x?.version===4&&x?.mode==='ai'&&Array.isArray(x.units)&&x.units.length<30){S=x;let migrated=false;if(!S.matchId){S.matchId='legacy-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);migrated=true}if(!Array.isArray(S.traps)){S.traps=[];migrated=true}for(const u of S.units){if((u.shield||0)>5){u.shield=5;migrated=true}}for(let t=0;t<2;t++){if(S.hands?.[t]?.length>5){const excess=S.hands[t].splice(5);S.decks[t].push(...excess);migrated=true}}if(migrated)save();return true}}catch(e){}return false}
 const onSpring=t=>springs.filter(k=>{let [x,y]=k.split(',').map(Number);return entity(x,y)?.team===t}).length;
 function deploy(t,x,y){if(!bounds(x,y)||rocks.has(K(x,y))||entity(x,y)||(x===3&&(y===0||y===7)))return false;if(t===0&&y>=5||t===1&&y<=2)return true;return springs.some(k=>{let [sx,sy]=k.split(',').map(Number);return entity(sx,sy)?.team===t&&d(P(sx,sy),P(x,y))<=1})}
-function movement(u){let queue=[{x:u.x,y:u.y,n:0}],seen=new Set([K(u.x,u.y)]),out=[];while(queue.length){let z=queue.shift();if(z.n>0)out.push(z);if(z.n>=u.move)continue;for(let [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){let x=z.x+dx,y=z.y+dy,k=K(x,y);if(!bounds(x,y)||seen.has(k)||entity(x,y)||(rocks.has(k)&&!u.fly)||(x===3&&(y===0||y===7)))continue;seen.add(k);queue.push({x,y,n:z.n+1})}}return out}
+function movement(u){let queue=[{x:u.x,y:u.y,n:0}],seen=new Set([K(u.x,u.y)]),out=[];const maxMove=Math.max(1,u.move-(u.frosted?1:0));while(queue.length){let z=queue.shift();if(z.n>0)out.push(z);if(z.n>=maxMove)continue;for(let [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){let x=z.x+dx,y=z.y+dy,k=K(x,y);if(!bounds(x,y)||seen.has(k)||entity(x,y)||(rocks.has(k)&&!u.fly)||(x===3&&(y===0||y===7)))continue;seen.add(k);queue.push({x,y,n:z.n+1})}}return out}
 function los(a,b){let n=Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y))*5;if(!n)return true;for(let i=1;i<n;i++){let q=i/n,x=Math.round(a.x+(b.x-a.x)*q),y=Math.round(a.y+(b.y-a.y)*q);if((x!==a.x||y!==a.y)&&(x!==b.x||y!==b.y)&&rocks.has(K(x,y)))return false}return true}
 function canAttack(a,b){return b&&a.team!==b.team&&d(a,b)<=a.range&&los(a,b)}
 // Each unit has one bounded, positional innate ability. All effects happen
@@ -476,7 +476,7 @@ function endSupportTurn(team){
   if(allies.length){allies[0].hp++;abilityPulse(allies[0],'heal',1)}
  }
  for(const u of S.units.filter(u=>u.team===team)){
-  u.rooted=false;u.stride=0;
+  u.rooted=false;u.frosted=false;u.stride=0;
  }
  terrainTurn(team);
 }
