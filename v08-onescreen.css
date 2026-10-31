@@ -1,0 +1,135 @@
+/* DOMINION v0.8 — ONE-SCREEN MOBILE BATTLE LAYOUT
+   Preserve full-resolution gameplay canvas; only the viewport is fitted. */
+@media (max-width:720px), (max-height:540px) {
+ html,body{margin:0!important;width:100%;height:100%;height:100dvh;overflow:hidden!important;overscroll-behavior:none}
+ body{position:fixed;inset:0;width:100%;height:100dvh;-webkit-text-size-adjust:100%}
+ #game{
+  width:100%;max-width:100%;height:100vh;height:100dvh;max-height:100dvh;
+  min-height:0;overflow:hidden!important;position:relative;
+  display:flex;flex-direction:column;gap:0;
+  padding:calc(5px + env(safe-area-inset-top,0px)) 5px calc(4px + env(safe-area-inset-bottom,0px))!important;
+  border-radius:0!important;box-sizing:border-box;
+ }
+ #game header{flex:0 0 auto;min-height:36px;max-height:43px;overflow:hidden;
+  padding:0 3px 3px!important;margin:0!important;align-items:center;gap:4px}
+ #game header .eyebrow,#game header .subtitle{display:none!important}
+ #game header .logo{font:900 clamp(16px,4.5vw,21px)/.89 Georgia,serif!important;
+  margin:0!important;letter-spacing:.2px!important}
+ #game header .logo em{font-size:.68em;letter-spacing:2px;margin-top:2px}
+ #game .smallbtn{flex:0 0 auto;padding:6px 7px;font-size:9px;border-radius:6px}
+ #game .menu{flex:0 0 auto;min-height:31px;max-height:36px;margin:3px 0!important;gap:5px}
+ #game .modebtn{padding:5px 3px!important;font-size:10px;border-radius:6px;letter-spacing:.3px}
+ #game .hud{flex:0 0 auto;min-height:47px;max-height:56px;grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr);
+  gap:5px;margin:2px 0 4px!important;align-items:stretch}
+ #game .hud .core{padding:4px 6px!important;border-radius:6px}
+ #game .hud .core label{font-size:8px;line-height:1.1;letter-spacing:.25px;white-space:nowrap}
+ #game .hud .hpbig{font-size:18px;line-height:1.0;margin:2px 0 4px!important}
+ #game .hud .hpbig small{font-size:9px}
+ #game .hud .meter{height:5px}
+ #game .hud .mid small{font-size:8px}
+ #game .hud .mid b{font-size:23px;line-height:.92}
+ #game .hud .mid span{font-size:8px}
+ #game .vista{flex:1 1 0;min-height:100px;max-height:none;
+  display:flex;flex-direction:column;margin:0!important;
+  border-width:2px;border-radius:7px;overflow:hidden}
+ #game .vista-top{flex:0 0 23px!important;min-height:23px!important;height:23px!important;
+  padding:0 6px!important;line-height:1.1;gap:3px}
+ #game .vista-top span{font-size:9px;white-space:nowrap}
+ #game .vista-top small{font-size:8px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #game .vista-top:after{display:none}
+ #game .arena{flex:1 1 0;min-height:0;height:auto!important;max-height:none!important;
+  display:flex;justify-content:center;align-items:center;position:relative;overflow:hidden!important;
+  background:radial-gradient(#283e57,#111f32)}
+ #game #battle-canvas{
+  display:block!important;position:relative;flex:0 0 100%;
+  width:100%!important;height:100%!important;
+  aspect-ratio:auto!important;object-fit:cover;
+  image-rendering:auto;touch-action:none;min-height:0;
+ }
+ #game .overlay{inset:23px 0 0;overflow:hidden;padding:9px}
+ #game .overlay .modal{max-height:100%;padding:14px}
+ #game .overlay .modal h2{font-size:22px;margin:9px 0}
+ #game .legend{display:none!important}
+ #game .hint{flex:0 0 29px;min-height:29px!important;max-height:29px;
+  padding:6px 8px!important;margin:4px 0 1px!important;
+  border-left-width:3px;border-radius:5px;overflow:hidden;line-height:1.35;font-size:11px}
+ #game .hint #instruction{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #game .hint #tip{display:none!important}
+ #game .handtop{flex:0 0 23px;min-height:23px;height:23px;margin:0!important;padding:0 2px;gap:4px}
+ #game .handtop strong{font-size:10px;letter-spacing:.8px;white-space:nowrap}
+ #game .handtop strong small{font-size:8px;letter-spacing:0}
+ #game .handtop .aeth{font-size:21px;line-height:1}
+ #game .handtop .aeth small{font-size:10px}
+ #game .hand{flex:0 0 clamp(122px,18dvh,162px);min-height:0!important;max-height:162px;
+  width:100%;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:minmax(0,1fr);
+  gap:3px;padding:0 0 3px!important;margin:0!important;
+  overflow:hidden!important;scroll-snap-type:none!important;-webkit-overflow-scrolling:auto}
+ #game .hand .card{
+  box-sizing:border-box;flex:none!important;width:100%;height:100%;min-width:0;min-height:0!important;
+  margin:0!important;padding:2px!important;border-width:2px;border-radius:5px;
+  display:flex;flex-direction:column;overflow:hidden;scroll-snap-align:none!important;
+  box-shadow:inset 0 0 0 1px #dfc08a82,0 2px 4px #0009;
+ }
+ #game .hand .card.picked{transform:none!important;outline-width:2px;outline-offset:-2px}
+ #game .cardtop{flex:0 0 18px;max-height:18px;align-items:center;gap:1px;letter-spacing:0;font-size:7px}
+ #game .cardtop span:last-child{max-width:calc(100% - 23px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ #game .cost{min-width:18px!important;width:18px;height:18px;font-size:11px;border-width:1.5px}
+ #game .portrait{flex:1 1 0;min-height:28px!important;max-height:none!important;height:auto!important;
+  margin:2px 0!important;border-width:1px;outline:0}
+ #game .illustrated-portrait{inset:0}
+ #game .cardname{flex:0 0 auto;font:800 clamp(9px,2.35vw,11px)/1.12 Georgia,serif!important;
+  min-height:0!important;max-height:24px;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;word-break:normal}
+ #game .carddesc{display:none!important}
+ #game .cardstats{flex:0 0 auto;font-size:9px;line-height:1.2;
+  padding:3px 0 0!important;white-space:nowrap;overflow:hidden}
+ #game .actions{flex:0 0 39px;max-height:39px;min-height:39px;margin:3px 0 0!important;
+  display:flex;gap:4px}
+ #game .actions button{min-width:0;padding:7px 4px;font-size:10px;border-radius:6px}
+ #game .actions #cycle{flex:0 0 25%}
+ #game .actions #end{flex:1 1 auto}
+ #game .actions #rules{flex:0 0 20%}
+ #game .feed,#game .alert{display:none!important}
+ #game #board{display:none!important}
+ /* Room setup is a dismissible overlay, never pushes the arena below the fold. */
+ #game .lobby{
+  position:absolute;z-index:30;
+  top:calc(46px + env(safe-area-inset-top,0px));left:9px;right:9px;
+  bottom:calc(48px + env(safe-area-inset-bottom,0px));
+  width:auto;margin:0!important;max-height:none;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;gap:5px;padding:12px!important;
+  border-radius:12px;box-shadow:0 0 0 999px #06131ebd,0 8px 25px #000c;
+ }
+ #game .lobby .lobby-title{font-size:18px}
+ #game .lobby p{font-size:11px;margin:5px 0!important;line-height:1.35}
+ #game .lobby p:last-child{display:none!important}
+ #game .lobby .room-controls{gap:5px}
+ #game .lobby .room-controls button{padding:8px 9px;font-size:11px}
+ #game .lobby input{font-size:16px;min-width:65px;padding:7px 6px}
+ #game .lobby .room-status{line-height:1.35;font-size:11px;overflow:hidden;max-height:4.8em}
+ #game .lobby .dismiss-room{align-self:flex-end;background:#21374c;color:#f5dba8;
+  border:1px solid #d0b683;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:800}
+}
+@media (max-width:720px) and (max-height:720px), (orientation:landscape) and (max-height:540px) {
+ #game header{max-height:30px;min-height:28px}
+ #game header .logo{font-size:16px!important}
+ #game .menu{max-height:27px;min-height:27px}
+ #game .hud{max-height:42px;min-height:42px}
+ #game .hud .hpbig{font-size:16px}
+ #game .hand{flex-basis:112px;max-height:112px}
+ #game .actions{flex-basis:34px;min-height:34px;max-height:34px}
+ #game .hint{flex-basis:23px;min-height:23px!important;max-height:23px;padding:3px 7px!important}
+ #game .handtop{flex-basis:19px;min-height:19px;height:19px}
+ #game .vista-top{flex-basis:20px!important;min-height:20px!important;height:20px!important}
+}
+@media (orientation:landscape) and (max-height:540px){
+ #game{padding-top:2px!important;padding-bottom:2px!important}
+ #game #battle-canvas{object-fit:contain;background:#16263c}
+ #game .hand{flex-basis:75px;max-height:75px}
+ #game .cardtop{flex-basis:13px;max-height:13px}
+ #game .cost{min-width:13px!important;width:13px;height:13px;font-size:9px}
+ #game .cardname{font-size:9px!important;-webkit-line-clamp:1}
+ #game .cardstats{font-size:8px;padding-top:1px!important}
+ #game .hint{display:none}
+}
