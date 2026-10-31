@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Aether Tactics: Dominion — Riftfront Duel</title>
+<title>Aether Tactics: Dominion — Riftfront Conquest v3.0</title>
 <meta name="theme-color" content="#0c1b2d"><meta name="description" content="Richer detailed 32-bit-era pixel fantasy. A 55° tactical floating island in a luminous rift.">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dominion">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css"><link rel="stylesheet" href="./v20-expansion.css"><link rel="stylesheet" href="./v21-progression.css"><link rel="stylesheet" href="./v22-balance.css">
-</head><body><main id="game">
+<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css"><link rel="stylesheet" href="./v20-expansion.css"><link rel="stylesheet" href="./v21-progression.css"><link rel="stylesheet" href="./v22-balance.css"><link rel="stylesheet" href="./v30-shell.css">
+</head><body><main id="game" data-tab="battle">
 <header class="battle-header"><div class="battle-brand"><h1 class="logo">AETHER <em>DOMINION</em></h1></div>
- <nav class="menu" aria-label="Game mode"><button id="mode-ai" class="modebtn active">SOLO</button><button id="mode-online" class="modebtn">DUEL</button></nav>
+ <nav class="menu" aria-label="Game mode"><button id="mode-ai" class="modebtn active">SOLO</button><button id="mode-online" class="modebtn">DUEL</button></nav><div id="battle-mode-tag" class="battle-mode-tag">⚔ SOLO BATTLE</div>
  <button id="reset" class="smallbtn" aria-label="Start a new match" title="New match">↻ <span>NEW</span></button></header>
 <section class="lobby hidden" id="lobby"><button type="button" id="close-lobby" class="dismiss-room" aria-label="Close room setup">✕ CLOSE</button>
  <div class="lobby-title">✦ The Duel Chamber</div>
@@ -19,8 +19,8 @@
 <section class="hud" aria-label="Match status"><div class="core"><div class="core-line"><label>YOUR CORE</label><div class="hpbig" id="selfhp">24 <small>/24</small></div></div><div class="meter"><i id="selfmeter"></i></div></div>
  <div class="mid"><div class="round-line"><small>RD</small><b id="round">1</b></div><span id="turnlabel">YOUR TURN</span></div>
  <div class="core enemy"><div class="core-line"><label>RIVAL CORE</label><div class="hpbig" id="rivalhp">24 <small>/24</small></div></div><div class="meter"><i id="rivalmeter"></i></div></div></section>
-<section class="vista" aria-label="Riftfront battle arena"><div class="sky"><div class="moon"></div><div class="beam"></div><div class="mount back"></div><div class="mount"></div></div><div class="vista-top"><span>✦ RIFTFRONT</span><small>BLUE MOVE · RED ATTACK · VIOLET SPELL</small></div><div class="arena" id="vista-stage"><canvas id="battle-canvas" aria-label="Angled 32-bit-inspired pixel fantasy tactical battlefield" role="img"></canvas><div id="board" class="board" aria-label="Interactive tactical battlefield">Preparing commands...</div></div>
-<div id="gameover" class="overlay hidden"><div class="modal"><div style="font-size:30px">✦</div><h2 id="resulttitle">BATTLE COMPLETE</h2><p id="resultdesc"></p><button id="result-rewards" type="button" class="result-rewards">★ REWARDS & PROGRESS</button><button id="again" class="primary">FIGHT AGAIN</button></div></div></section>
+<section class="vista" aria-label="Riftfront battle arena"><div class="sky"><div class="moon"></div><div class="beam"></div><div class="mount back"></div><div class="mount"></div></div><div class="vista-top"><span id="arena-label">✦ RIFTFRONT</span><small id="arena-details">BLUE MOVE · RED ATTACK · VIOLET SPELL</small></div><div class="arena" id="vista-stage"><canvas id="battle-canvas" aria-label="Angled 32-bit-inspired pixel fantasy tactical battlefield" role="img"></canvas><div id="board" class="board" aria-label="Interactive tactical battlefield">Preparing commands...</div></div>
+<div id="gameover" class="overlay hidden"><div class="modal"><div style="font-size:30px">✦</div><h2 id="resulttitle">BATTLE COMPLETE</h2><p id="resultdesc"></p><button id="next-mission" type="button" class="result-rewards hidden">🗺 CONTINUE CAMPAIGN</button><button id="result-rewards" type="button" class="result-rewards">★ REWARDS & PROGRESS</button><button id="again" class="primary">FIGHT AGAIN</button></div></div></section>
 <div class="legend"><span>✦ SPRING +1 AETH</span><span>⌃ RAISED +1 DAMAGE</span><span>◈ ROCKS BLOCK SHOTS</span><span>◆ TAP TILES, NOT SPRITES</span></div>
 <section class="command-dock" aria-label="Your cards and turn controls">
  <div class="hint" role="status" aria-live="polite"><div id="instruction"><b>Select a card or allied tile.</b></div><small id="tip">Summon and conquer.</small></div>
@@ -32,6 +32,27 @@
  <div id="hand" class="hand">Preparing cards...</div>
  <div class="actions"><button id="cycle" aria-label="Redraw selected card">↻ <span>REDRAW</span></button><button id="end" class="end">END TURN <span>→</span></button></div>
 </section>
+<section id="campaign-screen" class="tab-page hidden" aria-label="Riftfront campaign">
+ <div class="page-top"><span class="eyebrow">DOMINION · STORY CAMPAIGN</span><h2>RIFTFRONT CONQUEST</h2><p>Conquer four regions. Face veteran commanders, unusual objectives and ancient guardians.</p></div>
+ <div class="campaign-meta"><span id="campaign-count">0 / 12 MISSIONS</span><span id="campaign-stars">✦ 0 SIGILS</span></div>
+ <div id="campaign-regions" class="campaign-regions"></div>
+ <section class="trials-section"><div class="trials-head"><span>✧ ENDGAME</span><h3>THE CROWN TRIALS</h3><p>Three escalating ancient-guardian battles, unlocked by completing the campaign.</p></div><div id="trial-list" class="trial-list"></div></section>
+</section>
+<section id="duel-screen" class="tab-page hidden" aria-label="Online duels">
+ <div class="page-top"><span class="eyebrow">COMMANDER VERSUS COMMANDER</span><h2>THE DUEL CHAMBER</h2><p>Bring your own 24-card deck and challenge a friend. Solo progress remains saved.</p></div>
+ <div class="duel-features"><div><b>⚔ PRIVATE DUEL</b><p>Host or join using a shareable room code.</p></div><div><b>◇ FAIR PLAY</b><p>Card levels are equalized, and both decks are verified by the host.</p></div><div><b>◈ CONNECTION STATUS</b><p id="duel-connection">Not connected. Direct peer-to-peer play is experimental.</p></div></div>
+ <button id="duel-launch" type="button" class="main-cta">OPEN DUEL CHAMBER</button>
+ <button id="duel-return" type="button" class="secondary-cta">RETURN TO BATTLE</button>
+ <button id="duel-solo" type="button" class="secondary-cta">RESTORE SOLO BATTLE</button>
+ <div class="duel-note">Two physical devices and their network connection are required to verify live duels. No ranked matchmaking or remote account saves.</div>
+</section>
+<nav id="bottom-tabs" class="bottom-tabs" aria-label="Main game navigation">
+ <button type="button" data-page="battle" class="selected" aria-current="page"><span class="nav-icon">⚔</span><span>BATTLE</span></button>
+ <button type="button" data-page="campaign"><span class="nav-icon">🗺</span><span>MAP</span></button>
+ <button type="button" data-page="cards"><span class="nav-icon">▤</span><span>CARDS</span></button>
+ <button type="button" data-page="forge"><span class="nav-icon">✦</span><span>FORGE</span></button>
+ <button type="button" data-page="duel"><span class="nav-icon">♜</span><span>DUEL</span></button>
+</nav>
 <section id="codex" class="codex hidden" role="dialog" aria-modal="true" aria-labelledby="codex-title">
   <div class="codex-panel">
     <div class="codex-header"><div><span class="codex-kicker">✧ COMMANDER'S REFERENCE</span><h2 id="codex-title">THE GRIMOIRE</h2></div><button type="button" id="codex-profile" class="build-deck-launch">★ LEVELS</button><button type="button" id="open-builder" class="build-deck-launch">⚒ BUILD DECK</button><button id="codex-close" class="codex-close" type="button" aria-label="Close card information">✕</button></div>
@@ -82,7 +103,7 @@
     <div class="profile-currencies"><span>◈ <b id="profile-gold">0</b> GOLD</span><span>⚔ <b id="profile-wins">0</b> WINS</span><span>◆ <b id="profile-matches">0</b> MATCHES</span></div>
    </section>
    <section class="profile-rewards"><h3>LATEST MATCH</h3><p id="profile-reward-text">Complete a match to earn XP, gold and card copies.</p></section>
-   <div class="profile-upgrade-heading"><h3>CARD UPGRADES</h3><p>Collect card copies from matches, then spend gold to upgrade. Every card is available at level 1.</p></div>
+   <div id="profile-achievements" class="profile-achievements">MILESTONES · 0/6</div><div class="profile-upgrade-heading"><h3>CARD UPGRADES</h3><p>Collect card copies from matches, then spend gold to upgrade. Every card is available at level 1.</p></div>
    <div id="profile-upgrade-list" class="profile-upgrade-list" aria-label="Card upgrades"></div>
   </div>
   <footer class="profile-footer"><span>Upgrades affect solo matches only. Duels use equal stats.</span><button id="profile-done" type="button">BACK TO GAME</button></footer>
@@ -107,6 +128,6 @@
   </div>
 </section>
 </main>
-<script defer src="./v21-art.js"></script><script defer src="./v22-engine.js"></script><script defer src="./v21-scene.js"></script><script type="module" src="./v22-net.js"></script>
+<script defer src="./v21-art.js"></script><script defer src="./v30-campaign-data.js"></script><script defer src="./v30-engine.js"></script><script defer src="./v30-scene.js"></script><script type="module" src="./v30-net.js"></script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
-</body></html>
+<script defer src="./v30-shell.js"></script></body></html>
