@@ -1,4 +1,4 @@
-const CACHE='aether-dominion-v06-art-20261031';
+const CACHE='aether-dominion-v06-art-20261031b';
 const ASSETS=['./','./index.html','./v06.html','./v04-style.css','./v05-style.css','./v06-style.css','./v05-art.js','./v06-engine.js','./v06-scene.js','./v04-net.js','./art/panorama.png','./art/cards.png','./art/reference.png','./art/units.png','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('aether-dominion-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
