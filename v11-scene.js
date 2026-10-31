@@ -357,7 +357,7 @@ function atmosphere(t){
  const vign=c.createRadialGradient(360,480,150,360,460,580);vign.addColorStop(0,'#09121a00');vign.addColorStop(1,'#06122288');c.fillStyle=vign;c.fillRect(0,0,W,H);
 }
 function draw(timestamp){
- if(timestamp-last<48){requestAnimationFrame(draw);return}last=timestamp;
+ if(timestamp-last<34){requestAnimationFrame(draw);return}last=timestamp;
  background();const time=timestamp;
  // long suspended island shoulders, with perspective-cliff edges
  poly([[94,260],[626,260],[700,770],[633,823],[67,823],[10,774]],'#172e3e','#345261',7);
