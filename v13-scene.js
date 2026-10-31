@@ -113,44 +113,55 @@ function screenFor(ref){
  return pt;
 }
 function fxProg(fx,t){return clamp01((t-fx.born)/fx.duration)}
-function fxImpact(fx){return fx.data.type==='strike'?(fx.data.kind==='ranged'?.56:.43):fx.data.type==='spell'?.36:.14}
+function fxImpact(fx){return fx.data.type==='strike'?(fx.data.kind==='ranged'?.61:.43):fx.data.type==='spell'?.36:.14}
 function newFx(data,now,sequenceIndex=0){
- activeFx.push({data,born:now+sequenceIndex*95,duration:data.type==='strike'?520:data.type==='spell'?650:510});
+ const moving=data.from?.id&&movements.get(data.from.id);
+ const windup=moving?.duration||0;
+ activeFx.push({data,born:now+sequenceIndex*75+windup,
+  duration:data.type==='strike'?510:data.type==='spell'?640:490});
  if(activeFx.length>24)activeFx.splice(0,activeFx.length-24);
 }
 function unitPose(u,t){
- let dx=0,dy=0,flash=0,rotate=0,scaleX=1;
+ let dx=0,dy=0,flash=0,rotate=0;
  for(const fx of activeFx){
   const e=fx.data,p=fxProg(fx,t);
   if(t<fx.born||p>=1)continue;
   if(e.type==='strike'&&e.from?.id===u.id){
    const a=screenFor(e.from),b=screenFor(e.to);
-   const d=Math.max(1,Math.hypot(b[0]-a[0],(b[1]-a[1])*.8));
-   const nx=(b[0]-a[0])/d,ny=(b[1]-a[1])/d;
+   const delta=Math.max(1,Math.hypot(b[0]-a[0],b[1]-a[1]));
+   const nx=(b[0]-a[0])/delta,ny=(b[1]-a[1])/delta;
    if(e.kind==='melee'){
-    const leap=p<.24?-p/.24*.22:p<.47?-.22+(p-.24)/.23*1.22:p<.73?1-(p-.47)/.26:p<.89?0:0;
-    dx+=nx*25*leap;dy+=ny*13*leap-Math.max(0,Math.sin(p*Math.PI))*3;
-    rotate+=Math.sin(p*Math.PI*2)*.07;
+    // A continuous rise-and-return lunge replaces the old jerky multiphase jumps.
+    const lunge=p<.18?0:p<.43?Math.sin((p-.18)/.25*Math.PI/2)
+      :p<.69?Math.cos((p-.43)/.26*Math.PI/2):0;
+    const prepare=Math.sin(Math.PI*Math.min(1,p/.18))*.25;
+    dx+=nx*(19*lunge-5*prepare);
+    dy+=ny*(11*lunge-3*prepare)-3*Math.sin(Math.PI*p);
+    rotate+=.052*Math.sin(Math.PI*2*p);
    }else{
-    const kick=Math.sin(Math.PI*clamp01(p/.55));
-    dx-=nx*8*kick;dy-=ny*5*kick;
-    rotate+=Math.sin(p*Math.PI*2)*.06;
+    const recoil=p<.14?0:p<.38?Math.sin((p-.14)/.24*Math.PI/2):
+     p<.63?Math.cos((p-.38)/.25*Math.PI/2):0;
+    dx-=nx*7*recoil;dy-=ny*3*recoil;
+    rotate+=.025*Math.sin(Math.PI*2*p);
    }
   }
   if((e.type==='strike'||e.type==='spell')&&e.to?.id===u.id){
    const impact=fxImpact(fx);
-   if(p>=impact&&p<.97){
-    const j=(p-impact)/(.97-impact),kick=Math.sin(Math.PI*j)*Math.pow(1-j,.65);
-    const a=screenFor(e.from||e.to),b=screenFor(e.to);
-    const d=Math.max(1,Math.hypot(b[0]-a[0],b[1]-a[1]));
-    dx+=((b[0]-a[0])/d*8+Math.sin(j*58)*2)*kick;
-    dy-=4*kick;
-    flash=Math.max(flash,(1-j)*.95);
-    rotate+=.12*Math.sin(j*28)*(1-j);
+   if(p>=impact&&p<.9){
+    const q=(p-impact)/(.9-impact);
+    const kick=Math.sin(Math.PI*q)*Math.pow(1-q,.55);
+    const origin=screenFor(e.from||e.to),point=screenFor(e.to);
+    const distance=Math.max(1,Math.hypot(point[0]-origin[0],point[1]-origin[1]));
+    dx+=((point[0]-origin[0])/distance*7+Math.sin(q*18)*1.0)*kick;
+    dy-=3.2*kick;
+    flash=Math.max(flash,Math.min(1,(p-impact)*16)*Math.pow(1-q,2)*.8);
+    rotate+=.055*Math.sin(q*16)*(1-q);
    }
   }
  }
- return{dx,dy,flash,rotate,scaleX};
+ // Clamp additive poses so overlapping attacks cannot teleport or flip sprites.
+ return{dx:Math.max(-28,Math.min(28,dx)),dy:Math.max(-15,Math.min(15,dy)),
+  flash,rotate:Math.max(-.13,Math.min(.13,rotate))};
 }
 function drawMagicRing(pt,rad,color,alpha=1){
  c.save();c.globalAlpha=alpha;c.strokeStyle=color;c.lineWidth=3;
@@ -158,7 +169,7 @@ function drawMagicRing(pt,rad,color,alpha=1){
  c.restore();
 }
 function renderBattleFX(t){
- for(let i=activeFx.length-1;i>=0;i--)if(t-activeFx[i].born>1100)activeFx.splice(i,1);
+ for(let i=activeFx.length-1;i>=0;i--)if(t-activeFx[i].born>activeFx[i].duration+180)activeFx.splice(i,1);
  c.save();
  for(const fx of activeFx){
   const e=fx.data,p=fxProg(fx,t);
@@ -343,7 +354,8 @@ function unitVisual(u,t){
  }
  // Scale by the animated foot position, not instantly by the destination row.
  // That prevents sudden size jumps when crossing perspective depth boundaries.
- const rowDepth=motion&&walking?motion.fromY+(y-motion.fromY)*progress:y;
+ const smoothDepth=progress*progress*(3-2*progress);
+ const rowDepth=motion&&walking?motion.fromY+(y-motion.fromY)*smoothDepth:y;
  const scale=(.58+rowDepth/8*.5)*1.04;
  return{u,x,y,z,scale,walking,stepPhase};
 }
@@ -471,17 +483,10 @@ cn.addEventListener('pointerup',e=>{
 });
 const intro=document.getElementById('vista-stage');if(intro)intro.classList.add('scene-ready');
 window.AetherScene={sync(s,my,choice){
- const seq=s.fxSeq||0;
- if(!fxInitialized||seq<fxSeen){fxInitialized=true;fxSeen=seq;activeFx.length=0}
- else{
-  const next=(s.fxEvents||[]).filter(e=>e.id>fxSeen).sort((a,b)=>a.id-b.id);
-  const moment=performance.now();
-  for(let i=0;i<next.length;i++)newFx(next[i],moment,i);
-  fxSeen=seq;
- }
- if(my!==seat){lastPositions.clear();movements.clear();floorValid=false}
- const now=performance.now();
- const live=new Set();
+ // Update movement before queuing attacks: the actor finishes stepping into
+ // position before its sword swing/projectile begins.
+ if(my!==seat){lastPositions.clear();movements.clear();floorValid=false;activeFx.length=0;fxInitialized=false}
+ const now=performance.now(),live=new Set();
  for(const unit of s.units){
   live.add(unit.id);
   const prev=lastPositions.get(unit.id);
@@ -491,11 +496,18 @@ window.AetherScene={sync(s,my,choice){
    const oldTile=board.children[fromY*7+fromX];
    const dist=Math.abs(toX-fromX)+Math.abs(toY-fromY);
    movements.set(unit.id,{fromX,fromY,fromLift:oldTile?.className.includes('high')?13:0,
-     start:now,duration:Math.min(720,350+dist*115),steps:Math.max(1,dist)});
+     start:now,duration:Math.min(720,340+dist*105),steps:Math.max(1,dist)});
   }
   lastPositions.set(unit.id,{x:unit.x,y:unit.y,team:unit.team});
  }
  for(const id of lastPositions.keys())if(!live.has(id)){lastPositions.delete(id);movements.delete(id)}
+ const seq=s.fxSeq||0;
+ if(!fxInitialized||seq<fxSeen){fxInitialized=true;fxSeen=seq;activeFx.length=0}
+ else{
+  const next=(s.fxEvents||[]).filter(e=>e.id>fxSeen).sort((a,b)=>a.id-b.id);
+  for(let i=0;i<next.length;i++)newFx(next[i],now,i);
+  fxSeen=seq;
+ }
  game=s;seat=my;selected=choice?.unit;selectedCard=choice?.card;tributes=choice?.tributes||[];
 },activeWalks:()=>movements.size,activeCombat:()=>activeFx.length};
 const initial=window.AetherGame?.get?.();if(initial)window.AetherScene.sync(initial,0,{unit:null,card:-1,tributes:[]});
