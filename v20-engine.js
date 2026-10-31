@@ -87,6 +87,8 @@ function damage(u,target){
  let n=u.atk+(high.has(K(u.x,u.y))&&!high.has(K(target.x,target.y))?1:0);
  if(u.k==='r'&&!u.moved&&d(u,target)===3)n++;
  if(u.k==='s'&&!target.core&&S.units.some(v=>v.team===u.team&&v.id!==u.id&&d(v,target)===1))n++;
+ if(u.k==='k'&&u.stride>=2)n++;
+ if(u.rallied){n++;u.rallied=0;}
  if(!target.core&&target.brandedFor===u.team){n++;delete target.brandedFor}
  return n;
 }
@@ -104,6 +106,10 @@ function basicStrike(attacker,target){
  const raw=damage(attacker,target),actual=mitigate(target,raw,true);
  fxStrike(attacker,target,actual);applyDamage(target,actual);
  // Leviathan's mark is not allowed to affect cores or already defeated units.
+ if(!target.core&&S.units.some(v=>v.id===target.id)){
+  if(attacker.k==='c')target.burning=true;
+  if(attacker.k==='j')target.rooted=true;
+ }
  if(attacker.k==='l'&&!target.core&&S.units.some(v=>v.id===target.id))
   target.brandedFor=attacker.team;
  // Shockwave follows the primary blow, hits only a SECOND enemy unit.
@@ -143,19 +149,86 @@ function fxSpell(target,n,spell,x,y,t){
    amount:dealt,blocked,lethal:target.core?S.hp[target.team]<=n:target.hp<=n-blocked});
 }
 function applyDamage(target,n){if(target.core){S.hp[target.team]=Math.max(0,S.hp[target.team]-n);if(S.hp[target.team]===0){S.phase='over';S.winner=1-target.team}}else{let absorb=Math.min(target.shield,n);target.shield-=absorb;target.hp-=n-absorb;if(target.hp<=0)S.units=S.units.filter(u=>u.id!==target.id)}}
+
+function endSupportTurn(team){
+ const supports=S.units.filter(u=>u.team===team&&u.k==='p');
+ for(const healer of supports){
+  const allies=S.units.filter(v=>v.team===team&&v.id!==healer.id&&d(v,healer)===1&&v.hp<v.max)
+    .sort((a,b)=>(b.max-b.hp)-(a.max-a.hp)||a.id-b.id);
+  if(allies.length){allies[0].hp++;abilityPulse(allies[0],'heal',1)}
+ }
+ for(const u of S.units.filter(u=>u.team===team)){
+  u.rooted=false;u.stride=0;
+ }
+}
+function startStatusTurn(team){
+ for(const u of [...S.units].filter(u=>u.team===team&&u.burning)){
+  u.burning=false;
+  fxSpell(u,1,'ignite',u.x,u.y,1-team);
+  applyDamage(u,1);
+ }
+}
+function validSpellSpot(q,t,x,y){
+ const target=entity(x,y);
+ if(['shield','heal','dash','cleanse','rally'].includes(q.spell)){
+  if(!target||target.team!==t)return false;
+  if(q.spell==='dash'&&target.dashRound===S.round)return false;
+  return true;
+ }
+ if(!S.units.some(v=>v.team===t&&d(v,P(x,y))<=3))return false;
+ if(['frost','ignite'].includes(q.spell))return !!target&&target.team!==t;
+ if(q.spell==='bolt')return target?.team===1-t||(x===3&&y===(t===0?0:7));
+ if(q.spell==='cross')return S.units.some(v=>v.team!==t&&d(v,P(x,y))<=1)||d(P(x,y),core(1-t))<=1;
+ return false;
+}
+function resolveSpell(q,t,x,y){
+ const target=entity(x,y),type=q.spell;
+ if(!validSpellSpot(q,t,x,y))return false;
+ if(type==='shield'){target.shield+=4;abilityPulse(target,'shield',4)}
+ else if(type==='heal'){const heal=Math.min(4,target.max-target.hp);target.hp+=heal;
+   target.moved=false;target.attacked=false;abilityPulse(target,'heal',heal)}
+ else if(type==='dash'){target.moved=false;target.stride=0;target.dashRound=S.round;abilityPulse(target,'shield',0)}
+ else if(type==='cleanse'){target.rooted=false;target.burning=false;target.shield+=2;abilityPulse(target,'shield',2)}
+ else if(type==='rally'){
+  for(const ally of S.units.filter(v=>v.team===t&&d(v,target)<=1)){
+   ally.rallied=1;abilityPulse(ally,'shield',0);
+  }
+ }else if(['frost','ignite'].includes(type)){
+  const amount=mitigate(target,q.power,false);fxSpell(target,amount,type,x,y,t);applyDamage(target,amount);
+  if(S.units.some(v=>v.id===target.id)){
+   if(type==='frost')target.rooted=true;
+   if(type==='ignite')target.burning=true;
+  }
+ }else{
+  const victims=S.units.filter(v=>v.team!==t&&(type==='bolt'?(v.x===x&&v.y===y):d(v,P(x,y))<=1));
+  for(const victim of [...victims]){const amount=mitigate(victim,q.power,false);fxSpell(victim,amount,type,x,y,t);applyDamage(victim,amount)}
+  const coreHit=type==='bolt'?(x===3&&y===(t===0?0:7)):d(P(x,y),core(1-t))<=1;
+  if(coreHit){const enemyCore=core(1-t);fxSpell(enemyCore,q.power,type,x,y,t);applyDamage(enemyCore,q.power)}
+ }
+ return true;
+}
+
 function discard(t,idx){let k=S.hands[t].splice(idx,1)[0];S.discards[t].push(k);draw(t,1)}
-function next(t){if(t===1){S.round++;S.cap=Math.min(10,2+S.round)}S.turn=1-t;S.energy[S.turn]=Math.min(10,S.cap+onSpring(S.turn));S.cycled[S.turn]=false;S.units.filter(u=>u.team===S.turn).forEach(u=>{u.moved=false;u.attacked=false});
- // Tidal brands cannot be stockpiled across turns.
- S.units.forEach(u=>{if(u.brandedFor===S.turn)delete u.brandedFor});draw(S.turn,Math.max(0,4-S.hands[S.turn].length))}
+function next(t){
+ endSupportTurn(t);
+ if(t===1){S.round++;S.cap=Math.min(10,2+S.round)}
+ S.turn=1-t;S.energy[S.turn]=Math.min(10,S.cap+onSpring(S.turn));
+ S.cycled[S.turn]=false;
+ S.units.filter(u=>u.team===S.turn).forEach(u=>{u.moved=false;u.attacked=false;u.stride=0});
+ S.units.forEach(u=>{if(u.brandedFor===S.turn)delete u.brandedFor});
+ startStatusTurn(S.turn);
+ draw(S.turn,Math.max(0,4-S.hands[S.turn].length));
+}
 function apply(t,a){
  if(!S||S.phase!=='playing'||S.turn!==t||!a||typeof a.op!=='string')return false;
  let x=a.x,y=a.y,validXY=Number.isInteger(x)&&Number.isInteger(y)&&bounds(x,y),u=S.units.find(v=>v.id===a.id&&v.team===t);
- if(a.op==='move'){if(!u||u.moved||!validXY||!movement(u).some(v=>v.x===x&&v.y===y))return false;u.x=x;u.y=y;u.moved=true;log=D[u.k].name+' advances.';afterMove(u)}
+ if(a.op==='move'){if(!u||u.moved||u.rooted||!validXY||!movement(u).some(v=>v.x===x&&v.y===y))return false;const distance=movement(u).find(z=>z.x===x&&z.y===y)?.n||1;
+ u.x=x;u.y=y;u.moved=true;u.stride=distance;log=D[u.k].name+' advances.';afterMove(u)}
  else if(a.op==='attack'){
   if(!u||u.attacked||!validXY)return false;
   let target=entity(x,y)||(x===3&&y===(t===0?0:7)?core(1-t):null);
   if(!target||!canAttack(u,target))return false;
-  let hit=basicStrike(u,target);u.attacked=true;log=D[u.k].name+' strikes for '+hit+'.'
+  let hit=basicStrike(u,target);u.attacked=true;u.stride=0;log=D[u.k].name+' strikes for '+hit+'.'
  }else if(a.op==='card'){
   let idx=a.idx;if(!Number.isInteger(idx)||idx<0||idx>=S.hands[t].length||!validXY)return false;
   let k=S.hands[t][idx],q=D[k];if(S.energy[t]<q.cost)return false;
@@ -165,23 +238,10 @@ function apply(t,a){
    if(S.units.filter(v=>v.team===t).length-tribute>=8||!deploy(t,x,y))return false;
    S.units=S.units.filter(v=>!ids.includes(v.id));S.units.push(unit(k,t,x,y));log=q.name+' summoned!';
   }else{
-   let target=entity(x,y);
-   if(q.spell==='shield'||q.spell==='heal'){
-    if(!target||target.team!==t)return false;
-    if(q.spell==='shield'){target.shield+=4;fxPush({type:'buff',kind:'shield',to:fxTarget(target),amount:4})}
-    else{const actual=Math.min(4,target.max-target.hp);target.hp=Math.min(target.max,target.hp+4);target.moved=false;target.attacked=false;
-      fxPush({type:'buff',kind:'heal',to:fxTarget(target),amount:actual})}
-   }else{
-    if(!S.units.some(v=>v.team===t&&d(v,P(x,y))<=3))return false;
-    let victims=S.units.filter(v=>v.team!==t&&(q.spell==='bolt'?(v.x===x&&v.y===y):d(v,P(x,y))<=1));
-    let coreHit=q.spell==='bolt'?(x===3&&y===(t===0?0:7)):d(P(x,y),core(1-t))<=1;
-    if(!victims.length&&!coreHit)return false;
-    for(let v of [...victims]){const hit=mitigate(v,q.power,false);fxSpell(v,hit,q.spell,x,y,t);applyDamage(v,hit)}
-    if(coreHit){const targetCore=core(1-t);fxSpell(targetCore,q.power,q.spell,x,y,t);applyDamage(targetCore,q.power)}
-   }
+   if(!resolveSpell(q,t,x,y))return false;
    log=q.name+' cast!';
   }
-  S.energy[t]-=q.cost;discard(t,idx);
+  S.energy[t]-=q.cost;if(k==='d')S.energy[t]=Math.min(10,S.energy[t]+1);discard(t,idx);
  }else if(a.op==='cycle'){
   if(S.cycled[t]||!Number.isInteger(a.idx)||a.idx<0||a.idx>=S.hands[t].length)return false;
   discard(t,a.idx);S.cycled[t]=true;log='Card redrawn.'
@@ -207,11 +267,11 @@ function aiTurn(){
   if(S.phase==='over')break;
   let goals=()=>[...S.units.filter(v=>v.team===0),core(0)];
   let eligible=goals().filter(v=>canAttack(u,v));
-  if(!eligible.length&&!u.moved){
+  if(!eligible.length&&!u.moved&&!u.rooted){
    let paths=movement(u);
    let score=z=>-Math.min(...goals().map(v=>d(z,v)))+(!entity(z.x,z.y)&&springs.includes(K(z.x,z.y))?2.5:0);
    paths.sort((a,b)=>score(b)-score(a));
-   if(paths.length&&score(paths[0])>score(u)-.2){u.x=paths[0].x;u.y=paths[0].y;u.moved=true;afterMove(u)}
+   if(paths.length&&score(paths[0])>score(u)-.2){const path=paths[0];u.x=path.x;u.y=path.y;u.moved=true;u.stride=path.n;afterMove(u)}
    eligible=goals().filter(v=>canAttack(u,v));
   }
   if(eligible.length){eligible.sort((a,b)=>(a.core?4:0)-(b.core?4:0)||((a.hp||99)-(b.hp||99)));let tar=eligible[0];basicStrike(u,tar);u.attacked=true}
