@@ -4,11 +4,11 @@
 <meta name="theme-color" content="#0c1b2d"><meta name="description" content="Richer detailed 32-bit-era pixel fantasy. A 55° tactical floating island in a luminous rift.">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dominion">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css">
+<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css">
 </head><body><main id="game">
-<header><div><div class="eyebrow">✧ The Shattered Planes · Act I</div><h1 class="logo">AETHER TACTICS<em>DOMINION</em></h1><div class="subtitle">The Living Rift · v0.7</div></div><button id="reset" class="smallbtn">↻ NEW MATCH</button></header>
+<header><div><div class="eyebrow">✧ The Shattered Planes · Act I</div><h1 class="logo">AETHER TACTICS<em>DOMINION</em></h1><div class="subtitle">Single-Screen Edition · v0.8</div></div><button id="reset" class="smallbtn">↻ NEW MATCH</button></header>
 <div class="menu"><button id="mode-ai" class="modebtn active">⚔ Solo Campaign</button><button id="mode-online" class="modebtn">✦ Online Duel</button></div>
-<section class="lobby hidden" id="lobby">
+<section class="lobby hidden" id="lobby"><button type="button" id="close-lobby" class="dismiss-room" aria-label="Close room setup">✕ CLOSE</button>
  <div class="lobby-title">✦ The Duel Chamber</div>
  <p>Battle another commander from anywhere. You host, your friend joins using the same room code. No login needed. Both players must keep the game open.</p>
  <div class="room-controls"><button class="primary" id="make-room">CREATE ROOM</button><input id="roomid" maxlength="8" autocomplete="off" spellcheck="false" placeholder="ROOM CODE" aria-label="Room code"><button class="outline" id="join-room">JOIN</button></div>
@@ -26,6 +26,6 @@
 <div id="feed" class="feed">Riftfront Valley is waking.</div>
 <div class="alert">Early online playtest · The room host adjudicates moves. WebRTC needs a direct connection between the two phones; no server-stored match history yet. Single player saves locally.</div>
 </main>
-<script defer src="./v05-art.js"></script><script defer src="./v06-engine.js"></script><script defer src="./v07-scene.js"></script><script type="module" src="./v04-net.js"></script>
+<script defer src="./v05-art.js"></script><script defer src="./v08-engine.js"></script><script defer src="./v08-scene.js"></script><script type="module" src="./v04-net.js"></script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
 </body></html>
