@@ -830,6 +830,7 @@ function render(){
   else if(isCore||enemyCore||spring||isRock){b.innerHTML='<img draggable="false" class="terrainimg" src="'+Art.terrain(isCore?(mineCore?'core':'enemycore'):enemyCore?(mineCore?'core':'enemycore'):spring?'spring':'rock')+'">'}
   else b.innerHTML=(isHigh?'<span class="up">⌃</span>':'')+'<span class="rune">✦</span>'
  }
+ $('hand').classList.toggle('five-cards',S.hands[my].length>4);
  $('hand').innerHTML=S.hands[my].map((k,i)=>{
   const q=D[k],type=q.spell?'spell':q.tribute?'boss':'unit';
   const stats=q.spell?(SPELL_LABELS[q.spell]||'✦ SPELL'):
