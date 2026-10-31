@@ -385,9 +385,9 @@ function drawTacticalMarkers(t){
    ellipse(p[0]+16,p[1]+7,8,4,occupant.team===seat?'#113d42':'#512b44');
    ellipse(p[0]+16,p[1]+6,5,2.5,occupant.team===seat?'#8ffff0':'#ffa8c1');
   }
-  if(occupant?.burning||occupant?.rooted||occupant?.rallied||occupant?.weakened){
+  if(occupant?.burning||occupant?.rooted||occupant?.frosted||occupant?.rallied||occupant?.weakened){
    c.save();
-   const states=[occupant.burning?['🔥','#ffc297']:null,occupant.rooted?['❄','#a5deff']:null,occupant.rallied?['✦','#ffdb9e']:null,occupant.weakened?['◉','#b8bbdf']:null].filter(Boolean);
+   const states=[occupant.burning?['🔥','#ffc297']:null,(occupant.rooted||occupant.frosted)?['❄','#a5deff']:null,occupant.rallied?['✦','#ffdb9e']:null,occupant.weakened?['◉','#b8bbdf']:null].filter(Boolean);
    c.textAlign='center';c.textBaseline='middle';c.font='bold 16px system-ui';
    for(let i=0;i<states.length;i++){const x1=p[0]+(i-(states.length-1)/2)*22,y1=p[1]-29;
     ellipse(x1,y1,10,10,'#122e44dc');c.fillStyle=states[i][1];c.fillText(states[i][0],x1,y1);
