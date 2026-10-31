@@ -85,8 +85,8 @@ function upgradeCard(k){
 }
 // Solo upgrades are deliberately gentle. Competitive online battles run base
 // stats so a veteran cannot overpower a new opponent through progression.
-function combatLevel(k,t){return mode==='ai'&&t===0?cardLevel(k):1}
-function unitBonuses(k,t){const lv=combatLevel(k,t);return{hp:Math.floor((lv-1)/2),atk:Math.floor((lv-1)/4)}}
+function combatLevel(k,t){return mode==='ai'&&t===0?(S?.cardRanks?.[k]||1):1}
+function unitBonuses(k,t){const lv=combatLevel(k,t);return{hp:Math.floor(lv/2),atk:Math.floor((lv-1)/4)}}
 function spellBonus(k,t){return Math.min(2,Math.floor((combatLevel(k,t)-1)/3))}
 function awardMatch(){
  if(!S||S.phase!=='over'||!S.winner&&S.winner!==0)return null;
@@ -131,7 +131,8 @@ function unit(k,team,x,y,ready=false){
 function draw(t,n=1){for(let i=0;i<n;i++){if(!S.decks[t].length){S.decks[t]=shuffle(S.discards[t]);S.discards[t]=[]}if(S.decks[t].length)S.hands[t].push(S.decks[t].pop())}}
 function seed(m){
  const aiStyle=m==='ai'?Object.keys(PACKS)[Math.floor(Math.random()*Object.keys(PACKS).length)]:'Balanced';
- S={version:4,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
+ const cardRanks=Object.fromEntries(CARD_KEYS.map(k=>[k,cardLevel(k)]));
+ S={version:4,cardRanks,matchId:'m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),mode:m,phase:m==='online'?'waiting':'playing',turn:0,round:1,next:1,hp:[24,24],energy:[3,3],cap:3,units:[],hands:[[],[]],aiStyle,decks:[shuffle(chosenDeck),shuffle(PACKS[aiStyle])],discards:[[],[]],traps:[],cycled:[false,false],winner:null};
  S.units.push(unit('v',0,2,6,true),unit('r',0,4,6,true),unit('v',1,2,1,true),unit('b',1,4,1,true));
  for(let t=0;t<2;t++){for(let k of ['v','r','a']){let i=S.decks[t].indexOf(k);if(i>=0){S.decks[t].splice(i,1);S.hands[t].push(k)}}draw(t,Math.max(0,4-S.hands[t].length))}
 }
@@ -738,7 +739,7 @@ function closeGuide(){
 function profileCardSummary(k){
  const d=D[k],lv=cardLevel(k),bonus=unitBonuses(k,0);
  const stats=d.spell?(d.power?'⚡ '+(d.power+spellBonus(k,0))+' DAMAGE':'✧ SUPPORT'):
-  '♥ '+(d.hp+Math.floor((lv-1)/2))+' · ⚔ '+(d.atk+Math.floor((lv-1)/4));
+  '♥ '+(d.hp+Math.floor(lv/2))+' · ⚔ '+(d.atk+Math.floor((lv-1)/4));
  return stats;
 }
 function renderProfile(){
