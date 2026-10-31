@@ -33,3 +33,12 @@ Three unlockable Crown Trials follow all twelve story missions: Hollow King, Mir
 
 ## Recommended playtest
 Confirm five-tab sizing on iPhone first. Clear Rune Valley missions normally. Test at least one frost and ember map, forge mastery rewards, save/reload in a mission, boss phase changes, and private Duel on two real devices. Continue future balance tuning against actual player behavior.
+
+## v3.1 navigation refinement — Commander’s Hall
+- App opens on a dedicated activity choice screen rather than immediately displaying a random battle.
+- Play tab returns to the Hall; Battle has a visible MENU button.
+- Player explicitly chooses Quick Battle, Map campaign mission, or a private Duel; Cards and Forge have dedicated Hall shortcuts.
+- Campaign Map and Duel previously remained globally hidden even when their tabs were active; switching pages now clears their hidden classes.
+- Saved solo matches may be resumed through the Hall; the existing v4 local save and profile formats remain unchanged.
+- New Quick Battle creates a fresh solo match deliberately, while the map remains the starting point for story missions.
+- Home Screen cache version updated to trigger fresh client assets. Exact hardware interaction still requires iPhone playtesting.

@@ -1,11 +1,11 @@
-/* v3.0 — navigation, campaign map and duel front door.
+/* v3.1 — commander hall, repaired map navigation and duel front door.
    State remains inside the authoritative AetherGame engine. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const game=$('game'),G=window.AetherGame;
 if(!game||!G)return;
-const pages=['battle','campaign','cards','forge','duel'];
-let active='battle';
+const pages=['home','battle','campaign','cards','forge','duel'];
+let active='home',everLaunched=false;
 function closeNested(){
  if(!$('deck-builder').classList.contains('hidden'))$('deck-cancel').click();
  if(!$('rules-sheet').classList.contains('hidden'))$('rules-close').click();
@@ -15,8 +15,13 @@ function showTab(page,opts={}){
  if(!pages.includes(page))return;
  closeNested();
  active=page;game.dataset.tab=page;
+ // v3.0 regression: map and duel carried the global .hidden class forever.
+ // Explicitly remove it on entry, then hide the other destination screens.
+ for(const [id,tab] of [['home-screen','home'],['campaign-screen','campaign'],['duel-screen','duel']]){
+  $(id).classList.toggle('hidden',page!==tab);
+ }
  $('bottom-tabs').querySelectorAll('button[data-page]').forEach(b=>{
-  const yes=b.dataset.page===page;b.classList.toggle('selected',yes);
+  const yes=b.dataset.page===(page==='battle'?'home':page);b.classList.toggle('selected',yes);
   if(yes)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
  });
  if(page==='cards'){
@@ -26,11 +31,51 @@ function showTab(page,opts={}){
  else if(!$('player-profile').classList.contains('hidden'))$('profile-close').click();
  if(page==='campaign')renderCampaign();
  if(page==='duel')renderDuel();
+ if(page==='home')renderHome();
 }
 window.DominionNav={showTab,renderCampaign:()=>renderCampaign(),active:()=>active};
 $('bottom-tabs').addEventListener('click',e=>{
  const b=e.target.closest('button[data-page]');if(b)showTab(b.dataset.page);
 });
+function savedBattle(){
+ try{
+  const s=JSON.parse(localStorage.getItem('aether-dominion-v04')||'null');
+  return s?.version===4&&s.mode==='ai'&&Array.isArray(s.units)?s:null;
+ }catch(e){return null}
+}
+function renderHome(){
+ const info=G.campaign?.(),p=G.profile?.(),s=G.get(),saved=savedBattle();
+ if(info){
+  $('home-progress').textContent=info.storyDone+' / '+info.storyTotal+' MISSIONS';
+  const next=info.missions.find(m=>!info.completed.includes(m.id));
+  $('home-next-story').textContent=next?'NEXT: '+next.name.toUpperCase():info.trialsDone===info.trials.length?'ALL CROWN TRIALS CLEARED':'THE CROWN TRIALS AWAIT';
+ }
+ if(p)$('home-player').textContent='COMMANDER · LV '+p.level+' · '+p.gold+' GOLD';
+ const ongoing=s?.phase==='playing'&&(s.mode==='online'||everLaunched||!!saved);
+ const waiting=s?.mode==='online'&&s.phase==='waiting';
+ const continueButton=$('home-continue');
+ continueButton.classList.toggle('hidden',!ongoing&&!waiting);
+ if(ongoing||waiting){
+  const mission=G.missions?.all?.find(m=>m.id===s.missionId);
+  $('home-current').textContent=s.mode==='online'?(waiting?'Waiting for a friend to connect':'Private duel · Round '+s.round):
+   mission?mission.name+' · Round '+s.round:'Solo skirmish · Round '+s.round;
+ }
+}
+$('home-campaign').addEventListener('click',()=>showTab('campaign'));
+$('home-cards').addEventListener('click',()=>showTab('cards'));
+$('home-forge').addEventListener('click',()=>showTab('forge'));
+$('home-duel').addEventListener('click',()=>showTab('duel'));
+$('home-continue').addEventListener('click',()=>{
+ const s=G.get();
+ if(s?.phase==='playing'||s?.mode==='online'&&s.phase==='waiting')showTab('battle');
+});
+$('home-quick').addEventListener('click',()=>{
+ const s=G.get(),saved=savedBattle();
+ const inProgress=s?.mode==='online'||s?.phase==='playing'&&(everLaunched||!!saved);
+ if(inProgress&&!confirm('Start a new quick battle? This replaces your current match. Campaign progress and your card collection will remain.'))return;
+ G.startQuickMatch();everLaunched=true;showTab('battle');
+});
+$('battle-home').addEventListener('click',()=>showTab('home'));
 function renderCampaign(){
  const info=G.campaign?.();if(!info)return;
  const complete=new Set(info.completed),available=new Set(info.available);
@@ -68,7 +113,7 @@ function onMission(e){
  if(S?.mode==='online'||S?.phase==='playing'&&S.round>1){
   if(!window.confirm('Starting this mission replaces your current solo battle. Your player levels and completed missions will be kept. Continue?'))return;
  }
- if(G.startMission(id))showTab('battle');
+ if(G.startMission(id)){everLaunched=true;showTab('battle')}
 }
 $('campaign-regions').addEventListener('click',onMission);
 $('trial-list').addEventListener('click',onMission);
@@ -76,7 +121,7 @@ function renderDuel(){
  const s=G.get();
  $('duel-connection').textContent=s?.mode==='online'?
   s.phase==='waiting'?'Waiting for a friend to connect and send their deck.':
-  s.phase==='playing'?'Duel match active. Use the Battle tab to play.':
+  s.phase==='playing'?'Duel match active. Return to the battle to play.':
   'Duel ended. Open the chamber to start another.':
   'No room connected. Experimental peer-to-peer duels require two devices.';
  $('duel-launch').textContent=s?.mode==='online'&&s.phase==='playing'?'RETURN TO ACTIVE DUEL':'OPEN DUEL CHAMBER';
@@ -90,7 +135,7 @@ $('duel-launch').addEventListener('click',()=>{
  showTab('battle');
  if(s?.mode!=='online'||s.phase==='waiting')$('lobby').classList.remove('hidden');
 });
-$('duel-return').addEventListener('click',()=>showTab('battle'));
+$('duel-return').addEventListener('click',()=>showTab('home'));
 $('duel-solo').addEventListener('click',()=>{if(G.get()?.mode==='online')$('mode-ai').click();showTab('battle')});
 // Shortcut actions open their dedicated tabs, even when triggered from Battle.
 $('card-guide').addEventListener('click',()=>{if(active!=='cards')showTab('cards',{preserveDetail:true})});
@@ -102,12 +147,13 @@ $('profile-open').addEventListener('click',()=>{if(active!=='forge')showTab('for
 $('codex-profile').addEventListener('click',()=>{if(active!=='forge')showTab('forge')});
 $('result-rewards').addEventListener('click',()=>{if(active!=='forge')showTab('forge')});
 // Mobile layout retains one centralized way back; never strand the user behind a panel.
-$('profile-done').addEventListener('click',()=>{if(active==='forge')showTab('battle')});
-$('codex-close').addEventListener('click',()=>{if(active==='cards')showTab('battle')});
+$('profile-done').addEventListener('click',()=>{if(active==='forge')showTab('home')});
+$('codex-close').addEventListener('click',()=>{if(active==='cards')showTab('home')});
 document.addEventListener('keydown',e=>{
- if(e.key==='Escape'&&active!=='battle'&&$('deck-builder').classList.contains('hidden')){
-  showTab('battle');
+ if(e.key==='Escape'&&active!=='home'&&$('deck-builder').classList.contains('hidden')){
+  showTab('home');
  }
 });
 renderCampaign();
+renderHome();
 })();

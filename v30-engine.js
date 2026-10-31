@@ -1082,6 +1082,13 @@ function render(){
  }
 }
 function publish(){if(net&&mode==='online'&&localSeat===0){net.state({s:S,rev:revision});}}
+function startQuickMatch(){
+ disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
+ seed('ai');setArena('verdant');
+ $('mode-ai').classList.add('active');$('mode-online').classList.remove('active');$('lobby').classList.add('hidden');
+ message('<b>Quick Battle</b> · Fresh skirmish','Your 24-card deck is ready. Summon, position and conquer.');
+ save();render();
+}
 function startAI(){
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
  $('mode-ai').classList.add('active');$('mode-online').classList.remove('active');$('lobby').classList.add('hidden');
@@ -1225,7 +1232,7 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Escape'&&!$('rules-sheet').classList.contains('hidden')){e.preventDefault();closeRules()}
 });
 window.addEventListener('aether-network-ready',()=>{if($('roomstatus').textContent.includes('loading'))$('roomstatus').textContent='Network ready. Create or join a room.'});
-window.AetherGame={get:()=>S,startAI,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel};
+window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel};
 startAI();
 const inviteCode=new URLSearchParams(location.search).get('room');if(inviteCode){startOnline();$('roomid').value=inviteCode.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);$('roomstatus').textContent='Invitation detected. Tap Join Room to connect.'}
 })();

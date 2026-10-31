@@ -5,10 +5,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dominion">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css"><link rel="stylesheet" href="./v20-expansion.css"><link rel="stylesheet" href="./v21-progression.css"><link rel="stylesheet" href="./v22-balance.css"><link rel="stylesheet" href="./v30-shell.css">
-</head><body><main id="game" data-tab="battle">
+</head><body><main id="game" data-tab="home">
 <header class="battle-header"><div class="battle-brand"><h1 class="logo">AETHER <em>DOMINION</em></h1></div>
  <nav class="menu" aria-label="Game mode"><button id="mode-ai" class="modebtn active">SOLO</button><button id="mode-online" class="modebtn">DUEL</button></nav><div id="battle-mode-tag" class="battle-mode-tag">⚔ SOLO BATTLE</div>
- <button id="reset" class="smallbtn" aria-label="Start a new match" title="New match">↻ <span>NEW</span></button></header>
+ <div class="battle-actions"><button id="battle-home" type="button" class="smallbtn" aria-label="Open commander hall" title="Choose a game mode">⌂ <span>MENU</span></button><button id="reset" class="smallbtn" aria-label="Start a new match" title="New match">↻ <span>NEW</span></button></div></header>
 <section class="lobby hidden" id="lobby"><button type="button" id="close-lobby" class="dismiss-room" aria-label="Close room setup">✕ CLOSE</button>
  <div class="lobby-title">✦ The Duel Chamber</div>
  <p>Battle another commander from anywhere. You host, your friend joins using the same room code. No login needed. Both players must keep the game open.</p>
@@ -32,6 +32,18 @@
  <div id="hand" class="hand">Preparing cards...</div>
  <div class="actions"><button id="cycle" aria-label="Redraw selected card">↻ <span>REDRAW</span></button><button id="end" class="end">END TURN <span>→</span></button></div>
 </section>
+<section id="home-screen" class="tab-page" aria-label="Choose your activity">
+ <div class="hall-hero"><span class="hall-kicker">✦ AETHER TACTICS · DOMINION</span><h2>COMMANDER'S HALL</h2><p>Choose your path. No battles begin until you decide.</p>
+  <div class="hall-stats"><span id="home-player">COMMANDER · LV 1</span><span id="home-progress">0 / 12 MISSIONS</span></div></div>
+ <button type="button" id="home-continue" class="hall-continue hidden"><span class="hall-symbol">↪</span><span><strong>CONTINUE YOUR BATTLE</strong><small id="home-current">Resume your saved match</small></span><span class="hall-arrow">›</span></button>
+ <div class="hall-section-title">CHOOSE AN ADVENTURE</div>
+ <button type="button" id="home-campaign" class="hall-choice hall-story"><span class="hall-symbol">🗺</span><span class="hall-choice-text"><strong>STORY CAMPAIGN</strong><small>Explore four regions, choose missions and challenge Crown Trial bosses.</small><em id="home-next-story">Begin with First Footsteps</em></span><span class="hall-arrow">›</span></button>
+ <button type="button" id="home-quick" class="hall-choice hall-skirmish"><span class="hall-symbol">⚔</span><span class="hall-choice-text"><strong>QUICK BATTLE</strong><small>Choose a fresh solo skirmish against the AI, with your own deck.</small></span><span class="hall-arrow">›</span></button>
+ <button type="button" id="home-duel" class="hall-choice hall-private"><span class="hall-symbol">♜</span><span class="hall-choice-text"><strong>PRIVATE DUEL</strong><small>Host or join a friend using an invitation code. Experimental online play.</small></span><span class="hall-arrow">›</span></button>
+ <div class="hall-section-title">PREPARE YOUR ARMY</div>
+ <div class="hall-shortcuts"><button type="button" id="home-cards">▤ <strong>CARDS & DECKS</strong><small>Build your strategy</small></button><button type="button" id="home-forge">✦ <strong>FORGE & LEVELS</strong><small>Upgrade your collection</small></button></div>
+ <p class="hall-footnote">Your commander, collection, and campaign are stored locally on this device. Solo matches can be resumed.</p>
+</section>
 <section id="campaign-screen" class="tab-page hidden" aria-label="Riftfront campaign">
  <div class="page-top"><span class="eyebrow">DOMINION · STORY CAMPAIGN</span><h2>RIFTFRONT CONQUEST</h2><p>Conquer four regions. Face veteran commanders, unusual objectives and ancient guardians.</p></div>
  <div class="campaign-meta"><span id="campaign-count">0 / 12 MISSIONS</span><span id="campaign-stars">✦ 0 SIGILS</span></div>
@@ -42,12 +54,12 @@
  <div class="page-top"><span class="eyebrow">COMMANDER VERSUS COMMANDER</span><h2>THE DUEL CHAMBER</h2><p>Bring your own 24-card deck and challenge a friend. Solo progress remains saved.</p></div>
  <div class="duel-features"><div><b>⚔ PRIVATE DUEL</b><p>Host or join using a shareable room code.</p></div><div><b>◇ FAIR PLAY</b><p>Card levels are equalized, and both decks are verified by the host.</p></div><div><b>◈ CONNECTION STATUS</b><p id="duel-connection">Not connected. Direct peer-to-peer play is experimental.</p></div></div>
  <button id="duel-launch" type="button" class="main-cta">OPEN DUEL CHAMBER</button>
- <button id="duel-return" type="button" class="secondary-cta">RETURN TO BATTLE</button>
+ <button id="duel-return" type="button" class="secondary-cta">RETURN TO HALL</button>
  <button id="duel-solo" type="button" class="secondary-cta">RESTORE SOLO BATTLE</button>
  <div class="duel-note">Two physical devices and their network connection are required to verify live duels. No ranked matchmaking or remote account saves.</div>
 </section>
 <nav id="bottom-tabs" class="bottom-tabs" aria-label="Main game navigation">
- <button type="button" data-page="battle" class="selected" aria-current="page"><span class="nav-icon">⚔</span><span>BATTLE</span></button>
+ <button type="button" data-page="home" class="selected" aria-current="page"><span class="nav-icon">⌂</span><span>PLAY</span></button>
  <button type="button" data-page="campaign"><span class="nav-icon">🗺</span><span>MAP</span></button>
  <button type="button" data-page="cards"><span class="nav-icon">▤</span><span>CARDS</span></button>
  <button type="button" data-page="forge"><span class="nav-icon">✦</span><span>FORGE</span></button>
