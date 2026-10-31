@@ -1,0 +1,138 @@
+/* Dominion v2.1 — Commander progression, match rewards, upgrade collection. */
+#game .hand-tools .profile-open{
+ min-width:46px;height:26px;min-height:26px;padding:0 5px!important;
+ display:grid;place-items:center;border:1px solid #ab9473;border-radius:8px;
+ background:#2e4150;color:#f7dfb1;font:900 10px/1 Georgia,serif;
+ letter-spacing:.1px;box-shadow:none;
+}
+#game .codex-header .build-deck-launch{padding:6px 7px;font-size:9px}
+#game .codex-header #codex-title{font-size:16px!important}
+#game .codex-card-level{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ padding:9px 10px;margin-top:11px;border:1px solid #587d7c;border-radius:8px;
+ color:#ffda9e;background:#153745;font:850 11px system-ui;
+}
+#game .codex-card-level button{
+ padding:6px 8px;border:1px solid #d8c18f;border-radius:6px;
+ color:#16313e;background:#dcc593;font:850 10px system-ui;
+}
+#game .result-rewards{
+ width:100%;margin:9px 0!important;min-height:38px;
+ border:1px solid #e2bf85;border-radius:7px;
+ background:#294b50;color:#ffe3a4;font:850 12px system-ui;
+}
+#game .player-profile{
+ position:absolute;inset:0;z-index:125;display:flex;align-items:flex-end;
+ justify-content:center;background:#030e1ad9;
+ backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+}
+#game .player-profile.hidden{display:none!important}
+#game .profile-panel{
+ display:flex;flex-direction:column;width:min(100%,570px);
+ height:min(88dvh,790px);border:1px solid #71908e;border-bottom:0;
+ border-radius:19px 19px 0 0;overflow:hidden;
+ background:linear-gradient(160deg,#1f4350,#0d2739 45%,#0a1f31);
+ box-shadow:0 -13px 55px #000b;color:#dfeae1;
+}
+#game .profile-head{
+ display:flex;justify-content:space-between;align-items:center;
+ gap:12px;flex:0 0 auto;padding:14px 15px!important;
+ border-bottom:1px solid #759b9370;
+}
+#game .profile-head span{font:850 9px system-ui;letter-spacing:1.4px;color:#9bd7ca}
+#game .profile-head h2{font:850 23px/1 Georgia,serif;margin:5px 0 0!important;color:#f8dbaa}
+#game .profile-head button{
+ flex:0 0 36px;width:36px;height:36px;border:1px solid #77928d;
+ border-radius:9px;background:#284a56;color:#f1e5d3;font:850 20px system-ui;
+}
+#game .profile-body{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#game .profile-level-card{
+ flex:0 0 auto;margin:11px 11px 8px;padding:12px 13px;
+ border:1px solid #b59c75;border-radius:11px;
+ background:linear-gradient(120deg,#334c53,#1a3646);
+}
+#game .profile-rank{display:flex;align-items:center;gap:12px}
+#game .profile-level-number{
+ display:flex;align-items:center;gap:5px;justify-content:center;
+ background:#153648;border:1px solid #b59a73;border-radius:9px;
+ min-width:70px;min-height:57px;padding:0 8px;
+ font:900 15px Georgia,serif;color:#f7d8a2;
+}
+#game .profile-level-number b{font-size:31px}
+#game .profile-rank>div:last-child{display:flex;flex-direction:column;gap:5px}
+#game .profile-rank strong{font:900 12px system-ui;letter-spacing:1px;color:#fce9c8}
+#game .profile-rank small{font:700 11px system-ui;color:#9de1d4}
+#game .profile-xp-bar{height:8px;margin:9px 0;border-radius:9px;overflow:hidden;background:#0f2b37}
+#game .profile-xp-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4eae9d,#9aefd2);border-radius:9px;transition:width .22s}
+#game .profile-currencies{
+ display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;
+ font:800 10px system-ui;color:#bfdad5;
+}
+#game .profile-currencies b{font-size:12px;color:#ffe0a9}
+#game .profile-rewards{flex:0 0 auto;padding:9px 13px;margin:0 11px 8px!important;
+ border:1px solid #56817d;background:#133b48;border-radius:8px}
+#game .profile-rewards h3,#game .profile-upgrade-heading h3{
+ font:900 11px system-ui;letter-spacing:.8px;color:#efcf97;margin:0 0 4px!important;
+}
+#game .profile-rewards p{font:11px/1.35 system-ui;color:#d1e7dd;margin:0!important}
+#game .profile-upgrade-heading{flex:0 0 auto;padding:3px 13px 8px}
+#game .profile-upgrade-heading p{font:10px/1.3 system-ui;color:#a9c9c4;margin:0!important}
+#game .profile-upgrade-list{
+ min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;display:flex;flex-direction:column;
+ gap:6px;padding:0 11px 13px;
+}
+#game .profile-card-row{
+ display:grid;grid-template-columns:48px minmax(0,1fr) 78px;
+ gap:8px;align-items:center;flex:0 0 76px;min-height:76px;
+ border:1px solid #4c757c;border-radius:8px;
+ background:#183746;padding:5px;
+}
+#game .profile-card-art{
+ display:block;position:relative;width:48px;height:62px;
+ border:1px solid #698a8b;border-radius:5px;
+ overflow:hidden;background:#294559;
+}
+#game .profile-card-art .illustrated-portrait{position:absolute;inset:0;background-size:700% 110%}
+#game .profile-card-art img{height:100%;width:100%;object-fit:cover}
+#game .profile-card-art .art-cost{
+ position:absolute;top:1px;left:1px;width:19px;height:19px;
+ display:grid;place-items:center;border:1px solid #dcc59a;border-radius:4px;
+ background:#1d5273;color:#ffe9b2;font:900 12px Georgia,serif;
+}
+#game .profile-card-meta{min-width:0;display:flex;flex-direction:column;gap:4px}
+#game .profile-card-meta strong{
+ color:#f7daa8;font:850 12px/1.1 Georgia,serif;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#game .profile-card-meta small{color:#abdfd6;font:800 10px/1.1 system-ui}
+#game .profile-card-meta span{color:#c8cfbd;font:750 9px/1 system-ui}
+#game .profile-card-row>button{
+ min-height:35px;padding:4px 3px;border-radius:7px;border:1px solid #ead0a1;
+ background:#dec08d;color:#122a3a;font:900 9px/1.15 system-ui;
+}
+#game .profile-card-row>button:disabled{opacity:.48}
+#game .profile-footer{
+ flex:0 0 auto;padding:10px 11px calc(10px + env(safe-area-inset-bottom,0px));
+ display:flex;align-items:center;justify-content:space-between;gap:9px;
+ border-top:1px solid #607f80;background:#0b2533;
+}
+#game .profile-footer span{font:700 9px/1.3 system-ui;color:#a9cbc8;flex:1}
+#game .profile-footer button{
+ min-width:126px;min-height:40px;border:1px solid #eed1a2;
+ border-radius:7px;background:#e6cc9b;color:#1a2b35;font:850 11px system-ui;
+}
+@media(max-width:400px){
+ #game .hand-tools{gap:3px!important}
+ #game .hand-tools .profile-open{min-width:40px;padding:0 3px!important;font-size:9px}
+ #game .command-dock .guide-open{min-width:68px!important;font-size:8px!important}
+ #game .codex-header .build-deck-launch{font-size:8px;padding:5px!important}
+ #game .codex-header{gap:4px!important;padding:9px 9px!important}
+ #game .codex-header #codex-title{font-size:14px!important}
+ #game .profile-panel{height:min(92dvh,790px)}
+ #game .profile-card-row{grid-template-columns:40px minmax(0,1fr) 69px;gap:6px}
+ #game .profile-card-art{width:40px;height:60px}
+ #game .profile-card-meta strong{font-size:11px}
+ #game .profile-card-meta small{font-size:9px}
+ #game .profile-card-row>button{font-size:8px}
+}
