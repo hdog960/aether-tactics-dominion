@@ -303,6 +303,37 @@ function onUnitDeath(u){
   if(ally){const amt=grantShield(ally,2);abilityPulse(ally,'shield',amt)}
  }
 }
+// Multi-phase campaign champions: meaningful changes to positioning and
+// survival rather than simply oversized health bars.
+function bossReaction(boss){
+ if(!S.missionId||boss.id!==S.championId||boss.hp<=0)return;
+ const ratio=boss.hp/Math.max(1,boss.max),phase=boss.bossPhase||0;
+ const mission=MISSION_BY_ID[S.missionId];if(!mission)return;
+ if(ratio<=.65&&phase<1){
+  boss.bossPhase=1;
+  const shield=grantShield(boss,2);if(shield)abilityPulse(boss,'shield',shield);
+  // Bosses call a distinct defender. At most one minion per phase.
+  const minion=mission.id==='t1'?'s':mission.id==='t2'?'b':mission.id==='t3'?'c':
+   mission.region==='frost'?'j':mission.region==='ember'?'c':'v';
+  for(const [xx,yy]of [[boss.x-1,boss.y],[boss.x+1,boss.y],[boss.x,boss.y-1],[boss.x,boss.y+1]]){
+   if(bounds(xx,yy)&&!rocks.has(K(xx,yy))&&!entity(xx,yy)&&
+      !(xx===3&&(yy===0||yy===7))&&S.units.filter(u=>u.team===1).length<8){
+    S.units.push(unit(minion,1,xx,yy,false));break;
+   }
+  }
+  log='The '+mission.name+' guardian calls its defenders!';
+ }
+ if(ratio<=.3&&(boss.bossPhase||0)<2){
+  boss.bossPhase=2;
+  boss.atk=Math.min(7,boss.atk+1);
+  grantShield(boss,1);
+  if(mission.id==='t3'){
+   const hazard=K(3,4);
+   if(!(S.hazards||[]).includes(hazard))S.hazards.push(hazard);
+  }
+  log='Final phase! The guardian draws on the Rift.';
+ }
+}
 function onSacrifice(t){
  for(const u of S.units.filter(v=>v.team===t&&v.k==='B'&&v.oathRound!==S.round)){
   u.oathRound=S.round;const amt=grantShield(u,2);u.oathBonus=1;abilityPulse(u,'shield',amt);
@@ -434,7 +465,8 @@ function applyDamage(target,n){if(target.core){
   const objectiveCore=S.missionId&&target.team===1&&S.missionGoal!=='assault';
   S.hp[target.team]=Math.max(objectiveCore?1:0,S.hp[target.team]-n);
   if(S.hp[target.team]===0){S.phase='over';S.winner=1-target.team}
- }else{let absorb=Math.min(target.shield,n);target.shield-=absorb;target.hp-=n-absorb;if(target.hp<=0){onUnitDeath(target);S.units=S.units.filter(u=>u.id!==target.id)}}}
+ }else{let absorb=Math.min(target.shield,n);target.shield-=absorb;target.hp-=n-absorb;if(target.hp>0&&target.boss)bossReaction(target);
+  if(target.hp<=0){onUnitDeath(target);S.units=S.units.filter(u=>u.id!==target.id)}}}
 
 function endSupportTurn(team){
  const supports=S.units.filter(u=>u.team===team&&u.k==='p');
