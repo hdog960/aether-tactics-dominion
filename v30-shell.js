@@ -65,7 +65,7 @@ function onMission(e){
  const button=e.target.closest('button[data-mission]');if(!button||button.disabled)return;
  const id=button.dataset.mission,S=G.get();
  if(S?.missionId===id&&S.phase==='playing'){showTab('battle');return}
- if(S?.phase==='playing'&&S.round>1){
+ if(S?.mode==='online'||S?.phase==='playing'&&S.round>1){
   if(!window.confirm('Starting this mission replaces your current solo battle. Your player levels and completed missions will be kept. Continue?'))return;
  }
  if(G.startMission(id))showTab('battle');
@@ -84,13 +84,14 @@ function renderDuel(){
 $('duel-launch').addEventListener('click',()=>{
  const s=G.get();
  if(s?.mode!=='online'){
-  if(s?.phase==='playing'&&s.round>1&&!confirm('Your current solo battle is saved. Open private duels?'))return;
+  if((s?.missionId||s?.phase==='playing'&&s.round>1)&&!confirm('Your current solo battle is saved. Open private duels?'))return;
   $('mode-online').click();
  }else if(s.phase==='waiting')$('mode-online').click();
  showTab('battle');
  if(s?.mode!=='online'||s.phase==='waiting')$('lobby').classList.remove('hidden');
 });
 $('duel-return').addEventListener('click',()=>showTab('battle'));
+$('duel-solo').addEventListener('click',()=>{if(G.get()?.mode==='online')$('mode-ai').click();showTab('battle')});
 // Shortcut actions open their dedicated tabs, even when triggered from Battle.
 $('card-guide').addEventListener('click',()=>{if(active!=='cards')showTab('cards',{preserveDetail:true})});
 $('hand').addEventListener('click',e=>{
