@@ -6,7 +6,7 @@
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css">
 </head><body><main id="game">
-<header><div><div class="eyebrow">✧ The Shattered Planes · Act I</div><h1 class="logo">AETHER TACTICS<em>DOMINION</em></h1><div class="subtitle">The Illustrated Rift · v0.6</div></div><button id="reset" class="smallbtn">↻ NEW MATCH</button></header>
+<header><div><div class="eyebrow">✧ The Shattered Planes · Act I</div><h1 class="logo">AETHER TACTICS<em>DOMINION</em></h1><div class="subtitle">The Living Rift · v0.7</div></div><button id="reset" class="smallbtn">↻ NEW MATCH</button></header>
 <div class="menu"><button id="mode-ai" class="modebtn active">⚔ Solo Campaign</button><button id="mode-online" class="modebtn">✦ Online Duel</button></div>
 <section class="lobby hidden" id="lobby">
  <div class="lobby-title">✦ The Duel Chamber</div>
@@ -16,7 +16,7 @@
  <p style="margin-bottom:0">Experimental peer-to-peer connection uses public signaling relays. Some cellular networks may block it; if so, try Wi-Fi. Matches pause if either player disconnects.</p>
 </section>
 <section class="hud"><div class="core"><label>✦ YOUR AETH CORE</label><div class="hpbig" id="selfhp">24 <small>/24</small></div><div class="meter"><i id="selfmeter"></i></div></div><div class="mid"><small>ROUND</small><b id="round">1</b><span id="turnlabel">YOUR TURN</span></div><div class="core enemy"><label>✧ RIVAL CORE</label><div class="hpbig" id="rivalhp">24 <small>/24</small></div><div class="meter"><i id="rivalmeter"></i></div></div></section>
-<section class="vista" aria-label="Riftfront battle arena"><div class="sky"><div class="moon"></div><div class="beam"></div><div class="mount back"></div><div class="mount"></div></div><div class="vista-top"><span>✦ THE LUMINOUS RIFT</span><small>55° ILLUSTRATED ARENA · 7 × 8</small></div><div class="arena" id="vista-stage"><canvas id="battle-canvas" aria-label="Angled 32-bit-inspired pixel fantasy tactical battlefield" role="img"></canvas><div id="board" class="board" aria-label="Interactive tactical battlefield">Preparing commands...</div></div>
+<section class="vista" aria-label="Riftfront battle arena"><div class="sky"><div class="moon"></div><div class="beam"></div><div class="mount back"></div><div class="mount"></div></div><div class="vista-top"><span>✦ THE LUMINOUS RIFT</span><small>55° NATURAL STONE ARENA · 7 × 8</small></div><div class="arena" id="vista-stage"><canvas id="battle-canvas" aria-label="Angled 32-bit-inspired pixel fantasy tactical battlefield" role="img"></canvas><div id="board" class="board" aria-label="Interactive tactical battlefield">Preparing commands...</div></div>
 <div id="gameover" class="overlay hidden"><div class="modal"><div style="font-size:30px">✦</div><h2 id="resulttitle">BATTLE COMPLETE</h2><p id="resultdesc"></p><button id="again" class="primary">FIGHT AGAIN</button></div></div></section>
 <div class="legend"><span>✦ SPRING +1 AETH</span><span>⌃ RAISED +1 DAMAGE</span><span>◈ ROCKS BLOCK SHOTS</span><span>◆ TAP TO COMMAND</span></div>
 <div class="hint"><div id="instruction"><b>Preparing battle...</b></div><small id="tip">Summon your units and conquer the rival Core.</small></div>
@@ -26,6 +26,6 @@
 <div id="feed" class="feed">Riftfront Valley is waking.</div>
 <div class="alert">Early online playtest · The room host adjudicates moves. WebRTC needs a direct connection between the two phones; no server-stored match history yet. Single player saves locally.</div>
 </main>
-<script defer src="./v05-art.js"></script><script defer src="./v06-engine.js"></script><script defer src="./v06-scene.js"></script><script type="module" src="./v04-net.js"></script>
+<script defer src="./v05-art.js"></script><script defer src="./v06-engine.js"></script><script defer src="./v07-scene.js"></script><script type="module" src="./v04-net.js"></script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
 </body></html>
