@@ -343,3 +343,13 @@
  #game .rules-content{padding:0 12px}
  #game .rules-section{padding:8px 0}
 }
+
+/* Cover the numbers baked into some early artwork with the actual game costs. */
+#game .codex-entry-image .art-cost,#game .codex-illustration .art-cost{
+ position:absolute;z-index:8;top:1px;left:1px;display:grid;place-items:center;
+ border:1px solid #e6c68c;border-radius:50%;background:linear-gradient(#447b93,#173b57);
+ box-shadow:0 1px 4px #061521bb;color:#fceecb;
+ font:900 12px/1 Georgia,serif;text-shadow:0 1px #071927;
+ width:22px;height:22px;
+}
+#game .codex-illustration .art-cost{width:29px;height:29px;font-size:16px;border-width:2px}
