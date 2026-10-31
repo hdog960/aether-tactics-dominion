@@ -188,11 +188,11 @@ function resolveSpell(q,t,x,y){
  if(type==='shield'){target.shield+=4;abilityPulse(target,'shield',4)}
  else if(type==='heal'){const heal=Math.min(4,target.max-target.hp);target.hp+=heal;
    target.moved=false;target.attacked=false;abilityPulse(target,'heal',heal)}
- else if(type==='dash'){target.moved=false;target.stride=0;target.dashRound=S.round;abilityPulse(target,'shield',0)}
+ else if(type==='dash'){target.moved=false;target.stride=0;target.dashRound=S.round;abilityPulse(target,'dash',0)}
  else if(type==='cleanse'){target.rooted=false;target.burning=false;target.shield+=2;abilityPulse(target,'shield',2)}
  else if(type==='rally'){
   for(const ally of S.units.filter(v=>v.team===t&&d(v,target)<=1)){
-   ally.rallied=1;abilityPulse(ally,'shield',0);
+   ally.rallied=1;abilityPulse(ally,'rally',0);
   }
  }else if(['frost','ignite'].includes(type)){
   const amount=mitigate(target,q.power,false);fxSpell(target,amount,type,x,y,t);applyDamage(target,amount);
