@@ -124,9 +124,18 @@ function drawCell(x,y,t){
  ellipse(z[0],z[1]-2,12,5,'#293f477f');
  line([z[0]-8,z[1]-3],[z[0]+8,z[1]-3],'#b2c2a648',1.5);
  if(flags.includes('showdeploy')||flags.includes('showmove')||flags.includes('showattack')||flags.includes('selected')||flags.includes('tribute')){
-  let glow=flags.includes('showattack')||flags.includes('tribute')?'#ff9bb8':flags.includes('selected')?'#ffe6aa':'#95ffda';
-  poly(points,'#70fff013',glow,5);
-  ellipse(z[0],z[1],15,5,glow+'55');
+  const isDeploy=flags.includes('showdeploy'),isAttack=flags.includes('showattack')||flags.includes('tribute');
+  let glow=isAttack?'#ffa9b6':flags.includes('selected')?'#ffe6aa':'#9cffe0';
+  const pulse=.65+.25*Math.sin(t/240+x*1.1+y*.7);
+  c.save();
+  c.globalAlpha=pulse;
+  poly(points,isDeploy?'#7bffcf4a':'#77ffdc2b',glow,isDeploy?7:5);
+  ellipse(z[0],z[1],isDeploy?21:15,isDeploy?8:5,glow+'99');
+  if(isDeploy){
+   line([z[0]-10,z[1]],[z[0]+10,z[1]],'#ecfff0',2.6);
+   line([z[0],z[1]-7],[z[0],z[1]+7],'#ecfff0',2.6);
+  }
+  c.restore();
  }
  if(rocky){rock(z[0],z[1]+3,35+15*y/8,.8+y/10,x+y*7)}
  if(spring)crystal(z[0],z[1]+6,.67+y*.035,false,t);
@@ -138,8 +147,9 @@ function drawCell(x,y,t){
   const art=imageFor(u.k),ww=112*scale,hh=152*scale;
   ellipse(z[0],z[1]+5,29*scale,10*scale,front?'#041c288f':'#35182c99');
   if(monsterAtlas.complete&&monsterAtlas.naturalWidth&&monsterFrames[u.k]!==undefined){
-   const atlasID=monsterFrames[u.k],vw=116*scale,vh=139*scale;
+   const atlasID=monsterFrames[u.k],vw=144*scale,vh=166*scale;
    c.save();c.imageSmoothingEnabled=false;
+   c.shadowColor=front?'#69f7da':'#fc839e';c.shadowBlur=10*scale;
    if(!front)c.filter='hue-rotate(135deg) saturate(1.2) brightness(.91)';
    c.drawImage(monsterAtlas,atlasID*128+4,20,120,120,z[0]-vw/2,z[1]-vh+17*scale+Math.sin(t/410+u.id)*2.1,vw,vh);c.restore();
   }else if(art.complete&&art.naturalWidth){
@@ -175,7 +185,7 @@ cn.addEventListener('pointerup',e=>{
  for(let row=7;row>=0;row--)for(let vx=0;vx<7;vx++){
    let ay=seat===0?row:7-row,ax=seat===0?vx:6-vx;
    const u=game.units.find(q=>q.x===ax&&q.y===ay);if(!u)continue;
-   const z=center(vx,row),sc=.58+row/8*.5,sw=95*sc,sh=125*sc;
+   const z=center(vx,row),sc=.58+row/8*.5,sw=132*sc,sh=164*sc;
    if(x>z[0]-sw/2&&x<z[0]+sw/2&&y>z[1]-sh&&y<z[1]+9){board.children[row*7+vx]?.click();return}
  }
  for(let row=7;row>=0;row--)for(let vx=0;vx<7;vx++){if(pointInPoly(x,y,tile(vx,row,board.children[row*7+vx]?.className.includes('high')?13:0))){board.children[row*7+vx]?.click();return}}
