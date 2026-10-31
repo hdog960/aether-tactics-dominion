@@ -190,7 +190,16 @@ cn.addEventListener('pointerup',e=>{
  const scale=(fit==='contain'?Math.min:Math.max)(bounds.width/W,bounds.height/H);
  const padX=(bounds.width-W*scale)/2,padY=(bounds.height-H*scale)/2;
  const x=(e.clientX-bounds.left-padX)/scale,y=(e.clientY-bounds.top-padY)/scale;
- // Unit silhouettes above the slab remain tappable
+ // A selected summon/spell targets the actual ground tile FIRST.
+ // Large illustrative sprites must not steal deployment taps from neighboring cells.
+ if(selectedCard>=0){
+  for(let row=7;row>=0;row--)for(let vx=0;vx<7;vx++){
+   const tileButton=board.children[row*7+vx];
+   const lift=tileButton?.className.includes('high')?13:0;
+   if(pointInPoly(x,y,tile(vx,row,lift))){tileButton?.click();return}
+  }
+ }
+ // With no selected card, painted monster silhouettes remain tappable.
  for(let row=7;row>=0;row--)for(let vx=0;vx<7;vx++){
    let ay=seat===0?row:7-row,ax=seat===0?vx:6-vx;
    const u=game.units.find(q=>q.x===ax&&q.y===ay);if(!u)continue;
