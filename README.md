@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current release: v3.2 — Celestial Court**
+**Current release: v3.3 — Unified Pixel-Fantasy Card Art**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -31,10 +31,16 @@ The Duel Chamber uses experimental peer-to-peer WebRTC and public signaling rela
 - `v30-shell.js` bottom-tab navigation and campaign selector
 - `v30-scene.js` game canvas, `v30-net.js` private duel networking
 - `v32-celestial.css` illustrated v3.2 theme and layout
+- `v33-art.js` illustrated card variants for all 25 previously geometric placeholders, derived from the existing painted card atlas
+- `v33-art-fixes.css` consistent card-grid proportions, readable card names, and duplicate mana badge corrections
 - `v32-details.js` presentation-only decoration and accurate trophy display
 - `art/ui-*.svg` seven original self-hosted fantasy scene illustrations
 - `sw.js` offline asset cache, `manifest.webmanifest` Home Screen support
-- `V32_VISUAL_OVERHAUL.md` implementation details and remaining QA
+- `V32_VISUAL_OVERHAUL.md` initial visual overhaul
+- `V33_ART_CONSISTENCY.md` art-pipeline analysis, changes, and remaining individual-portrait art goals
 - `V30_RELEASE_AND_TESTING.md` base campaign tests and `BALANCE_AUDIT_v22.md` earlier balance review
 
 The personal domain `huntermakesgame.com` is not altered by this repository.
+
+## v3.3 Art note
+All 32 card portraits now use the original seven painted atlas frames or illustrated variants derived from them. This replaces the 25 former flat geometric fallback portraits and corrects clipped card names. The new derived illustrations share base source archetypes rather than each having independently painted character art. The battlefield keeps transparent unit sprites to avoid drawing full rectangular portraits on the tactical grid.
