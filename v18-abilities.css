@@ -1,0 +1,38 @@
+/* Dominion v1.8: innate powers on the actual game cards and in the Grimoire. */
+#game .command-dock .portrait .portrait-type.ability-label{
+ left:4px!important;right:4px;bottom:4px;
+ display:block;max-width:calc(100% - 8px);overflow:hidden;
+ white-space:nowrap;text-overflow:ellipsis;
+ padding:3px 4px!important;border-radius:4px;
+ color:#ffe7b4!important;background:#112d40e6!important;
+ font:900 clamp(7px,1.8vw,10px)/1.1 system-ui!important;
+ letter-spacing:0!important;box-shadow:0 1px 5px #08162280;
+}
+#game .codex-ability{
+ border:1px solid #457f83;border-left:3px solid #78e3d6;border-radius:8px;
+ background:linear-gradient(115deg,#1b4855,#153649);
+ padding:10px 12px;margin:3px 0 12px;
+}
+#game .codex-ability strong{
+ display:block;color:#ffdfa7;font:900 15px/1.2 Georgia,serif;
+ margin:0 0 5px;
+}
+#game .codex-ability p{
+ color:#d7eee5;font:12px/1.43 system-ui;
+ margin:0!important;
+}
+#game .codex-entry-main{gap:4px!important}
+#game .codex-entry-ability{
+ display:block!important;color:#f2d69e!important;
+ font:800 9px/1.15 system-ui!important;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ max-width:100%;
+}
+#game .codex-entry-main .codex-entry-statline{font-size:9px}
+@media(max-width:400px){
+ #game .command-dock .portrait .portrait-type.ability-label{
+  font-size:7px!important;letter-spacing:-.1px!important;
+ }
+ #game .codex-entry-ability{font-size:8px!important}
+ #game .codex-entry-main{gap:3px!important}
+}
