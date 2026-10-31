@@ -19,7 +19,7 @@
 <section class="hud" aria-label="Match status"><div class="core"><div class="core-line"><label>YOUR CORE</label><div class="hpbig" id="selfhp">24 <small>/24</small></div></div><div class="meter"><i id="selfmeter"></i></div></div>
  <div class="mid"><div class="round-line"><small>RD</small><b id="round">1</b></div><span id="turnlabel">YOUR TURN</span></div>
  <div class="core enemy"><div class="core-line"><label>RIVAL CORE</label><div class="hpbig" id="rivalhp">24 <small>/24</small></div></div><div class="meter"><i id="rivalmeter"></i></div></div></section>
-<section class="vista" aria-label="Riftfront battle arena"><div class="sky"><div class="moon"></div><div class="beam"></div><div class="mount back"></div><div class="mount"></div></div><div class="vista-top"><span>✦ RIFTFRONT</span><small>BLUE MOVE · RED ATTACK · VIOLET SPELL</small></div><div class="arena" id="vista-stage"><canvas id="battle-canvas" aria-label="Angled 32-bit-inspired pixel fantasy tactical battlefield" role="img"></canvas><div id="board" class="board" aria-label="Interactive tactical battlefield">Preparing commands...</div></div>
+<section class="vista" aria-label="Riftfront battle arena"><div class="sky"><div class="moon"></div><div class="beam"></div><div class="mount back"></div><div class="mount"></div></div><div class="vista-top"><span id="arena-label">✦ RIFTFRONT</span><small id="arena-details">BLUE MOVE · RED ATTACK · VIOLET SPELL</small></div><div class="arena" id="vista-stage"><canvas id="battle-canvas" aria-label="Angled 32-bit-inspired pixel fantasy tactical battlefield" role="img"></canvas><div id="board" class="board" aria-label="Interactive tactical battlefield">Preparing commands...</div></div>
 <div id="gameover" class="overlay hidden"><div class="modal"><div style="font-size:30px">✦</div><h2 id="resulttitle">BATTLE COMPLETE</h2><p id="resultdesc"></p><button id="result-rewards" type="button" class="result-rewards">★ REWARDS & PROGRESS</button><button id="again" class="primary">FIGHT AGAIN</button></div></div></section>
 <div class="legend"><span>✦ SPRING +1 AETH</span><span>⌃ RAISED +1 DAMAGE</span><span>◈ ROCKS BLOCK SHOTS</span><span>◆ TAP TILES, NOT SPRITES</span></div>
 <section class="command-dock" aria-label="Your cards and turn controls">
@@ -102,7 +102,7 @@
     <div class="profile-currencies"><span>◈ <b id="profile-gold">0</b> GOLD</span><span>⚔ <b id="profile-wins">0</b> WINS</span><span>◆ <b id="profile-matches">0</b> MATCHES</span></div>
    </section>
    <section class="profile-rewards"><h3>LATEST MATCH</h3><p id="profile-reward-text">Complete a match to earn XP, gold and card copies.</p></section>
-   <div class="profile-upgrade-heading"><h3>CARD UPGRADES</h3><p>Collect card copies from matches, then spend gold to upgrade. Every card is available at level 1.</p></div>
+   <div id="profile-achievements" class="profile-achievements">MILESTONES · 0/6</div><div class="profile-upgrade-heading"><h3>CARD UPGRADES</h3><p>Collect card copies from matches, then spend gold to upgrade. Every card is available at level 1.</p></div>
    <div id="profile-upgrade-list" class="profile-upgrade-list" aria-label="Card upgrades"></div>
   </div>
   <footer class="profile-footer"><span>Upgrades affect solo matches only. Duels use equal stats.</span><button id="profile-done" type="button">BACK TO GAME</button></footer>
@@ -127,6 +127,6 @@
   </div>
 </section>
 </main>
-<script defer src="./v21-art.js"></script><script defer src="./v30-engine.js"></script><script defer src="./v30-scene.js"></script><script type="module" src="./v30-net.js"></script>
+<script defer src="./v21-art.js"></script><script defer src="./v30-campaign-data.js"></script><script defer src="./v30-engine.js"></script><script defer src="./v30-scene.js"></script><script type="module" src="./v30-net.js"></script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
 <script defer src="./v30-shell.js"></script></body></html>
