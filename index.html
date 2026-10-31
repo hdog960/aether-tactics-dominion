@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#0c1b2d"><meta name="description" content="Richer detailed 32-bit-era pixel fantasy. A 55° tactical floating island in a luminous rift.">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dominion">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css">
+<link rel="stylesheet" href="./v04-style.css"><link rel="stylesheet" href="./v05-style.css"><link rel="stylesheet" href="./v06-style.css"><link rel="stylesheet" href="./v08-onescreen.css"><link rel="stylesheet" href="./v15-grimoire.css"><link rel="stylesheet" href="./v16-ui.css"><link rel="stylesheet" href="./v17-layout.css"><link rel="stylesheet" href="./v18-abilities.css"><link rel="stylesheet" href="./v20-expansion.css">
 </head><body><main id="game">
 <header class="battle-header"><div class="battle-brand"><h1 class="logo">AETHER <em>DOMINION</em></h1></div>
  <nav class="menu" aria-label="Game mode"><button id="mode-ai" class="modebtn active">SOLO</button><button id="mode-online" class="modebtn">DUEL</button></nav>
@@ -34,7 +34,7 @@
 </section>
 <section id="codex" class="codex hidden" role="dialog" aria-modal="true" aria-labelledby="codex-title">
   <div class="codex-panel">
-    <div class="codex-header"><div><span class="codex-kicker">✧ COMMANDER'S REFERENCE</span><h2 id="codex-title">THE GRIMOIRE</h2></div><button id="codex-close" class="codex-close" type="button" aria-label="Close card information">✕</button></div>
+    <div class="codex-header"><div><span class="codex-kicker">✧ COMMANDER'S REFERENCE</span><h2 id="codex-title">THE GRIMOIRE</h2></div><button type="button" id="open-builder" class="build-deck-launch">⚒ BUILD DECK</button><button id="codex-close" class="codex-close" type="button" aria-label="Close card information">✕</button></div>
     <div id="codex-library" class="codex-library">
       <div id="codex-tabs" class="codex-tabs" role="group" aria-label="Cards to browse">
         <button type="button" data-tab="hand" class="active">HAND <span id="codex-hand-count">4</span></button>
@@ -52,6 +52,24 @@
   </div>
 </section>
 
+<section id="deck-builder" class="deck-builder hidden" role="dialog" aria-modal="true" aria-labelledby="deck-builder-title">
+ <div class="deck-panel">
+ <header class="deck-header"><div><span>COMMANDER'S ARMORY</span><h2 id="deck-builder-title">BUILD YOUR DECK</h2><p id="deck-status">Choose a strategy for your next match.</p></div><button id="deck-close" type="button" aria-label="Close deck builder">✕</button></header>
+ <div class="deck-content">
+  <div id="deck-presets" class="deck-presets" role="group" aria-label="Choose a playstyle">
+   <button type="button" data-preset="Balanced">BALANCED<small>Versatile</small></button>
+   <button type="button" data-preset="Assault">ASSAULT<small>Aggressive</small></button>
+   <button type="button" data-preset="Fortress">FORTRESS<small>Defensive</small></button>
+   <button type="button" data-preset="Arcane">ARCANE<small>Spellcraft</small></button>
+   <button type="button" data-preset="Skirmish">SKIRMISH<small>Mobility</small></button>
+  </div>
+  <div class="deck-tallies"><b><span id="deck-size">24/24</span> CARDS</b><span><b id="deck-unit-count">16</b> UNITS</span><span><b id="deck-spell-count">8</b> SPELLS</span></div>
+  <p class="deck-instructions">Tap − to remove cards, then + to replace them. Up to 3 copies each; at least 12 units and 3 unit types; at most 2 mythics.</p>
+  <div id="deck-cards" class="deck-cards" aria-label="Choose the contents of your deck"></div>
+ </div>
+ <footer class="deck-bottom"><p id="deck-validation" role="status">Deck ready.</p><div class="deck-buttons"><button type="button" id="deck-cancel">CANCEL</button><button type="button" id="deck-save">SAVE FOR NEXT MATCH</button></div></footer>
+ </div>
+</section>
 <div id="feed" class="feed">Riftfront Valley is waking.</div>
 <div class="alert">Early online playtest · The room host adjudicates moves. WebRTC needs a direct connection between the two phones; no server-stored match history yet. Single player saves locally.</div>
 <section id="rules-sheet" class="rules-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="rules-title">
@@ -71,6 +89,6 @@
   </div>
 </section>
 </main>
-<script defer src="./v05-art.js"></script><script defer src="./v18-engine.js"></script><script defer src="./v19-scene.js"></script><script type="module" src="./v04-net.js"></script>
+<script defer src="./v20-art.js"></script><script defer src="./v20-engine.js"></script><script defer src="./v20-scene.js"></script><script type="module" src="./v20-net.js"></script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
 </body></html>
