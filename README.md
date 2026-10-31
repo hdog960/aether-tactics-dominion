@@ -1,40 +1,42 @@
 # Aether Tactics: Dominion
 
-**v0.5 — The Luminous Rift** is a public iPhone-friendly tactical card battler hosted on GitHub Pages.
+**Current public release: v3.1 — Commander's Hall and Riftfront Conquest**
 
-**Play:** https://hdog960.github.io/aether-tactics-dominion/
+**Play on iPhone:** https://hdog960.github.io/aether-tactics-dominion/
 
-## What's in v0.5
-- True oblique 55-degree camera rendered on a pixel-accurate canvas, not a flat top-down grid
-- Depth-sorted monster sprites on raised, perspective-projected floating stone tiles, with near/far perspective scaling
-- Multi-layer atmospheric world: floating cliffs, carved ruins, moonlit mountains, chasm waterfalls, glowing crystals and altar architecture
-- Replaced 32×40 placeholders with new richly shaded 112×152 pixel sprites for eight units and four spells, rendered using nearest-neighbor scaling
-- Crystal pillars, springs, Aeth Cores, and redesigned illustrated card hand
-- AI solo matches, automatic local solo save
-- Experimental **online two-player duels** via private room codes and invite links
-- Host-authoritative move validation, shared turns, synchronized Aeth, hands, HP, units, and reconnect when both clients return
+A mobile-first, tactical fantasy card battler with a 55-degree isometric battlefield, 32 original cards, upgradeable 24-card decks, a four-region campaign, and experimental private duels.
 
-## How to test online
-1. Both players open the game in Safari.
-2. Host taps **ONLINE DUEL** then **CREATE ROOM**.
-3. Host taps **SHARE INVITE LINK**, or sends the displayed six-character room code.
-4. Friend opens the link and taps **JOIN**, or enters the code and taps **JOIN**.
-5. After the connection succeeds, host plays first; friend plays second. Both should see the same battlefield.
-6. Note any bugs, connection issues, visual feedback, and balance concerns.
+## Getting started
+1. Open the game in Safari. The **Commander's Hall** lets you choose what to play.
+2. Tap **Story Campaign** or **Map** to select from 12 missions spanning Rune Valley, Frostglass Reach, Ashen Crucible, and Crownfall Sanctum. The first mission is *First Footsteps*.
+3. Choose **Quick Battle** for a fresh solo AI skirmish, or **Private Duel** to host or join a friend's room (experimental).
+4. Use **Cards** to inspect and construct decks; use **Forge** to review XP, gold, achievements, mastery, and upgrade cards.
+5. From a battle, tap **MENU** to return to the Hall, then **Continue Your Battle** to resume.
 
-**Note:** The online mode uses Trystero over WebRTC with public Nostr signaling relays. No separate paid service is needed for this experiment, but peer-to-peer connectivity is not guaranteed on all Wi-Fi/cellular networks. There is currently no TURN fallback, cloud-saved match history, account system, or anti-cheat server. The host must stay connected. Never use this as ranked/public matchmaking without stronger backend support.
+The Map loads as a scrollable four-region mission selector with objectives, lock/unlock status, sigils, and Crown Trials after completing the story.
 
-## Engineering
-- \`index.html\`: v0.5 production entrypoint; \`v05.html\`: staged release; \`v04.html\`: previous version backup
-- \`v04-style.css\` and \`v05-style.css\`: responsive card, HUD, and angled scene framing
-- \`v05-art.js\`: 112×152 shaded pixel monster/portrait renderer
-- \`v05-scene.js\`: perspective tile projection, lighting, architecture, particle effects, interactive hit tests and unit depth sorting
-- \`v04-engine.js\`: game logic, validation, display, AI, multiplayer integration
-- \`v04-net.js\`: WebRTC room networking
-- \`sw.js\`: offline service worker and update cache
-- \`manifest.webmanifest\` and icons: iPhone Home Screen support
+## Game systems
+- Tactical positioning, movement, cover, elevation, Aeth springs, spells, sacrifices, and unit abilities
+- 32 card types with seven 24-card deck archetypes, each with counterplay
+- Local commander XP, gold, card duplicates, upgrades, and six achievements
+- Twelve campaign missions with distinct victory objectives and regions; three multi-phase endgame Crown Trials
+- Save/resume support using browser local storage on the same device
+- Private peer-to-peer duel experiments with level equalization; **not production-grade matchmaking**
 
-Repository intentionally has no custom \`CNAME\`; **huntermakesgame.com stays unchanged**. Updates to \`main\` deploy through GitHub Pages. To install on iPhone, open the game in Safari and choose Share → Add to Home Screen.
+## Important limitations
+- **Online:** WebRTC via public relay signaling may fail across some cellular/Wi-Fi configurations. Two-device live verification is still required. There is no ranked matchmaking, anti-cheat backend, cloud account sync, leaderboards, or server-persisted recovery.
+- **Offline:** Home Screen caching is supported. After an update, reopening the app while online allows the new cache to be installed.
+- **Saves:** Browser device data is local. Clearing Safari website data or using a private tab may lose progress.
+- **Quality assurance:** Automated progression and mission checks passed for v3.0; the v3.1 navigation regression fix has been source and syntax checked, but exact iPhone layout and multiplayer still need hands-on testing.
 
-## Visual QA & rollout
-A targeted browser automation QA of v0.5 confirmed the angled canvas renders, the game loads with both opposing factions, all four cards and controls are populated, and card selection updates the interface. This is not a full iPhone graphics/performance audit or a verified cross-state, two-phone multiplayer test. An additional card-portrait visibility safeguard was incorporated before production promotion.
+## Repository layout
+- `index.html`: main release; `v30.html`: parallel entrypoint
+- `v30-shell.js`, `v30-shell.css`: Hall, tabs, campaign selector and Duel hub
+- `v30-campaign-data.js`: region layouts, twelve missions, and three Crown Trials
+- `v30-engine.js`: battle engine, cards, persistence, progression, and AI
+- `v30-scene.js`, `v30-net.js`: renderer and peer networking
+- `sw.js`: local offline asset cache; `manifest.webmanifest`: Home Screen support
+- `V30_RELEASE_AND_TESTING.md`: release and verification notes
+- `BALANCE_AUDIT_v22.md`: prior balance and exploit review
+
+The existing GitHub Pages domain remains independent of huntermakesgame.com. Source changes on `main` update the hosted game. Historical versions are retained for recovery and reference.
