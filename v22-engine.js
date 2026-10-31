@@ -202,6 +202,9 @@ function grantShield(u,n){const old=Math.min(MAX_SHIELD,Math.max(0,u.shield||0))
 function powerFor(q,t){const k=CARD_KEYS.find(k=>D[k]===q);return(q.power||0)+spellBonus(k,t)}
 
 function afterMove(u){
+ // Entering a concealed snare resolves before arrival-based shield bonuses.
+ trapImpact(u);
+ if(!S.units.some(v=>v.id===u.id))return;
  if(u.k==='v'&&u.braceRound!==S.round&&u.shield<1&&
     S.units.some(v=>v.team!==u.team&&d(v,u)===1)){
   grantShield(u,1);u.braceRound=S.round;abilityPulse(u,'shield',1);
@@ -217,7 +220,6 @@ function afterMove(u){
    grantShield(u,1);u.escortRound=S.round;abilityPulse(u,'shield',1);
   }
  }
- trapImpact(u);
 }
 function damage(u,target){
  let n=u.atk+(high.has(K(u.x,u.y))&&!high.has(K(target.x,target.y))?1:0);
