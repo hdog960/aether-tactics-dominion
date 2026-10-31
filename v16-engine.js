@@ -214,9 +214,10 @@ const GUIDE={
  h:{feature:'Restore health and refresh actions.',detail:'Heal an allied unit by up to 4 (without exceeding maximum health). That unit can move and attack again this turn.',tip:'Use on an injured attacker after it has already acted for an extra action.'}
 };
 let guideTab='hand',guideKey=null;
-const codex=(id)=>$(id),guideImage=k=>portraitIndices[k]===undefined
+const codex=(id)=>$(id),guideImage=k=>(portraitIndices[k]===undefined
  ?'<img alt="" draggable="false" src="'+Art.get(k)+'">'
- :'<div class="illustrated-portrait" aria-hidden="true" style="--art-pos:'+portraitPositions[k]+'%"></div>';
+ :'<div class="illustrated-portrait" aria-hidden="true" style="--art-pos:'+portraitPositions[k]+'%"></div>')+
+ '<span class="art-cost" aria-label="'+D[k].cost+' Aeth">'+D[k].cost+'</span>';
 function guideCount(list,k){return list.reduce((n,id)=>n+(id===k?1:0),0)}
 function guideInventory(){
  if(!S)return [];
