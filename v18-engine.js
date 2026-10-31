@@ -406,9 +406,9 @@ function render(){
    (chosenCard===i?' picked':'')+(q.cost>S.energy[my]||S.turn!==my?' cant':'')+
    '" data-card="'+i+'" aria-label="Select '+q.name+', '+q.cost+' Aeth">'+
    '<div class="portrait">'+portrait+'<span class="portrait-cost" aria-hidden="true">'+q.cost+'</span>'+
-   '<span class="portrait-type">'+(q.spell?'SPELL':q.tribute?'MYTHIC':'UNIT')+'</span></div>'+
+   '<span class="portrait-type'+(q.ability?' ability-label':'')+'">'+(q.ability?'✦ '+q.ability:q.spell?'SPELL':q.tribute?'MYTHIC':'UNIT')+'</span></div>'+
    '<div class="card-foot"><div class="cardname">'+q.name+'</div>'+
-   '<div class="cardstats">'+(q.ability?'✦ '+q.ability:stats)+'</div></div></button>'+
+   '<div class="cardstats">'+stats+'</div></div></button>'+
    '<button type="button" class="card-info" data-card-info="'+i+'" aria-label="Inspect '+q.name+' without playing it">i</button></div>';
  }).join('');
  renderLabels();
