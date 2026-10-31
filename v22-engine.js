@@ -213,6 +213,8 @@ function afterMove(u){
   if(nearby.length){
    const ally=nearby[0];grantShield(ally,1);u.escortRound=S.round;
    abilityPulse(ally,'shield',1);log='Slipstream: '+D[ally.k].name+' receives a shield.';
+  }else if((u.shield||0)<1){
+   grantShield(u,1);u.escortRound=S.round;abilityPulse(u,'shield',1);
   }
  }
  trapImpact(u);
