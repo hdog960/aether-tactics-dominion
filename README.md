@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current release: v3.3 — Unified Pixel-Fantasy Card Art**
+**Current release: v3.4 — Original Illustrated Card Rebuild**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -31,16 +31,17 @@ The Duel Chamber uses experimental peer-to-peer WebRTC and public signaling rela
 - `v30-shell.js` bottom-tab navigation and campaign selector
 - `v30-scene.js` game canvas, `v30-net.js` private duel networking
 - `v32-celestial.css` illustrated v3.2 theme and layout
-- `v33-art.js` illustrated card variants for all 25 previously geometric placeholders, derived from the existing painted card atlas
-- `v33-art-fixes.css` consistent card-grid proportions, readable card names, and duplicate mana badge corrections
+- `v34-art.js` 25 completely new hand-authored fantasy illustrations, with client-side low-resolution rasterization and no reused atlas silhouettes
+- `v33-art-fixes.css` and `v34-art.css` consistent card-grid proportions, readable names and rarity details
 - `v32-details.js` presentation-only decoration and accurate trophy display
 - `art/ui-*.svg` seven original self-hosted fantasy scene illustrations
 - `sw.js` offline asset cache, `manifest.webmanifest` Home Screen support
 - `V32_VISUAL_OVERHAUL.md` initial visual overhaul
-- `V33_ART_CONSISTENCY.md` art-pipeline analysis, changes, and remaining individual-portrait art goals
+- `V33_ART_CONSISTENCY.md` earlier art-pipeline attempt (superseded)
+- `V34_ORIGINAL_ART_REBUILD.md` current original-art reconstruction
 - `V30_RELEASE_AND_TESTING.md` base campaign tests and `BALANCE_AUDIT_v22.md` earlier balance review
 
 The personal domain `huntermakesgame.com` is not altered by this repository.
 
-## v3.3 Art note
-All 32 card portraits now use the original seven painted atlas frames or illustrated variants derived from them. This replaces the 25 former flat geometric fallback portraits and corrects clipped card names. The new derived illustrations share base source archetypes rather than each having independently painted character art. The battlefield keeps transparent unit sprites to avoid drawing full rectangular portraits on the tactical grid.
+## v3.4 original art note
+All 25 formerly geometric or recolored cards now have independently designed SVG illustration scenes, rasterized locally for a small-pixel look. The original seven richly illustrated atlas cards remain untouched. This is a new hand-drawn-in-code artwork pass, not 25 externally commissioned painted portraits; actual iPhone quality verification remains necessary.
