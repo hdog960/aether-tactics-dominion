@@ -1,0 +1,345 @@
+/* AETHER TACTICS · UI refinement v1.6
+   Quiet, readable visual hierarchy. All gameplay art is preserved.
+   iPhone layout remains one-screen; only contained reference sheets scroll. */
+#game{
+ --ui-ink:#091926;--ui-navy:#122a3b;--ui-slate:#203e50;
+ --ui-stroke:#597482;--ui-mist:#c7dcd8;--ui-gold:#e4c48c;
+ --ui-teal:#8debd5;
+}
+#game header{
+ border-bottom:1px solid #a8b9ae30;
+ padding-bottom:6px!important;
+}
+#game header .logo{text-shadow:0 2px 12px #0008;letter-spacing:.35px}
+#game .smallbtn,#game .modebtn{
+ box-shadow:none;transition:background-color .15s,border-color .15s;
+}
+#game .smallbtn{
+ background:#1d3848;color:#d8dfd8;
+ border:1px solid #78918a;border-radius:8px;
+}
+#game .modebtn{
+ background:#1b3547;border:1px solid #5a7883;border-radius:8px;
+ color:#b9d2d1;
+}
+#game .modebtn.active{
+ background:linear-gradient(180deg,#dfc99e,#b89964);
+ color:#102637;border-color:#f3d7a0;box-shadow:inset 0 1px #fff4cc8a;
+}
+#game .hud .core{background:linear-gradient(145deg,#233f52,#172e40);border-color:#698d8c;border-radius:8px;box-shadow:none}
+#game .hud .core.enemy{background:linear-gradient(145deg,#463748,#302b40);border-color:#a78890}
+#game .hud .hpbig{color:#f7ead1}
+#game .vista{border-color:#6e8c95;border-radius:9px;box-shadow:0 3px 15px #050e1833}
+#game .vista-top{background:#1b3446;border-bottom:1px solid #6f8f93}
+#game .hint{
+ background:linear-gradient(90deg,#284751,#1a3449);
+ border:1px solid #5a8084;border-left:3px solid #9ee3d4;
+ border-radius:7px;box-shadow:none;
+ color:#e7e9dc;
+}
+#game .hint #instruction{font-weight:600}
+#game .hint #instruction b{color:#ffe0ad}
+#game .handtop{align-items:center;gap:6px}
+#game .handtop strong{
+ display:inline-flex;flex-direction:column;align-items:flex-start;
+ gap:1px;font-weight:900;letter-spacing:1px;color:#f6d69c;
+}
+#game .handtop strong small{font:700 9px system-ui;color:#9fbbbc;letter-spacing:0}
+#game .guide-open{
+ background:#213e4e;color:#d6f7ee;border:1px solid #789c9c;
+ font-size:10px;letter-spacing:.1px;font-weight:800;
+ border-radius:7px;box-shadow:none;min-width:83px;min-height:28px;
+}
+#game .guide-open:active{background:#375e67}
+#game .handtop .aeth{
+ background:#193b46;border:1px solid #4d8a86;
+ border-radius:7px;padding:2px 7px;color:#a5f8de;
+ font-family:Georgia,serif;font-weight:900;
+ box-shadow:none;white-space:nowrap;
+}
+#game .hand{
+ gap:7px;
+ padding:3px 0 4px!important;
+}
+#game .hand .card-wrap{overflow:visible}
+#game .hand .card-wrap .card{
+ border:1px solid #78949b;
+ border-radius:8px;
+ background:linear-gradient(180deg,#254457,#152d40 78%,#102437);
+ box-shadow:0 2px 5px #05121c66,inset 0 1px #d4e4d130;
+ padding:4px!important;
+ color:#f5f1de;
+ transform:none;
+}
+#game .hand .card-wrap .card.spell{border-color:#8b819d;background:linear-gradient(#37445b,#1a2e44 70%,#132438)}
+#game .hand .card-wrap .card.boss{border-color:#ba9767}
+#game .hand .card-wrap .card.picked{
+ border-color:#f9d699;
+ outline:2px solid #e4c48c;outline-offset:0;
+ box-shadow:0 0 0 1px #0e2d38,0 0 14px #efc98148;
+}
+#game .hand .card-wrap .card.cant{opacity:.65}
+#game .cardtop{
+ min-height:15px;
+ align-items:center;justify-content:flex-end;
+ padding:0 2px;
+}
+#game .card-role{
+ min-width:0;max-width:100%;
+ color:#b2d7d3;letter-spacing:.65px;text-overflow:ellipsis;overflow:hidden;
+ white-space:nowrap;text-align:right;font:800 9px/1.2 system-ui;
+}
+#game .card.boss .card-role{color:#f4ca8d}
+#game .card.spell .card-role{color:#d5bfed}
+#game .hand .card-wrap .portrait{
+ position:relative;border:1px solid #7f999a;border-radius:5px;
+ outline:0;margin:3px 0 4px;overflow:hidden;background:#162d41;
+}
+#game .portrait .illustrated-portrait{inset:0}
+#game .portrait .portrait-cost{
+ position:absolute;top:1px;left:1px;z-index:6;
+ display:grid;place-items:center;
+ width:clamp(25px,3.6vw,45px);height:clamp(25px,3.6vw,45px);
+ border:2px solid #e5cb94;border-radius:50%;
+ background:linear-gradient(155deg,#507f96 0%,#265276 40%,#12324c 100%);
+ box-shadow:0 2px 6px #06111cf0,inset 0 0 0 1px #e8f6dd55;
+ font:900 clamp(15px,1.9vw,23px)/1 Georgia,serif;
+ color:#f7f6de;text-shadow:0 1px 1px #000;
+}
+#game .cardname{
+ color:#f5e4bc;font:800 14px/1.07 Georgia,serif;
+ text-shadow:none;margin:2px 0 0;
+ min-height:0;
+}
+#game .cardstats{
+ font:800 10px/1.18 system-ui;
+ color:#b3f2dd;letter-spacing:.05px;
+ border-top:1px solid #6f959077;
+ padding:5px 1px 1px!important;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#game .card.spell .cardstats{color:#d4cdf9}
+#game .hand .card-info{
+ z-index:8;top:27px;right:7px;
+ width:31px;height:31px;min-width:31px;min-height:31px;
+ border:1.5px solid #bad7d0;
+ border-radius:50%;background:#0e2d43ea;color:#f3eccf;
+ font:italic 800 19px/1 Georgia,serif;
+ box-shadow:0 2px 5px #07131cbc;
+}
+#game .hand .card-info:active{background:#316675}
+#game .actions{gap:6px}
+#game .actions button{
+ border-radius:8px!important;font-weight:900;letter-spacing:.2px;
+ box-shadow:0 1px 2px #020f1666;
+}
+#game .actions #cycle,#game .actions #rules{
+ border:1px solid #648589;background:linear-gradient(#294857,#1a3548);
+ color:#daece4;
+}
+#game .actions #end{
+ background:linear-gradient(#f2ddb6,#cfad73);border:1px solid #f2d7a0;
+ color:#162b3b;box-shadow:0 2px 5px #0005,inset 0 1px #fff9e5a8;
+}
+#game .actions button:disabled{opacity:.48}
+/* Grimoire: fit natural content instead of stretching a four-row list to
+   the entire phone height. The longer deck alone gets an internal scroller. */
+#game .codex{background:#030d18c4;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+#game .codex-panel{
+ width:min(94vw,520px);
+ height:auto!important;max-height:min(86dvh,695px)!important;
+ border:1px solid #bca47b;border-radius:13px;
+ background:linear-gradient(#203c50,#10263b 70%,#0f2132);
+ box-shadow:0 20px 65px #010b13ec;
+ overflow:hidden;
+}
+#game .codex-header{padding:12px 15px;border-color:#7d98935c}
+#game .codex-kicker{font-size:9px;letter-spacing:1.1px;color:#8bdbc9}
+#game #codex-title{
+ font:800 21px/1.05 Georgia,serif;
+ color:#f5d7a5;margin-top:4px!important;
+}
+#game .codex-close{
+ width:35px;height:35px;flex-basis:35px;border:1px solid #6f9393;
+ background:#203d4e;border-radius:8px;color:#f1dfbc;
+}
+#game .codex-library,#game .codex-detail{
+ flex:0 1 auto!important;min-height:0;max-height:calc(86dvh - 125px);
+}
+#game .codex-tabs{padding:10px 12px 6px;gap:6px}
+#game .codex-tabs button{padding:9px 5px;background:#183247;color:#b8dbd6;border:1px solid #5f8388;border-radius:7px}
+#game .codex-tabs button.active{background:#d5bb8a;color:#192c39;border-color:#f5d4a1}
+#game .codex-intro{font-size:11px;color:#afcac7;margin:1px 13px 9px!important}
+#game .codex-list{
+ flex:0 1 auto!important;min-height:0;max-height:min(49dvh,400px);
+ padding:0 12px 12px;gap:5px;overflow-y:auto;
+ scrollbar-width:thin;scrollbar-color:#698c90 transparent;
+}
+#game .codex-entry{
+ min-height:61px;flex:0 0 auto;padding:5px 8px;gap:9px;
+ background:#1c394b;border:1px solid #537783;
+ border-radius:8px;box-shadow:none;
+}
+#game .codex-entry:active{background:#305264}
+#game .codex-entry-image{
+ width:46px;height:49px;flex-basis:46px;
+ border:1px solid #75919a;border-radius:5px;
+}
+#game .codex-entry-main strong{font:800 14px/1.05 Georgia,serif;color:#f4dcad}
+#game .codex-entry-main small{color:#9fe2d3;font-size:9px}
+#game .codex-entry-main>span{font-size:11px}
+#game .codex-quantity{font-size:12px;color:#e0c997}
+#game .codex-back{
+ margin:9px 12px 3px;align-self:flex-start;
+ padding:6px 9px;border:1px solid #688f90;border-radius:6px;
+ background:#244554;color:#e6e4d4;font-size:10px;
+}
+#game .codex-detail-body{
+ flex:0 1 auto!important;max-height:min(58dvh,460px);min-height:0;
+ padding:10px 14px 15px;overflow-y:auto;
+}
+#game .codex-hero{
+ display:grid;grid-template-columns:100px minmax(0,1fr);
+ align-items:center;gap:12px;
+}
+#game .codex-illustration{
+ width:100%;aspect-ratio:1/1.05;
+ border:1px solid #739394;border-radius:7px;
+}
+#game .codex-hero-copy h2{font:800 clamp(20px,4.5vw,25px)/1.08 Georgia,serif;color:#f5ddaf}
+#game .codex-hero-copy p{font:12px/1.35 system-ui;color:#c4dad5}
+#game .codex-stats{margin:10px 0 7px;gap:5px}
+#game .codex-stat{padding:6px 8px;background:#234656;border:1px solid #567b7d;font-size:11px}
+#game .codex-detail-body h3{margin:13px 0 4px!important;color:#e2be87}
+#game .codex-detail-body>p{font-size:12px;line-height:1.42}
+#game .codex-detail-body .codex-ownership{margin-top:11px!important;padding:6px 0}
+#game .codex-footer{
+ border-top:1px solid #65828370;padding:8px 13px;
+ background:#12293a;color:#accbc4;font:10px/1.3 system-ui;
+ display:flex;align-items:center;gap:7px;
+}
+#game .codex-safe-icon{background:#275f57;color:#acf0d2;border-radius:50%;
+ width:17px;height:17px;display:grid;place-items:center;flex:0 0 17px;font-weight:900}
+/* In-app field guide — never invoke a native iOS alert for rules. */
+#game .rules-sheet{
+ position:absolute;z-index:95;inset:0;
+ display:flex;justify-content:center;align-items:center;
+ padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px));
+ background:#030e19cf;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+}
+#game .rules-sheet.hidden{display:none!important}
+#game .rules-panel{
+ box-sizing:border-box;display:flex;flex-direction:column;
+ width:min(94vw,525px);max-height:min(88dvh,670px);
+ border:1px solid #b89f77;border-radius:13px;
+ background:linear-gradient(#233e51,#102637);
+ color:#f6ead5;box-shadow:0 20px 65px #000c;overflow:hidden;
+}
+#game .rules-panel-head{
+ display:flex;justify-content:space-between;align-items:center;gap:10px;
+ padding:14px 16px 11px!important;border-bottom:1px solid #708d8b6b;
+ margin:0!important;min-height:auto!important;max-height:none!important;
+ background:none;
+}
+#game .rules-eyebrow{color:#90e0d0;font:900 9px system-ui;letter-spacing:1.4px}
+#game .rules-panel-head h2{font:800 23px/1.1 Georgia,serif;margin:5px 0 3px!important;color:#ffe3b4}
+#game .rules-panel-head p{font:11px/1.25 system-ui;color:#bfd2ce;margin:0!important}
+#game .rules-panel-head button{
+ width:36px;height:36px;flex:0 0 36px;
+ display:grid;place-items:center;border:1px solid #759995;border-radius:8px;
+ color:#f2e6c7;background:#2a4756;font-size:19px;
+}
+#game .rules-content{
+ display:flex;flex-direction:column;gap:0;
+ flex:0 1 auto;min-height:0;overflow-y:auto;
+ padding:0 15px;overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;scrollbar-width:thin;
+}
+#game .rules-section{display:flex;gap:12px;align-items:flex-start;
+ padding:13px 0;border-bottom:1px solid #72938d42}
+#game .rules-section:last-child{border-bottom:0}
+#game .rules-symbol{
+ display:grid;place-items:center;flex:0 0 31px;width:31px;height:31px;
+ border:1px solid #6b9d9c;border-radius:7px;
+ background:#264e58;color:#acede0;font:900 12px system-ui;
+}
+#game .rules-symbol.gold{color:#f9d79f;background:#544a38;border-color:#9f8a65}
+#game .rules-symbol.rose{color:#ffc3c4;background:#503a48;border-color:#a47786}
+#game .rules-symbol.blue{color:#c2e6ff}
+#game .rules-section h3{font:800 13px/1.2 system-ui;color:#f6deae;margin:1px 0 4px!important}
+#game .rules-section p{font:12px/1.4 system-ui;color:#ccdad5;margin:0!important}
+#game .rules-panel-foot{padding:10px 14px;flex:0 0 auto;border-top:1px solid #75979455;
+ background:#122a3b}
+#game .rules-panel-foot button{
+ width:100%;min-height:41px;border:1px solid #efcf9c;border-radius:7px;
+ background:linear-gradient(#efd9b3,#caa96f);
+ font:900 12px system-ui;color:#182b38;letter-spacing:.4px;
+}
+/* Everything below is sized around the actual iPhone viewport. */
+@media (max-width:720px),(max-height:540px){
+ #game{background:#091b2a}
+ #game header{border-bottom:0;padding-bottom:1px!important}
+ #game header .logo{font-size:clamp(15px,4.1vw,19px)!important}
+ #game header .logo em{letter-spacing:1.6px}
+ #game .menu{margin:2px 0 3px!important;gap:5px}
+ #game .modebtn{border-radius:7px;padding:5px 3px!important;letter-spacing:.1px}
+ #game .hud{margin:2px 0 3px!important}
+ #game .hud .core{border-width:1px;padding:4px 6px!important}
+ #game .hud .core label{font-size:8px}
+ #game .vista{border-width:1px}
+ #game .vista-top{padding:0 6px!important}
+ #game .hint{border-width:1px;border-left-width:3px;box-sizing:border-box;margin:3px 0 2px!important}
+ #game .handtop{flex-basis:26px;min-height:26px;height:26px;padding:0 1px}
+ #game .handtop strong{font-size:10px;letter-spacing:.6px;display:flex;flex-direction:row;align-items:center;gap:3px}
+ #game .handtop strong small{display:none}
+ #game .handtop .aeth{font-size:17px;padding:2px 5px}
+ #game .handtop .aeth small{font-size:9px}
+ #game .guide-open{min-height:24px;min-width:76px;padding:3px 6px;font-size:9px}
+ #game .hand{gap:4px;flex-basis:clamp(125px,18.5dvh,156px);max-height:156px;padding:1px 0 3px!important}
+ #game .hand .card-wrap .card{border-width:1px;border-radius:6px;padding:3px!important}
+ #game .cardtop{flex:0 0 14px!important;max-height:14px!important;min-height:14px}
+ #game .card-role{font-size:7px;letter-spacing:.15px}
+ #game .hand .card-wrap .portrait{margin:2px 0 3px!important;border-width:1px;min-height:32px!important}
+ #game .portrait .portrait-cost{
+   width:25px;height:25px;top:0;left:0;border-width:1.5px;
+   font-size:15px;
+ }
+ #game .hand .card-info{top:21px;right:3px;width:23px;height:23px;
+ min-width:23px;min-height:23px;font-size:14px;border-width:1px}
+ #game .cardname{font-size:clamp(9px,2.35vw,11px)!important;line-height:1.1}
+ #game .cardstats{font-size:clamp(8px,2.1vw,10px);padding:3px 0 0!important}
+ #game .actions{margin:2px 0 0!important;gap:4px}
+ #game .actions button{border-radius:6px!important;box-shadow:none}
+ #game .actions #cycle{flex:0 0 25%}
+ #game .actions #rules{flex:0 0 22%}
+ #game .codex-panel{width:min(95vw,520px);max-height:calc(100dvh - 38px)!important}
+ #game .codex-header{padding:9px 12px}
+ #game #codex-title{font-size:19px}
+ #game .codex-close{width:32px;height:32px;flex-basis:32px}
+ #game .codex-list{max-height:min(48dvh,385px)}
+ #game .codex-entry{min-height:56px}
+ #game .codex-entry-image{width:43px;height:46px;flex-basis:43px}
+ #game .codex-detail-body{max-height:min(57dvh,455px)}
+ #game .codex-hero{grid-template-columns:92px minmax(0,1fr);gap:10px}
+ #game .codex-hero-copy h2{font-size:21px}
+ #game .codex-footer{font-size:9px}
+ #game .rules-panel{width:min(95vw,525px);max-height:calc(100dvh - 40px)}
+}
+@media(max-height:650px){
+ #game .hand{flex-basis:100px;max-height:100px}
+ #game .cardtop{flex-basis:11px!important;max-height:11px!important;min-height:11px}
+ #game .card-role{font-size:6.5px}
+ #game .hand .card-info{top:16px}
+ #game .portrait .portrait-cost{width:21px;height:21px;font-size:13px}
+ #game .codex-list{max-height:45dvh}
+ #game .codex-detail-body{max-height:52dvh}
+}
+@media(orientation:landscape) and (max-height:540px){
+ #game .hand{flex-basis:75px;max-height:75px}
+ #game .cardtop{display:none}
+ #game .hand .card-info{top:3px;right:3px}
+ #game .cardname{font-size:9px!important}
+ #game .rules-panel-head{padding:8px 13px!important}
+ #game .rules-content{padding:0 12px}
+ #game .rules-section{padding:8px 0}
+}
