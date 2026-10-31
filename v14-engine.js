@@ -192,7 +192,7 @@ function chooseTile(vx,vy){
   message('<b>Tile '+spot+' · Enemy '+q.name+'</b>',here.hp+'/'+here.max+' HP · Select one of your own tiles to command an attack.');
  }else{
   const terrain=rocks.has(K(x,y))?'impassable rock':springs.includes(K(x,y))?'Aeth spring':high.has(K(x,y))?'raised terrain':'open ground';
-  message('<b>Tile '+spot+' · '+terrain+'</b>','Tap an allied unit tile or select a card. Blue = move; red = attack.');
+  message('<b>Tile '+spot+' · '+terrain+'</b>','Tap an allied unit tile or select a card. Blue = move; red = attack; violet = cast.');
  }
  render();
 }
@@ -210,10 +210,28 @@ function render(){
  $('deckcount').textContent=S.decks[my].length+' IN DRAW PILE';$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
  const unit=S.units.find(u=>u.id===chosenUnit),walk=new Set(unit&&!unit.moved?movement(unit).map(z=>K(z.x,z.y)):[]),targets=new Set(unit&&!unit.attacked?[...S.units.filter(u=>u.team!==localSeat),core(enemy)].filter(z=>canAttack(unit,z)).map(z=>K(z.x,z.y)):[]);
  const card=chosenCard>=0?D[S.hands[my][chosenCard]]:null;
+ // Spell targets are tile-based too. Make every legal cast square visible
+ // rather than forcing players to guess which body/sprite is the target.
+ const castTiles=new Set();
+ if(card?.spell&&S.energy[my]>=card.cost){
+  for(let gy=0;gy<8;gy++)for(let gx=0;gx<7;gx++){
+   const u=entity(gx,gy),pos=P(gx,gy);
+   if(card.spell==='shield'||card.spell==='heal'){
+    if(u?.team===my)castTiles.add(K(gx,gy));
+   }else{
+    const inRange=S.units.some(v=>v.team===my&&d(v,pos)<=3);
+    if(!inRange)continue;
+    const coreThreat=(gx===3&&gy===(my===0?0:7));
+    const hit=card.spell==='bolt'?(u?.team===enemy||coreThreat):
+      (S.units.some(v=>v.team===enemy&&d(v,pos)<=1)||d(pos,core(enemy))<=1);
+    if(hit)castTiles.add(K(gx,gy));
+   }
+  }
+ }
  for(let b of $('board').children){
   let vx=+b.dataset.x,vy=+b.dataset.y,x=mirror?6-vx:vx,y=mirror?7-vy:vy,u=entity(x,y),k=K(x,y),isRock=rocks.has(k),spring=springs.includes(k),isHigh=high.has(k),isCore=x===3&&y===7,enemyCore=x===3&&y===0;
   let mineCore=x===3&&y===(my===0?7:0),rivalCore=x===3&&y===(my===0?0:7);
-  b.className='tile'+(vy<=2?' dark':vy>=5?' lit':'')+(isRock?' rock':'')+(isHigh?' high':'')+(spring?' spring':'')+(u&&u.team!==my?' enemyunit':'')+(walk.has(k)?' showmove':'')+(targets.has(k)?' showattack':'')+(card&&!card.spell&&deploy(my,x,y)?' showdeploy':'')+(u?.id===chosenUnit?' selected':'')+(inspectedTile?.vx===vx&&inspectedTile?.vy===vy?' focused':'')+(tributes.includes(u?.id)?' tribute':'');
+  b.className='tile'+(vy<=2?' dark':vy>=5?' lit':'')+(isRock?' rock':'')+(isHigh?' high':'')+(spring?' spring':'')+(u&&u.team!==my?' enemyunit':'')+(walk.has(k)?' showmove':'')+(targets.has(k)?' showattack':'')+(card&&!card.spell&&deploy(my,x,y)?' showdeploy':'')+(castTiles.has(k)?' showcast':'')+(u?.id===chosenUnit?' selected':'')+(inspectedTile?.vx===vx&&inspectedTile?.vy===vy?' focused':'')+(tributes.includes(u?.id)?' tribute':'');
   b.setAttribute('aria-label',u?(u.team===my?'Your ':'Enemy ')+D[u.k].name+' '+u.hp+' HP':mineCore?'Your core':rivalCore?'Rival core':'Arena tile '+(vx+1)+','+(vy+1));
   if(u){b.innerHTML='<img draggable="false" class="unitimg '+(u.team!==my?'foe ':'')+(['t','l'].includes(u.k)?'boss':'')+'" src="'+Art.get(u.k)+'"><div class="hpstrip"><i style="width:'+Math.max(0,u.hp/u.max*100)+'%"></i></div><div class="num">'+u.hp+(u.shield?' ◇':'')+'</div>'+(u.team===my&&!u.attacked?'<i class="dot"></i>':'')}
   else if(isCore||enemyCore||spring||isRock){b.innerHTML='<img draggable="false" class="terrainimg" src="'+Art.terrain(isCore?(mineCore?'core':'enemycore'):enemyCore?(mineCore?'core':'enemycore'):spring?'spring':'rock')+'">'}
