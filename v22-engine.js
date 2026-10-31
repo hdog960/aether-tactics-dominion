@@ -357,7 +357,6 @@ function resolveSpell(q,t,x,y){
   S.exchangeRound||(S.exchangeRound=[0,0]);S.exchangeRound[t]=S.round;
   onSacrifice(t);
   S.units=S.units.filter(v=>v.id!==target.id);
-  S.energy[t]=Math.min(10,S.energy[t]+2);
   fxPush({type:'spell',kind:'exchange',to:fxTarget(target),amount:0});
  }else if(type==='silence'){
   target.shield=Math.max(0,target.shield-3-boost);
@@ -418,7 +417,7 @@ function apply(t,a){
    onFriendlySpell(t);
    log=q.name+' cast!';
   }
-  S.energy[t]-=q.cost;if(k==='d'&&S.sparkRound?.[t]!==S.round){S.sparkRound||(S.sparkRound=[0,0]);S.sparkRound[t]=S.round;S.energy[t]=Math.min(10,S.energy[t]+1)}
+  S.energy[t]-=q.cost;if(k==='F')S.energy[t]=Math.min(10,S.energy[t]+2);if(k==='d'&&S.sparkRound?.[t]!==S.round){S.sparkRound||(S.sparkRound=[0,0]);S.sparkRound[t]=S.round;S.energy[t]=Math.min(10,S.energy[t]+1)}
   discard(t,idx);
   if(k==='F')draw(t,2+Math.min(1,spellBonus(k,t)));
  }else if(a.op==='cycle'){
