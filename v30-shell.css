@@ -1,12 +1,12 @@
 /* v3.0 — persistent five-tab mobile shell. Battle remains a single-screen game.
    Panels are pages, not stacked popups. The nav is always in the bottom safe zone. */
-#game{--docknav:58px;position:relative!important;box-sizing:border-box}
+#game{--docknav:calc(56px + env(safe-area-inset-bottom,0px));position:relative!important;box-sizing:border-box}
 #game>.bottom-tabs{
  order:50!important;flex:0 0 var(--docknav)!important;height:var(--docknav)!important;
  width:100%;position:relative;z-index:130;
  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
  align-items:stretch;box-sizing:border-box;
- margin:4px 0 0!important;padding:4px 3px max(3px,env(safe-area-inset-bottom,0px))!important;
+ margin:4px 0 0!important;padding:4px 3px calc(3px + env(safe-area-inset-bottom,0px))!important;
  border:1px solid #45737a;border-radius:13px 13px 10px 10px;
  background:linear-gradient(180deg,#173c4e,#091b2b);
  box-shadow:0 -5px 14px #0006;
@@ -151,13 +151,13 @@
 @media (max-width:720px),(max-height:540px){
  #game{height:100dvh!important;max-height:100dvh!important;overflow:hidden!important;
  padding:calc(4px + env(safe-area-inset-top,0px)) 6px 3px!important}
- #game>.bottom-tabs{--docknav:58px}
+ #game>.bottom-tabs{min-height:0!important}
  #game>.vista{min-height:100px!important}
  #game>.command-dock{flex-shrink:0}
  #game .codex-header{padding:9px 10px!important}
 }
 @media(max-height:640px){
- #game{--docknav:48px}
+ #game{--docknav:calc(45px + env(safe-area-inset-bottom,0px))}
  #game>.bottom-tabs{margin-top:2px!important;padding-top:2px!important;padding-bottom:2px!important}
  #game>.bottom-tabs button .nav-icon{font-size:16px}
  #game>.bottom-tabs button{font-size:8px}
