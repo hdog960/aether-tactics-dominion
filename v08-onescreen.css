@@ -133,3 +133,11 @@
  #game .cardstats{font-size:8px;padding-top:1px!important}
  #game .hint{display:none}
 }
+
+/* Keep the selected-card instruction readable without scrolling or shrinking art. */
+@media (max-width:720px) and (min-height:721px) {
+ #game .hint{flex-basis:35px;min-height:35px!important;max-height:35px;padding:3px 8px!important}
+ #game .hint #instruction{line-height:1.15}
+ #game .hint #tip{display:block!important;max-width:100%;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;
+ font-size:9px;line-height:1.1;margin-top:1px;color:#bfe9dc}
+}
