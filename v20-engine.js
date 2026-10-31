@@ -312,7 +312,7 @@ function chooseTile(vx,vy){
  // large nearby character illustrations visually overlap that square.
  if(here?.team===localSeat){
   chosenUnit=here.id;
-  const q=D[here.k],moves=here.moved?'Moved':'Ready',attacks=here.attacked?'Attacked':'Ready';
+  const q=D[here.k],moves=here.rooted?'Rooted':here.moved?'Moved':'Ready',attacks=here.attacked?'Attacked':'Ready';
   message('<b>'+q.name+' · '+spot+' · '+here.hp+'/'+here.max+' HP</b>',
           'Move: '+moves+' · Attack: '+attacks+' · '+D[here.k].ability+'.');
   render();return;
@@ -392,6 +392,8 @@ function guideDrawList(){
  codex('codex-list').innerHTML=items.length?items.map(k=>{
   const d=D[k],qty=guideTab==='hand'?guideCount(S.hands[localSeat],k):guideCount([...S.decks[localSeat],...S.hands[localSeat],...S.discards[localSeat]],k);
   const quick=d.spell?(d.spell==='heal'?'♥ HEAL 4':d.spell==='shield'?'◇ SHIELD 4':
+      d.spell==='dash'?'➜ MOVE AGAIN':d.spell==='frost'?'❄ ROOT':d.spell==='ignite'?'🔥 BURN':
+      d.spell==='rally'?'⚔ TEAM BUFF':d.spell==='cleanse'?'◇ CLEANSE':
       d.spell==='bolt'?'⚡ 3 DAMAGE':'⚡ AREA 3')
      :'♥ '+d.hp+'  ⚔ '+d.atk+'  ➜ '+d.move;
   return '<button class="codex-entry" type="button" data-inspect="'+k+'" aria-label="Inspect '+d.name+'">'+
@@ -409,6 +411,11 @@ function guideStats(k){
   if(d.power)extras.push(['⚡',d.power+' damage']);
   if(d.spell==='heal')extras.push(['♥','Up to 4 HP']);
   if(d.spell==='shield')extras.push(['◇','4 shield']);
+  if(d.spell==='dash')extras.push(['➜','Move again']);
+  if(d.spell==='frost')extras.push(['❄','Root next turn']);
+  if(d.spell==='ignite')extras.push(['🔥','Burn 1']);
+  if(d.spell==='rally')extras.push(['⚔','+1 next attack']);
+  if(d.spell==='cleanse')extras.push(['◇','Cleanse +2 shield']);
  }else{
   extras.push(['◈',d.cost+' Aeth'],['♥',d.hp+' health'],['⚔',d.atk+' attack'],
               ['↗',d.range+' range'],['➜',d.move+' move']);
@@ -459,7 +466,7 @@ function render(){
  $('round').textContent=S.round;$('turnlabel').textContent=S.phase==='over'?'MATCH OVER':S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
  $('aeth').textContent=S.energy[my];$('capacity').textContent=' / '+S.cap;
  $('deckcount').textContent=S.decks[my].length+' IN DRAW PILE';$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
- const unit=S.units.find(u=>u.id===chosenUnit),walk=new Set(unit&&!unit.moved?movement(unit).map(z=>K(z.x,z.y)):[]),targets=new Set(unit&&!unit.attacked?[...S.units.filter(u=>u.team!==localSeat),core(enemy)].filter(z=>canAttack(unit,z)).map(z=>K(z.x,z.y)):[]);
+ const unit=S.units.find(u=>u.id===chosenUnit),walk=new Set(unit&&!unit.moved&&!unit.rooted?movement(unit).map(z=>K(z.x,z.y)):[]),targets=new Set(unit&&!unit.attacked?[...S.units.filter(u=>u.team!==localSeat),core(enemy)].filter(z=>canAttack(unit,z)).map(z=>K(z.x,z.y)):[]);
  const card=chosenCard>=0?D[S.hands[my][chosenCard]]:null;
  // Spell targets are tile-based too. Make every legal cast square visible
  // rather than forcing players to guess which body/sprite is the target.
@@ -467,15 +474,10 @@ function render(){
  if(card?.spell&&S.energy[my]>=card.cost){
   for(let gy=0;gy<8;gy++)for(let gx=0;gx<7;gx++){
    const u=entity(gx,gy),pos=P(gx,gy);
-   if(card.spell==='shield'||card.spell==='heal'){
+   if(['shield','heal','dash','cleanse','rally'].includes(card.spell)){
     if(u?.team===my)castTiles.add(K(gx,gy));
    }else{
-    const inRange=S.units.some(v=>v.team===my&&d(v,pos)<=3);
-    if(!inRange)continue;
-    const coreThreat=(gx===3&&gy===(my===0?0:7));
-    const hit=card.spell==='bolt'?(u?.team===enemy||coreThreat):
-      (S.units.some(v=>v.team===enemy&&d(v,pos)<=1)||d(pos,core(enemy))<=1);
-    if(hit)castTiles.add(K(gx,gy));
+    if(validSpellSpot(card,my,gx,gy))castTiles.add(K(gx,gy));
    }
   }
  }
@@ -491,6 +493,8 @@ function render(){
  $('hand').innerHTML=S.hands[my].map((k,i)=>{
   const q=D[k],type=q.spell?'spell':q.tribute?'boss':'unit';
   const stats=q.spell?(q.spell==='heal'?'♥ HEAL 4':q.spell==='shield'?'◇ SHIELD 4':
+      q.spell==='dash'?'➜ MOVE AGAIN':q.spell==='frost'?'❄ ROOT +1':q.spell==='ignite'?'🔥 BURN +2':
+      q.spell==='rally'?'⚔ +1 ALLIES':q.spell==='cleanse'?'◇ CLEANSE +2':
       q.spell==='bolt'?'⚡ DAMAGE 3':'⚡ AREA 3')
     :'♥ '+q.hp+'  ⚔ '+q.atk+'  ↗ '+q.range;
   const portrait=portraitIndices[k]===undefined?'<img alt="" draggable="false" src="'+Art.get(k)+'">'
