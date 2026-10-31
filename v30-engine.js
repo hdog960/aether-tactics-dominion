@@ -823,7 +823,7 @@ let guideTab='hand',guideKey=null,guideFilter='all';
 const codex=(id)=>$(id),guideImage=k=>(portraitIndices[k]===undefined
  ?'<img alt="" draggable="false" src="'+Art.get(k)+'">'
  :'<div class="illustrated-portrait" aria-hidden="true" style="--art-pos:'+portraitPositions[k]+'%"></div>')+
- '<span class="art-cost" aria-label="'+D[k].cost+' Aeth">'+D[k].cost+'</span>';
+ (portraitIndices[k]===undefined?'<span class="art-cost" aria-label="'+D[k].cost+' Aeth">'+D[k].cost+'</span>':'');
 function guideCount(list,k){return list.reduce((n,id)=>n+(id===k?1:0),0)}
 function guideInventory(){
  if(!S)return [];
@@ -1037,7 +1037,7 @@ function render(){
   let mineCore=x===3&&y===(my===0?7:0),rivalCore=x===3&&y===(my===0?0:7);
   b.className='tile'+(vy<=2?' dark':vy>=5?' lit':'')+(isRock?' rock':'')+(isHigh?' high':'')+(spring?' spring':'')+((S.hazards||[]).includes(k)?' hazard':'')+(u&&u.team!==my?' enemyunit':'')+(walk.has(k)?' showmove':'')+(targets.has(k)?' showattack':'')+(card&&!card.spell&&deploy(my,x,y)?' showdeploy':'')+(castTiles.has(k)?' showcast':'')+(u?.id===chosenUnit?' selected':'')+(inspectedTile?.vx===vx&&inspectedTile?.vy===vy?' focused':'')+(tributes.includes(u?.id)?' tribute':'');
   b.setAttribute('aria-label',u?(u.team===my?'Your ':'Enemy ')+D[u.k].name+' '+u.hp+' HP':mineCore?'Your core':rivalCore?'Rival core':'Arena tile '+(vx+1)+','+(vy+1));
-  if(u){b.innerHTML='<img draggable="false" class="unitimg '+(u.team!==my?'foe ':'')+(['t','l'].includes(u.k)?'boss':'')+'" src="'+Art.get(u.k)+'"><div class="hpstrip"><i style="width:'+Math.max(0,u.hp/u.max*100)+'%"></i></div><div class="num">'+u.hp+(u.shield?' ◇':'')+'</div>'+(u.team===my&&!u.attacked?'<i class="dot"></i>':'')}
+  if(u){b.innerHTML='<img draggable="false" class="unitimg '+(u.team!==my?'foe ':'')+(['t','l'].includes(u.k)?'boss':'')+'" src="'+(Art.sprite?Art.sprite(u.k):Art.get(u.k))+'"><div class="hpstrip"><i style="width:'+Math.max(0,u.hp/u.max*100)+'%"></i></div><div class="num">'+u.hp+(u.shield?' ◇':'')+'</div>'+(u.team===my&&!u.attacked?'<i class="dot"></i>':'')}
   else if(isCore||enemyCore||spring||isRock){b.innerHTML='<img draggable="false" class="terrainimg" src="'+Art.terrain(isCore?(mineCore?'core':'enemycore'):enemyCore?(mineCore?'core':'enemycore'):spring?'spring':'rock')+'">'}
   else b.innerHTML=(isHigh?'<span class="up">⌃</span>':'')+'<span class="rune">✦</span>'
  }
@@ -1051,7 +1051,7 @@ function render(){
   return '<div class="card-wrap"><button type="button" class="card '+type+
    (chosenCard===i?' picked':'')+(q.cost>S.energy[my]||S.turn!==my?' cant':'')+
    '" data-card="'+i+'" aria-label="Select '+q.name+', '+q.cost+' Aeth">'+
-   '<div class="portrait">'+portrait+'<span class="portrait-cost" aria-hidden="true">'+q.cost+'</span>'+
+   '<div class="portrait">'+portrait+(portraitIndices[k]===undefined?'<span class="portrait-cost" aria-hidden="true">'+q.cost+'</span>':'')+
    '<span class="portrait-type'+(q.ability?' ability-label':'')+'">'+(q.ability?'✦ '+q.ability:q.spell?'SPELL':q.tribute?'MYTHIC':'UNIT')+'</span></div>'+
    '<div class="card-foot"><div class="cardname">'+q.name+'</div>'+
    '<div class="cardstats">'+stats+'</div></div></button>'+
@@ -1232,6 +1232,16 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Escape'&&!$('rules-sheet').classList.contains('hidden')){e.preventDefault();closeRules()}
 });
 window.addEventListener('aether-network-ready',()=>{if($('roomstatus').textContent.includes('loading'))$('roomstatus').textContent='Network ready. Create or join a room.'});
+window.addEventListener('aether-card-art-ready',()=>{
+ // Replace any temporary fallback images after the illustrated atlas loads.
+ // This is a display-only refresh: match state and progression are unchanged.
+ if(!$('codex').classList.contains('hidden')){
+  if(guideKey)inspectCard(guideKey);else guideDrawList();
+ }
+ if(!$('player-profile').classList.contains('hidden'))renderProfile();
+ if(!$('deck-builder').classList.contains('hidden'))deckStatus();
+ render();
+});
 window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel};
 startAI();
 const inviteCode=new URLSearchParams(location.search).get('room');if(inviteCode){startOnline();$('roomid').value=inviteCode.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);$('roomstatus').textContent='Invitation detected. Tap Join Room to connect.'}

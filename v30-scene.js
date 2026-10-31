@@ -21,7 +21,7 @@ scenic.src='./art/rift-valley-background.jpg';groundTexture.src='./art/terrain-n
 const monsterFrames={v:0,r:1,b:2,s:3,f:4,g:5};
 const col={ink:'#081a2a',stone:'#526775',stone2:'#385363',moss:'#486e66',light:'#bbd3bb',gold:'#ddbc84',magic:'#75efdb',enemy:'#f68fb1'};
 function imageFor(id){
- if(!cache.has(id)){let im=new Image();im.src=window.AetherArt.get(id);cache.set(id,im)}return cache.get(id)
+ if(!cache.has(id)){let im=new Image();im.src=window.AetherArt.sprite?window.AetherArt.sprite(id):window.AetherArt.get(id);cache.set(id,im)}return cache.get(id)
 }
 function poly(pts,fill,stroke,width=2){
  c.beginPath();c.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);c.closePath();if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.lineWidth=width;c.strokeStyle=stroke;c.stroke()}

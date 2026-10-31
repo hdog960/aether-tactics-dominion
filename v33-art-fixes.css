@@ -1,0 +1,82 @@
+/* v3.3 — Pixel fantasy collection repairs.
+   Corrects old v17 !important 106px card-height collision and art duplication. */
+#game[data-tab="cards"] .codex-list{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ grid-auto-rows:auto!important;align-items:stretch!important;
+ gap:10px!important;padding:10px 10px 24px!important;
+}
+#game[data-tab="cards"] .codex-entry{
+ display:flex!important;flex-direction:column!important;
+ grid-template-columns:unset!important;grid-template-rows:unset!important;
+ width:100%!important;height:auto!important;min-height:213px!important;
+ max-height:none!important;padding:7px!important;
+ align-items:stretch!important;justify-content:flex-start!important;
+ overflow:hidden!important;gap:6px!important;
+}
+#game[data-tab="cards"] .codex-entry-image{
+ display:block!important;position:relative!important;
+ width:100%!important;height:126px!important;min-height:126px!important;
+ max-height:126px!important;flex:0 0 126px!important;
+ margin:0!important;padding:0!important;overflow:hidden!important;
+ border-radius:8px!important;
+}
+#game[data-tab="cards"] .codex-entry-image img,
+#game[data-tab="cards"] .codex-entry-image .illustrated-portrait{
+ width:100%!important;height:100%!important;position:absolute!important;
+ inset:0!important;max-width:none!important;max-height:none!important;
+ object-fit:cover!important;image-rendering:pixelated!important;
+}
+#game[data-tab="cards"] .codex-entry-image .illustrated-portrait{
+ background-size:700% 113%!important;background-repeat:no-repeat!important
+}
+#game[data-tab="cards"] .codex-entry-main{
+ flex:1 1 auto!important;display:flex!important;flex-direction:column!important;
+ justify-content:flex-start!important;align-items:flex-start!important;
+ gap:3px!important;padding:2px 2px 4px!important;
+ height:auto!important;min-height:64px!important;max-height:none!important;
+ color:#fff3dd!important;opacity:1!important;visibility:visible!important;
+}
+#game[data-tab="cards"] .codex-entry-main strong{
+ display:block!important;line-height:1.17!important;max-width:100%;
+ font-size:clamp(12px,3.6vw,15px)!important;color:#ffdfac!important;
+ overflow:hidden!important;white-space:normal!important;text-overflow:clip!important;
+}
+#game[data-tab="cards"] .codex-entry-main small{
+ display:block!important;font:900 9px system-ui!important;color:#a7f0d7!important;
+}
+#game[data-tab="cards"] .codex-entry-main .codex-entry-statline{
+ display:block!important;max-width:100%;white-space:normal!important;
+ color:#eadfd5!important;font:800 10px/1.25 system-ui!important;
+}
+#game[data-tab="cards"] .codex-entry-main .codex-entry-ability{
+ display:block!important;color:#f3c995!important;font:700 9px/1.1 system-ui!important;
+ white-space:nowrap!important;text-overflow:ellipsis!important;overflow:hidden!important;max-width:100%;
+}
+#game[data-tab="cards"] .codex-quantity{z-index:5!important}
+#game .codex-entry-image .art-cost,#game .profile-card-art .art-cost{
+ z-index:6!important;top:5px!important;left:5px!important;
+}
+#game[data-tab="cards"] .codex-entry-image img,
+#game[data-tab="forge"] .profile-card-art img,
+#game .codex-illustration img,
+#game .command-dock .portrait img{
+ image-rendering:pixelated!important;
+ image-rendering:crisp-edges!important;
+}
+#game[data-tab="forge"] .profile-card-art img{
+ object-fit:cover!important;
+}
+#game .command-dock .portrait img{
+ object-fit:cover!important;
+}
+#game[data-tab="cards"] .codex-quantity{border-color:#dfb885!important}
+@media(min-width:560px){
+ #game[data-tab="cards"] .codex-entry{min-height:235px!important}
+ #game[data-tab="cards"] .codex-entry-image{height:156px!important;min-height:156px!important;max-height:156px!important;flex-basis:156px!important}
+}
+@media(max-width:365px){
+ #game[data-tab="cards"] .codex-list{gap:7px!important;padding:7px!important}
+ #game[data-tab="cards"] .codex-entry{min-height:195px!important;padding:5px!important}
+ #game[data-tab="cards"] .codex-entry-image{height:112px!important;min-height:112px!important;max-height:112px!important;flex-basis:112px!important}
+ #game[data-tab="cards"] .codex-entry-main strong{font-size:12px!important}
+}
