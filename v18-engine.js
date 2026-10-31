@@ -335,7 +335,7 @@ function inspectCard(k){
    '<div class="codex-hero-copy"><div class="codex-type">'+d.role+' · '+(d.spell?'SPELL':'SUMMON')+'</div>'+
    '<h2>'+d.name+'</h2><p>'+info.feature+'</p></div></div>'+
    '<div class="codex-stats">'+guideStats(k)+'</div>'+
-   '<h3>INNATE ABILITY</h3><div class="codex-ability"><strong>✦ '+(d.ability||'')+'</strong><p>'+(d.abilityText||'')+'</p></div>'+((d.ability)?'':'')+
+   (d.ability?'<h3>INNATE ABILITY</h3><div class="codex-ability"><strong>✦ '+d.ability+'</strong><p>'+d.abilityText+'</p></div>':'')+
    '<h3>WHAT IT DOES</h3><p>'+info.detail+'</p>'+
    '<h3>TACTICAL TIP</h3><p>'+info.tip+'</p>'+
    '<p class="codex-ownership">In hand: <b>'+held+'</b> · Still in draw pile: <b>'+remaining+'</b></p>';
