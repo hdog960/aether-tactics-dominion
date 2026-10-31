@@ -450,6 +450,51 @@ function openGuide(k=null){
   guideDrawList();
  }
 }
+
+function deckStatus(){
+ const tally={},units=draftDeck.filter(k=>!D[k].spell),mythic=units.filter(k=>D[k].tribute);
+ draftDeck.forEach(k=>tally[k]=(tally[k]||0)+1);
+ const warning=draftDeck.length!==24?'Build a 24-card deck.':
+   units.length<12?'At least 12 unit cards required.':
+   new Set(units).size<3?'Use at least 3 different creatures.':
+   mythic.length>2?'Only 2 mythic cards allowed.':
+   Object.values(tally).some(n=>n>3)?'Maximum 3 of each card.':'Deck ready for the next match.';
+ $('deck-validation').textContent=warning;
+ $('deck-validation').classList.toggle('ready',checkDeck(draftDeck));
+ $('deck-save').disabled=!checkDeck(draftDeck);
+ $('deck-size').textContent=draftDeck.length+'/24';
+ $('deck-unit-count').textContent=units.length;
+ $('deck-spell-count').textContent=draftDeck.length-units.length;
+ const cards=CARD_KEYS.slice().sort((a,b)=>Number(!!D[a].spell)-Number(!!D[b].spell)||D[a].cost-D[b].cost||D[a].name.localeCompare(D[b].name));
+ $('deck-cards').innerHTML=cards.map(k=>{
+  const q=D[k],number=tally[k]||0;
+  return '<article class="builder-card'+(number?' owned':'')+'">'+
+   '<span class="builder-image">'+guideImage(k)+'</span>'+
+   '<div class="builder-meta"><strong>'+q.name+'</strong><small>'+q.cost+' Aeth · '+q.role+
+   '</small><span>'+(q.ability||q.desc)+'</span></div>'+
+   '<div class="builder-qty"><button data-remove="'+k+'" type="button" aria-label="Remove '+q.name+'"'+(!number?' disabled':'')+'>−</button>'+
+   '<b>'+number+'</b><button data-add="'+k+'" type="button" aria-label="Add '+q.name+'"'+
+   (number>=MAX_COPIES||draftDeck.length>=24?' disabled':'')+'>+</button></div></article>'
+ }).join('');
+}
+function openBuilder(){
+ closeGuide();draftDeck=chosenDeck.slice();$('deck-builder').classList.remove('hidden');
+ $('deck-status').textContent='Your saved deck will be used for your next match. This battle stays unchanged.';
+ deckStatus();
+}
+function closeBuilder(){draftDeck=chosenDeck.slice();$('deck-builder').classList.add('hidden')}
+function saveBuilder(){
+ if(!checkDeck(draftDeck))return;
+ chosenDeck=draftDeck.slice();persistDeck();
+ $('deck-status').textContent='Saved! Your new deck starts on your next NEW MATCH.';
+ closeBuilder();
+ message('<b>Deck saved for your next match.</b>','Your current battle and cards are unchanged.');
+}
+function presetBuilder(name){
+ const cards=PACKS[name];if(!cards||!checkDeck(cards))return;
+ draftDeck=cards.slice();deckStatus();
+ $('deck-status').textContent=name+' style selected. Tap SAVE to use it for your next match.';
+}
 function closeGuide(){
  codex('codex').classList.add('hidden');guideKey=null;
 }
@@ -570,6 +615,24 @@ $('join-room').addEventListener('click',()=>join($('roomid').value,false));
 $('invite').addEventListener('click',invite);
 $('roomid').addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8));
 $('card-guide').addEventListener('click',()=>openGuide());
+$('open-builder').addEventListener('click',openBuilder);
+$('deck-close').addEventListener('click',closeBuilder);
+$('deck-cancel').addEventListener('click',closeBuilder);
+$('deck-save').addEventListener('click',saveBuilder);
+$('deck-builder').addEventListener('click',e=>{if(e.target===$('deck-builder'))closeBuilder()});
+$('deck-presets').addEventListener('click',e=>{
+ const btn=e.target.closest('button[data-preset]');if(btn)presetBuilder(btn.dataset.preset)
+});
+$('deck-cards').addEventListener('click',e=>{
+ const add=e.target.closest('button[data-add]'),rem=e.target.closest('button[data-remove]');
+ if(!add&&!rem)return;
+ const k=add?.dataset.add||rem?.dataset.remove;
+ if(!CARD_KEYS.includes(k))return;
+ if(add&&draftDeck.length<DECK_SIZE&&draftDeck.filter(x=>x===k).length<MAX_COPIES)draftDeck.push(k);
+ if(rem){const i=draftDeck.indexOf(k);if(i!==-1)draftDeck.splice(i,1)}
+ deckStatus();
+});
+
 $('codex-close').addEventListener('click',closeGuide);
 $('codex-back').addEventListener('click',()=>openGuide());
 $('codex').addEventListener('click',e=>{if(e.target===codex('codex'))closeGuide()});
@@ -584,7 +647,7 @@ $('codex-filters').addEventListener('click',e=>{
 $('codex-list').addEventListener('click',e=>{
  const button=e.target.closest('button[data-inspect]');if(button)inspectCard(button.dataset.inspect)
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!codex('codex').classList.contains('hidden'))closeGuide()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('deck-builder').classList.contains('hidden'))closeBuilder();else if(e.key==='Escape'&&!codex('codex').classList.contains('hidden'))closeGuide()});
 
 function closeRules(){
  const modal=$('rules-sheet');modal.classList.add('hidden');
