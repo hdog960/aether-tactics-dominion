@@ -1,0 +1,49 @@
+
+/* Riftfront Citadel — visual overhaul v0.5 */
+#game{max-width:820px;background:
+radial-gradient(ellipse 80% 19% at 50% 0%,#355b70 0%,transparent 80%),
+linear-gradient(#091b2e,#0b1828 42%,#0a1222);padding:15px 9px 32px}
+#game header{border-bottom:1px solid #a8c9b34d;box-shadow:0 8px 16px #0003;padding:5px 5px 15px}
+#game .logo{font-size:clamp(23px,5.8vw,39px);filter:drop-shadow(0 2px 3px #071021)}
+#game .logo em{text-shadow:0 0 12px #d2a36f33}
+#game .eyebrow{color:#8ce5d4}
+#game .subtitle{color:#9fb1b3}
+#game .vista{background:#09182a;border:3px solid #b3a07c;border-radius:13px;
+box-shadow:inset 0 0 0 3px #223847,0 9px 32px #000a,0 0 27px #68c6b322;overflow:hidden}
+#game .vista .sky{display:none}
+#game .vista-top{height:37px;align-items:center;display:flex;padding:0 11px;
+background:linear-gradient(90deg,#203746,#34555d,#203746);
+border-bottom:2px solid #b4a57caa;position:relative;z-index:2;font-size:10px;color:#f2d4a3}
+#game .vista-top small{font-size:9px;color:#b6ddd3}
+#game .arena{border:0;border-radius:0;background:transparent;box-shadow:none;
+margin:0;padding:0;width:100%;position:relative;overflow:hidden}
+#battle-canvas{display:block;width:100%;height:auto;aspect-ratio:3 / 4;image-rendering:pixelated;
+touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair;background:#102941}
+#game #board{display:none!important}
+#game .core{background:linear-gradient(#1f5156,#152d3e);box-shadow:inset 0 1px #a1fff030}
+#game .core.enemy{background:linear-gradient(#4b344e,#272338)}
+#game .menu button{box-shadow:inset 0 1px #ffffff22}
+#game .card{background:linear-gradient(150deg,#466d77,#263b4c 30%,#152736);
+border:2px solid #c6af86;box-shadow:inset 0 0 0 2px #10283e,0 5px 16px #000b;
+border-radius:11px}
+#game .card.boss{background:linear-gradient(#6f5e54,#293447 58%,#1c2538)}
+#game .card.spell{background:linear-gradient(#625876,#2b3151 54%,#1b2337)}
+#game .card.picked{box-shadow:0 0 0 2px #90ffe1,0 0 18px #69e7c770;transform:translateY(-3px)}
+#game .portrait{height:132px;border:2px solid #baac85;background:
+radial-gradient(ellipse at 50% 60%,#91c6ad6b,transparent 61%),
+linear-gradient(155deg,#223950,#497b7a 70%,#203948)}
+#game .portrait:after{content:"";position:absolute;inset:0;pointer-events:none;
+background:linear-gradient(115deg,transparent 27%,#ffffff12 33%,transparent 37%),linear-gradient(to top,#101e395c,transparent 60%)}
+#game .card.spell .portrait{background:radial-gradient(ellipse at 55% 45%,#9f91ba88,transparent 60%),linear-gradient(#383454,#181f3a)}
+#game .portrait img{width:124px;height:154px;top:-13px;max-width:none;image-rendering:pixelated;
+filter:drop-shadow(0 6px 3px #071222a0)}
+#game .cardname{font:800 15px Georgia,serif;color:#ffedc5}
+#game .cardstats{color:#96f6dc}
+#game .hint{border-left:4px solid #e1c38b;background:linear-gradient(110deg,#315665,#1a3044);
+box-shadow:inset 0 1px #b6f5d322}
+#game .feed{color:#9cc2c7}
+#game .alert{color:#89a5ac}
+@media(min-width:640px){#game .portrait{height:154px}#game .portrait img{width:152px;height:192px;top:-14px}}
+@media(max-width:365px){#game{padding:9px 5px 20px}#game .vista-top{height:34px;font-size:9px}#game .vista-top small{font-size:8px}
+#game .portrait{height:117px}#game .portrait img{width:112px;height:142px}
+#game .card{flex-basis:133px}}
