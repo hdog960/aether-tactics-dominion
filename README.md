@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current release: v3.7 — Painted Card & Battlefield Integration**
+**Current source release: v3.8 — Browser QA and Quick Battle confirmation**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -64,3 +64,6 @@ Aether Titan, Abyssal Leviathan, Ember Adept and Thorn Warden now have painted t
 Eight previously borrowed/recolored unit sprites (`p,k,d,o,y,z,A,B`) now render from eight individually illustrated character cutouts sourced from their exact card paintings. Ten previously geometric spell cards (`q,e,i,n,x,C,D,E,F,G`) have painted spell scenes in a separate self-hosted atlas. Seven classic original illustrations and seven prior premium illustrations are retained. `v37-art-unity.js` replaces v36's borrowed-card pipeline; `v30-scene.js` renders the correct eight-character atlas.
 
 Artwork is precached for iPhone. Existing save schemas, campaign, match logic, AI and multiplayer code are unmodified. On-device visual regression testing and manually drawn per-frame animation remain outstanding.
+
+## v3.8 QA and usability
+A live browser smoke test checked the Commander's Hall, campaign battle, 32-card collection, map, and Forge. It also identified a Quick Battle flow obstructed by a browser-native confirmation. v3.8 replaces that prompt with an explicit in-game dialog that preserves existing match progress until the player chooses to replace it. See `V38_QA_REPORT.md` for results, supporting browser-session link, actual sprite transparency checks, and outstanding limitations. GitHub Pages may lag behind the latest `main` source commit while deployment/caches update.
