@@ -1306,10 +1306,10 @@ function render(){
  const mission=MISSION_BY_ID[S.missionId];
  if($('arena-label'))$('arena-label').textContent=mission?'✦ '+mission.name.toUpperCase():'✦ RIFTFRONT';
  if($('arena-details'))$('arena-details').textContent=mission?
-  mission.objective==='capture'?'SPRINGS '+(S.missionProgress||0)+'/'+mission.needed:
-  mission.objective==='defend'?'SURVIVE TO ROUND '+mission.needed:
-  mission.objective==='hunt'?'DEFEAT BOSS · '+(S.units.find(u=>u.id===S.championId)?.hp||0)+' HP':
-  'BREAK ENEMY CORE': 'BLUE MOVE · RED ATTACK · VIOLET SPELL';
+  mission.objective==='capture'?'HOLD BOTH SPRINGS · '+onSpring(0)+'/2 CONTROL · '+(S.missionProgress||0)+'/'+mission.needed+' TURNS':
+  mission.objective==='defend'?'SURVIVE · ROUND '+S.round+'/'+mission.needed+' · CORE '+S.hp[0]+' HP':
+  mission.objective==='hunt'? 'SLAY CHAMPION · '+(S.units.find(u=>u.id===S.championId)?.hp||0)+'/'+(S.units.find(u=>u.id===S.championId)?.max||0)+' HP':
+  'BREAK ENEMY CORE · '+S.hp[1]+' HP LEFT':'BLUE MOVE · RED ATTACK · VIOLET SPELL';
  if(mission?.encounter&&$('arena-details')){
   const event=S.encounterState;
   $('arena-details').textContent+=' · '+mission.encounter.name.toUpperCase()+
@@ -1652,10 +1652,12 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   startQuickMatch();
   return{pass:findings.length===4&&findings.every(f=>f.pass),findings};
  },
- qaBalance:(samples=2)=>{
+ qaBalance:(samples=2,missionIds=null)=>{
   const originalRandom=Math.random;
   const reports=[],errors=[];
-  const trials=Math.max(1,Math.min(4,Math.floor(samples)||2));
+  const trials=Math.max(1,Math.min(12,Math.floor(samples)||2));
+  const scenarios=Array.isArray(missionIds)&&missionIds.length?
+   CONQUEST.all.filter(m=>missionIds.includes(m.id)):CONQUEST.all;
   const rng=(seed)=>{
    let x=(seed>>>0)||1;
    Math.random=()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296};
@@ -1664,6 +1666,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    const coreHit=!!v.core,lethal=coreHit?S.hp[1]<=u.atk:v.hp-v.shield<=u.atk;
    let sc=(lethal?12:0)+(coreHit?mission.objective==='assault'?16:1:Math.max(0,6-v.hp)*.65);
    if(mission.objective==='hunt'&&v.id===S.championId)sc+=18;
+   if(coreHit&&mission.objective!=='assault')return -Infinity;
    if(mission.objective==='capture'&&!coreHit&&springs.includes(K(v.x,v.y)))sc+=10;
    if(!coreHit)sc+=Math.min(4,v.atk)*.55;
    return sc;
@@ -1685,7 +1688,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    const targets=objectives(mission,u);
    const near=targets.length?Math.min(...targets.map(v=>d(p,v))):9;
    const onSpring=springs.includes(K(p.x,p.y));
-   const springWorth=mission.objective==='capture'?7.5:2.2;
+   const springWorth=mission.objective==='capture'?11:2.2;
    const nearbyEnemies=S.units.filter(v=>v.team===1);
    const shots=nearbyEnemies.some(v=>d(p,v)<=u.range&&los(p,v))?3.3:0;
    const danger=nearbyEnemies.filter(v=>d(p,v)<=v.range&&los(v,p))
@@ -1812,15 +1815,30 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    }
    for(const u of [...S.units].filter(v=>v.team===0)){
     if(S.phase!=='playing'||!S.units.some(v=>v.id===u.id))break;
-    const targets=()=>[...S.units.filter(v=>v.team===1),core(1)];
+    const targets=()=>mission.objective==='assault'?
+     [...S.units.filter(v=>v.team===1),core(1)]:
+     S.units.filter(v=>v.team===1);
     let eligible=targets().filter(v=>canAttack(u,v));
     // If the unit can attack already, don't sacrifice an attack for
     // movement; attacks are scored rather than always hitting the core.
-    if(!eligible.length&&!u.moved&&!u.rooted){
+    const priorityAdvance=mission.objective==='capture'&&
+     (!springs.includes(K(u.x,u.y))||onSpring(0)<2)||
+     mission.objective==='hunt'&&!eligible.some(v=>v.id===S.championId);
+    if((!eligible.length||priorityAdvance)&&!u.moved&&!u.rooted){
      const paths=movement(u).sort((a,b)=>moveScore(u,b,mission)-
        moveScore(u,a,mission)||a.n-b.n||a.y-b.y||a.x-b.x);
-     if(paths.length&&moveScore(u,paths[0],mission)>moveScore(u,u,mission)+.12)
-      if(apply(0,{op:'move',id:u.id,x:paths[0].x,y:paths[0].y}))activity.moves++;
+     if(paths.length&&moveScore(u,paths[0],mission)>moveScore(u,u,mission)+.12){
+      const best=paths[0];
+      const hasAttack=eligible.length>0;
+      const attacksFromBest=targets().some(v=>d(best,v)<=u.range&&los(best,v));
+      // A tactical move may precede an attack, but never throw away a
+      // guaranteed strike unless it secures a mission spring or advances
+      // toward a hunt champion instead of irrelevant targets.
+      const objectiveMove=mission.objective==='capture'&&springs.includes(K(best.x,best.y))||
+       mission.objective==='hunt'&&priorityAdvance;
+      if((!hasAttack||attacksFromBest||objectiveMove)&&
+       apply(0,{op:'move',id:u.id,x:best.x,y:best.y}))activity.moves++;
+     }
      if(!S.units.some(v=>v.id===u.id)||S.phase!=='playing')continue;
      eligible=targets().filter(v=>canAttack(u,v));
     }
@@ -1831,7 +1849,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    if(S.phase==='playing'&&S.turn===1)aiTurn();
   };
   try{
-   for(const m of CONQUEST.all){
+   for(const m of scenarios){
     for(const plan of m.storyScene?.choices||[]){
      for(let seed=1;seed<=trials;seed++){
       const sampleSeed=0x123ad+seed*137+m.id.charCodeAt(0)*991+
@@ -1869,7 +1887,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    }
   }catch(error){errors.push('Runtime: '+String(error?.message||error))}
   finally{Math.random=originalRandom;startQuickMatch()}
-  const grouped=CONQUEST.all.map(m=>{
+  const grouped=scenarios.map(m=>{
    const plans=(m.storyScene?.choices||[]).map(p=>{
     const r=reports.filter(z=>z.id===m.id&&z.plan===p.kind);
     return{kind:p.kind,games:r.length,wins:r.filter(z=>z.win).length,
@@ -1879,7 +1897,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    });
    return{id:m.id,title:m.name,region:m.region,objective:m.objective,plans};
   });
-  return{pass:!errors.length&&reports.length===CONQUEST.all.length*2*trials&&
+  return{pass:!errors.length&&reports.length===scenarios.length*2*trials&&
     reports.every(r=>r.valid&&r.ended),samples:trials,
     games:reports.length,wins:reports.filter(r=>r.win).length,
     errors,grouped,reports,
