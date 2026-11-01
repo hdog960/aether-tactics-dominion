@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current release: v3.4 — Original Illustrated Card Rebuild**
+**Current release: v3.5 — Battlefield Art Unity**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -31,17 +31,22 @@ The Duel Chamber uses experimental peer-to-peer WebRTC and public signaling rela
 - `v30-shell.js` bottom-tab navigation and campaign selector
 - `v30-scene.js` game canvas, `v30-net.js` private duel networking
 - `v32-celestial.css` illustrated v3.2 theme and layout
-- `v34-art.js` 25 completely new hand-authored fantasy illustrations, with client-side low-resolution rasterization and no reused atlas silhouettes
+- `v34-art.js` earlier original art generator (now superseded for 7 cards by the premium v3.5 painted atlas)
+- `v35-battle-art.js` premium card-art portraits plus matching transparent painted battlefield units and character-aware render routing
 - `v33-art-fixes.css` and `v34-art.css` consistent card-grid proportions, readable names and rarity details
 - `v32-details.js` presentation-only decoration and accurate trophy display
 - `art/ui-*.svg` seven original self-hosted fantasy scene illustrations
 - `sw.js` offline asset cache, `manifest.webmanifest` Home Screen support
 - `V32_VISUAL_OVERHAUL.md` initial visual overhaul
 - `V33_ART_CONSISTENCY.md` earlier art-pipeline attempt (superseded)
-- `V34_ORIGINAL_ART_REBUILD.md` current original-art reconstruction
+- `V34_ORIGINAL_ART_REBUILD.md` prior art reconstruction
+- `V35_BATTLEFIELD_ART_UNITY.md` painted card-to-battlefield integration, spell effects, and limitations
 - `V30_RELEASE_AND_TESTING.md` base campaign tests and `BALANCE_AUDIT_v22.md` earlier balance review
 
 The personal domain `huntermakesgame.com` is not altered by this repository.
 
 ## v3.4 original art note
 All 25 formerly geometric or recolored cards now have independently designed SVG illustration scenes, rasterized locally for a small-pixel look. The original seven richly illustrated atlas cards remain untouched. This is a new hand-drawn-in-code artwork pass, not 25 externally commissioned painted portraits; actual iPhone quality verification remains necessary.
+
+## v3.5 battlefield visuals
+Aether Titan, Abyssal Leviathan, Ember Adept and Thorn Warden now have painted transparent unit cutouts derived from their high-detail card paintings; Aeth Renewal uses the matching cleric as its heal effect. Six classic painted monsters are kept, while eight other new summons use themed painted stand-ins pending bespoke pose art. Meteor, ice, fire, shield, silence and heal effects have dedicated battlefield signatures. The tactical combat engine, XP, collection and saves remain unchanged. Real iPhone QA is still required.

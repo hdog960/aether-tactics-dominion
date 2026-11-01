@@ -19,6 +19,24 @@ scenic.onload=()=>{floorValid=false};
 groundTexture.onload=()=>{floorValid=false};
 scenic.src='./art/rift-valley-background.jpg';groundTexture.src='./art/terrain-natural.jpg';monsterAtlas.src='./art/units-feet.png';
 const monsterFrames={v:0,r:1,b:2,s:3,f:4,g:5};
+const paintedAtlas=new Image();
+paintedAtlas.decoding='async';paintedAtlas.src='./art/units-painted-v35.png';
+const customFrames={t:0,l:1,c:2,j:3};
+const unitAliases={p:['f','hue-rotate(24deg) saturate(1.4)'],k:['v','hue-rotate(18deg) saturate(1.2)'],
+ d:['f','hue-rotate(36deg) brightness(1.23)'],o:['r','hue-rotate(63deg) saturate(1.12)'],
+ y:['s','hue-rotate(72deg) saturate(.75)'],z:['b','hue-rotate(45deg) saturate(1.15)'],
+ A:['s','hue-rotate(125deg) saturate(.94)'],B:['b','hue-rotate(-16deg) brightness(1.1)']};
+const unitColors={t:'#e7c36c',l:'#64daff',c:'#fa9e57',j:'#9be776',p:'#75eedc',
+ k:'#a8ccff',d:'#c8edff',o:'#dab0fa',y:'#94d9b5',z:'#a29aff',A:'#f5a0c8',B:'#ffe1a7'};
+function unitSprite(k){
+ if(customFrames[k]!==undefined&&paintedAtlas.complete&&paintedAtlas.naturalWidth)
+  return{img:paintedAtlas,x:customFrames[k]*64,sourceW:64,sourceH:88,
+   tone:'none',boss:(k==='t'||k==='l')};
+ const a=unitAliases[k],classic=a?a[0]:k,index=monsterFrames[classic];
+ if(index!==undefined&&monsterAtlas.complete&&monsterAtlas.naturalWidth)
+  return{img:monsterAtlas,x:index*128,sourceW:128,sourceH:148,tone:a?a[1]:'none',boss:false};
+ return null;
+}
 const col={ink:'#081a2a',stone:'#526775',stone2:'#385363',moss:'#486e66',light:'#bbd3bb',gold:'#ddbc84',magic:'#75efdb',enemy:'#f68fb1'};
 function imageFor(id){
  if(!cache.has(id)){let im=new Image();im.src=window.AetherArt.sprite?window.AetherArt.sprite(id):window.AetherArt.get(id);cache.set(id,im)}return cache.get(id)
@@ -222,10 +240,42 @@ function renderBattleFX(t){
     c.fillStyle=beam;c.fillRect(to[0]-8-q*12,to[1]-120,16+q*24,130);
    }
   }
+  if(e.type==='spell'){
+   const x=to[0],y=to[1]-38,z=clamp01(p),alpha=Math.sin(Math.PI*z);
+   const col=e.kind==='frost'?'#a9ecff':e.kind==='ignite'?'#ff9756':
+    e.kind==='silence'?'#af8ce9':e.kind==='cross'?'#ffad68':'#d8c0ff';
+   c.save();c.globalAlpha=alpha;
+   if(e.kind==='cross'){
+    const progress=clamp01((z-.04)/.43),cy=y-200*(1-progress);
+    c.shadowColor='#ffa64c';c.shadowBlur=27;
+    ellipse(x+48*(1-progress),cy,14+14*progress,19+11*progress,'#ffab58');
+    ellipse(x+47*(1-progress),cy,9+8*progress,12+8*progress,'#5c3347');
+   }else if(e.kind==='frost'){
+    for(let i=0;i<7;i++){const x0=x+(i-3)*12,h=(35+i%3*15)*alpha;
+     poly([[x0-8,y+40],[x0,y+40-h],[x0+8,y+40]],'#80d6f2','#d9ffff',2);}
+   }else if(e.kind==='ignite'){
+    for(let i=0;i<8;i++){const x0=x+(i-4)*8,drop=Math.sin(i*3.1+z*10)*7;
+     poly([[x0-7,y+32],[x0,y-35*alpha-drop],[x0+7,y+32]],i%2?'#ffb163':'#f16a54','#ffdb9c',2);}
+   }else if(e.kind==='silence'||e.kind==='exchange'){
+    drawMagicRing([x,y],25+30*z,col,alpha);
+   }
+   c.restore();
+  }
   if(e.type==='buff'){
    const color=e.kind==='heal'?'#93ffc3':e.kind==='rally'?'#ffd997':e.kind==='dash'?'#98caff':'#b6dfff';
    const ring=clamp01(p/.85);
    drawMagicRing(to,8+ring*37,color,(1-ring)*.95);
+   if(e.kind==='heal'&&paintedAtlas.complete&&paintedAtlas.naturalWidth){
+    const a=Math.sin(Math.PI*clamp01(p));
+    c.save();c.globalAlpha=.58*a;c.imageSmoothingEnabled=false;
+    c.shadowColor='#ffe2a7';c.shadowBlur=20;
+    c.drawImage(paintedAtlas,4*64,0,64,88,to[0]-35,to[1]-116-13*p,70,93);
+    c.restore();
+   }
+   if(e.kind==='shield'){
+    c.save();c.globalAlpha=(1-ring)*.65;c.strokeStyle='#ded2ff';c.lineWidth=4;
+    c.beginPath();c.ellipse(to[0],to[1]-42,26+13*ring,40+13*ring,0,0,Math.PI*2);c.stroke();c.restore();
+   }
    for(let n=0;n<6;n++){
     const angle=n*Math.PI/3+p*2;const rr=17+p*20;
     ellipse(to[0]+Math.cos(angle)*rr,to[1]-45+Math.sin(angle)*rr*.7,3,4,color);
@@ -246,19 +296,20 @@ function renderBattleFX(t){
    // The authoritative state removes defeated monsters immediately, but the
    // visual echo remains through impact and collapses gracefully instead of
    // popping out of existence before the player even sees the blow.
-   const spriteID=monsterFrames[e.to.k];
-   if(spriteID!==undefined&&monsterAtlas.complete&&monsterAtlas.naturalWidth){
+   const sprite=unitSprite(e.to.k);
+   if(sprite){
     const row=seat===0?e.to.y:7-e.to.y;
-    const scale=(.58+row/8*.5)*1.04;
-    const w=128*scale,h=152*scale;
+    const scale=(.58+row/8*.5)*1.04,large=sprite.boss?1.14:1;
+    const w=128*scale*large,h=152*scale*large;
     const collapse=clamp01((p-impact)/Math.max(.1,.96-impact));
     const opacity=p<impact?1:Math.pow(1-collapse,1.3);
-    c.save();c.globalAlpha=opacity;
+    c.save();c.globalAlpha=opacity;c.imageSmoothingEnabled=false;
     const dy=to[1]-h+7*scale+collapse*25*scale;
     if(p>=impact&&p<impact+.16)c.filter='brightness(2.1) saturate(.45)';
-    else if(e.to.team!==seat)c.filter='hue-rotate(135deg) saturate(1.2) brightness(.91)';
-    c.drawImage(monsterAtlas,spriteID*128,0,128,148,
-     to[0]-w/2,dy,w,h*(1-collapse*.13));
+    else if(e.to.team!==seat)c.filter='hue-rotate(126deg) saturate(1.2) brightness(.91)';
+    else if(sprite.tone!=='none')c.filter=sprite.tone;
+    c.drawImage(sprite.img,sprite.x,0,sprite.sourceW,sprite.sourceH,
+      to[0]-w/2,dy,w,h*(1-collapse*.13));
     c.restore();
    }
    if(p>=impact&&p<.91){
@@ -500,34 +551,38 @@ function drawUnit(view,t){
    ellipse(z[0]-9*scale,z[1]+3,3.5*scale*beat,1.6*scale,'#d1d3bb6b');
    ellipse(z[0]+9*scale,z[1]+2,3.5*scale*(1-beat),1.6*scale,'#8adbc65c');
   }
-  if(monsterAtlas.complete&&monsterAtlas.naturalWidth&&monsterFrames[u.k]!==undefined){
-   const atlasID=monsterFrames[u.k],vw=128*scale,vh=152*scale;
-   c.save();c.imageSmoothingEnabled=false;
-   c.shadowColor=front?'#69f7da':'#fc839e';c.shadowBlur=10*scale;
-   if(!front)c.filter='hue-rotate(135deg) saturate(1.2) brightness(.91)';
-   // Per-character transparent cutouts. No card backdrop and no cropped rectangle.
-   // The feet land at the shadow plane (z + 3px), with just a 1px idle bob.
-   // Each 128x148 frame includes the complete body, shins and painted boots.
-   // The last 3px are transparent; boots land exactly on the stone surface.
-   // Armored units stand still. Sky Manta is the sole naturally hovering summon.
-   const footY=z[1]+4*scale;
-   const idleBob=isFlying?Math.sin(t/620+u.id)*1.8:walking?-stepLift:Math.sin(t/780+u.id)*.22;
-   // Each footstep shifts the body slightly, rather than snapping or teleporting.
-   const sway=walking?Math.sin(stepPhase)*2.0*scale:0;
-   // Attack lunges, hit knockback and impact flashes are layered on the original
-   // sprite (no hard rectangular overlay, no missing boots).
+  const sprite=unitSprite(u.k);
+  if(sprite){
+   const large=sprite.boss?1.14:1;
+   const vw=128*scale*large,vh=152*scale*large;
+   const footY=z[1]+4*scale,sway=walking?Math.sin(stepPhase)*2*scale:0;
+   const idleBob=isFlying?Math.sin(t/620+u.id)*2.3:walking?-stepLift:Math.sin(t/780+u.id)*.25;
    const dx=z[0]-vw/2+sway+pose.dx,dy=footY-vh+3*scale+idleBob+pose.dy;
+   const tint=unitColors[u.k]||(front?'#69f7da':'#fc839e');
+   c.save();c.imageSmoothingEnabled=false;c.shadowColor=tint;c.shadowBlur=9*scale;
+   if(!front)c.filter=(sprite.tone==='none'?'':sprite.tone+' ')+'hue-rotate(126deg) brightness(.88)';
+   else if(sprite.tone!=='none')c.filter=sprite.tone;
    if(pose.rotate){c.translate(z[0]+pose.dx,footY+pose.dy);c.rotate(pose.rotate);
-     c.translate(-z[0]-pose.dx,-footY-pose.dy)}
-   c.drawImage(monsterAtlas,atlasID*128,0,128,148,dx,dy,vw,vh);
+    c.translate(-z[0]-pose.dx,-footY-pose.dy)}
+   c.drawImage(sprite.img,sprite.x,0,sprite.sourceW,sprite.sourceH,dx,dy,vw,vh);
    if(pose.flash>.03){
-    c.save();c.globalAlpha=Math.min(.75,pose.flash*.75);c.filter='brightness(3.2) saturate(0.2)';
-    c.drawImage(monsterAtlas,atlasID*128,0,128,148,dx,dy,vw,vh);c.restore();
+    c.save();c.globalAlpha=Math.min(.78,pose.flash*.8);
+    c.filter='brightness(3.6) saturate(.25)';
+    c.drawImage(sprite.img,sprite.x,0,sprite.sourceW,sprite.sourceH,dx,dy,vw,vh);c.restore();
    }
    c.restore();
-  }else if(art.complete&&art.naturalWidth){
-   c.save();c.imageSmoothingEnabled=false;
-   c.drawImage(art,z[0]-ww/2,z[1]-hh+18*scale+Math.sin(t/410+u.id)*2.1,ww,hh);c.restore()
+   if(unitColors[u.k]){
+    c.save();c.strokeStyle=tint;c.globalAlpha=.35+.15*Math.sin(t/630+u.id);
+    c.lineWidth=1.8*scale;c.beginPath();
+    c.ellipse(z[0],z[1]+4,27*scale*large,8*scale,0,0,Math.PI*2);c.stroke();
+    if(['j','p','d','o','A'].includes(u.k)){
+     for(let k=0;k<4;k++){
+      const a=t/710+k*1.57+u.id,rr=16+6*scale;
+      ellipse(z[0]+Math.cos(a)*rr,z[1]-40*scale+Math.sin(a)*rr,2,2,tint);
+     }
+    }
+    c.restore();
+   }
   }
   const bw=36+16*(y/8),percent=Math.max(0,shownHealth(u,t)/u.max),by=z[1]-152*scale-7*scale;
   if(pose.flash>.15){c.save();c.globalAlpha=pose.flash*.5;
