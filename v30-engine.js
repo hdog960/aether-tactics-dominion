@@ -34,7 +34,17 @@ C:{name:'Echo Retrieval',cost:2,spell:'recall',role:'Spell',desc:'Recover your l
 D:{name:'Veil Snare',cost:2,spell:'snare',role:'Trap',desc:'Hide a rune that strikes an enemy entering its tile.'},
 E:{name:'Twin Convergence',cost:3,spell:'bond',role:'Spell',desc:'Shield and briefly empower nearby allies.'},
 F:{name:'Fateful Exchange',cost:2,spell:'exchange',role:'Ritual',desc:'Sacrifice an ally to draw two and regain 2 Aeth.'},
-G:{name:'Null Chime',cost:2,spell:'silence',role:'Hex',desc:'Strip enemy shield and weaken its next attack.'}
+G:{name:'Null Chime',cost:2,spell:'silence',role:'Hex',desc:'Strip enemy shield and weaken its next attack.'},
+// v4.5 experimental spell designs. This branch is not released until painted
+// spell art and interactive QA are verified. Never ship placeholder portraits.
+H:{name:'Starfall Lattice',cost:4,spell:'diagonal',power:2,role:'Astral Spell',
+ desc:'Deal 2 damage at the four diagonal tiles around an aimed square.'},
+I:{name:'Ashen Reprisal',cost:2,spell:'reprisal',role:'Battle Ward',
+ desc:'Give an ally 2 shield and a one-use 1-damage basic-attack retaliation.'},
+J:{name:'Undertow',cost:3,spell:'undertow',power:1,role:'Tide Hex',
+ desc:'Deal 1 damage and pull a non-boss enemy one open tile toward your army.'},
+K:{name:'Dawn Edict',cost:3,spell:'edict',role:'War Blessing',
+ desc:'Empower an ally’s next basic attack by 1 and strip up to 3 shield first.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
 const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"p":{"move":2},"o":{"hp":4,"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
@@ -1037,7 +1047,7 @@ function chooseTile(vx,vy){
 
 // GRIMOIRE INFORMATION: matches current card definitions and actual rules.
 // Read-only UI; inspecting cards never submits a move or consumes Aeth.
-const SPELL_LABELS={"heal":"♥ HEAL","shield":"◇ SHIELD","dash":"➜ MOVE","frost":"❄ ROOT","ignite":"🔥 BURN","rally":"⚔ RALLY","cleanse":"◇ CLEANSE","bolt":"⚡ BARRAGE","cross":"☄ AREA","recall":"✦ RECALL","snare":"◇ TRAP 2","bond":"✦ FORMATION","exchange":"✧ RITUAL","silence":"◇ SILENCE"};
+const SPELL_LABELS={"heal":"♥ HEAL","shield":"◇ SHIELD","dash":"➜ MOVE","frost":"❄ ROOT","ignite":"🔥 BURN","rally":"⚔ RALLY","cleanse":"◇ CLEANSE","bolt":"⚡ BARRAGE","cross":"☄ AREA","recall":"✦ RECALL","snare":"◇ TRAP 2","bond":"✦ FORMATION","exchange":"✧ RITUAL","silence":"◇ SILENCE","diagonal":"✧ DIAGONAL","reprisal":"♜ RIPOSTE","undertow":"≈ PULL","edict":"☼ PIERCE"};
 const GUIDE={
  o:{feature:'Spell-recycling specialist.',detail:'On summon, return the most recently spent spell to the top of your deck, once per round. If there is no spell to retrieve, gain 1 shield.',tip:'Cast a useful spell, then summon Echo Scribe to bring it back in the coming draw.'},
  y:{feature:'Defensive death-trigger.',detail:'When defeated, gives 2 shield to the nearest surviving allied unit within 2 tiles.',tip:'Position beside your carry to make its defeat still valuable.'},
@@ -1049,6 +1059,10 @@ const GUIDE={
  E:{feature:'Small-group formation payoff.',detail:'Up to three allies within one tile of your selected ally gain 1 shield and +1 on their next attack. Extra attack does not stack.',tip:'Arrange a compact formation, then cast before attacking.'},
  F:{feature:'Trade a creature for more options.',detail:'Sacrifice an allied unit to draw up to two cards and regain 2 Aeth. Costs 3 Aeth, for a net cost of 1 Aeth plus the unit. Once per round.',tip:'Trade a nearly defeated cheap ally into extra choices.'},
  G:{feature:'Disrupt an empowered target.',detail:'Strip up to 3 shield and remove attack bonuses. The target’s next basic attack deals 2 less damage, minimum 1.',tip:'Counter a large attack setup before it is used.'},
+ H:{feature:'Diagonal area denial.',detail:'Choose a focal tile within 3 of an ally. Enemies on its four diagonal neighboring squares take 2 damage. The center tile is untouched.',tip:'Aim into the empty gap between diagonally clustered enemies.'},
+ I:{feature:'One-hit reactive defense.',detail:'Grant an ally 2 shield up to the global five-shield cap. The first enemy basic strike against it before its next turn takes 1 retaliation damage. Does not stack.',tip:'Protect an exposed spring holder; the ward is consumed on its first incoming basic strike.'},
+ J:{feature:'Controlled positional displacement.',detail:'Deal 1 damage to a non-boss enemy within 3 of your army; move it one clear tile toward its nearest allied-side challenger when possible. The target must have a valid open landing tile.',tip:'Pull ranged enemies off high ground into melee range, or disturb a fortified formation.'},
+ K:{feature:'Counter-protection attack blessing.',detail:'The next basic attack from one allied creature gains 1 damage and strips up to 3 shield before the hit. Expires at the start of that creature’s next turn.',tip:'Time this immediately before striking a heavily shielded boss or frontline guardian.'},
 
  c:{feature:'Ranged elemental pressure.',detail:'Basic attacks burn a target for 1 additional damage at the start of its next turn. Burn does not stack.',tip:'Keep enemies burning while controlling their movement.'},
  j:{feature:'Lock down enemy advances.',detail:'Basic attacks root the target for its next turn. The victim may still attack but cannot move.',tip:'Block a dangerous rush near a choke point.'},
@@ -1127,6 +1141,10 @@ function guideStats(k){
   if(d.spell==='bond')extras.push(['⚔','Formation']);
   if(d.spell==='exchange')extras.push(['♜','Sacrifice']);
   if(d.spell==='silence')extras.push(['◇','Counter buffs']);
+  if(d.spell==='diagonal')extras.push(['✧','4 diagonal tiles']);
+  if(d.spell==='reprisal')extras.push(['♜','2 shield · 1 riposte']);
+  if(d.spell==='undertow')extras.push(['≈','Pull 1 tile']);
+  if(d.spell==='edict')extras.push(['☼','+1 strike · pierce 3']);
  }else{
   extras.push(['◈',d.cost+' Aeth'],['♥',d.hp+' health'],['⚔',d.atk+' attack'],
               ['↗',d.range+' range'],['➜',d.move+' move']);
