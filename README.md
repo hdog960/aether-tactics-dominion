@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.4.6 — Objective Clarity & Focused Tactical QA**
+**Current source release: v4.4.8 — Crownfall Deck Preparation & Trial Balance**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -119,3 +119,10 @@ The save-isolated campaign testing bot now plays actual spell cards, chooses leg
 - Improved **QA-only** objective priorities for capture/hunt, and added a memory-isolated **48 HARD-ENCOUNTER BATTLES** action for Oaths in Shadow, Crown Guardian and Hollow King. None of these bot changes affect real rival AI, card stats, campaign progression or rewards.
 - In a published isolated browser test, 48 games completed with **21 wins and 0 invalid states**; 366 spells and 68 mythic summons were exercised. **4/4** targeted spell/mythic regression checks passed. The Hollow King remains challenging (1/16 bot wins); further human-caliber testing is required before balance changes.
 - See `V446_OBJECTIVE_QA.md` for full details and testing limitations. Real iPhone Safari layout and touch performance have not yet been verified.
+
+## v4.4.7–v4.4.8 — Crownfall fairness and campaign armory
+The Hollow King's unique scheduled shadow-hunter reinforcement event now **replaces** generic reinforcement waves rather than stacking with them. His HP, attacks, boss transitions, and signature wave cadence remain unchanged. A memory-isolated 32-battle A/B check is available and documented in `V448_CROWNFALL_PREPARATION.md`.
+
+In the illustrated mission briefing, **EDIT DECK** opens the existing functional 24-card builder. The briefing displays your real saved deck's unit/spell breakdown and average card upgrade level. Saved decks apply on the next new match and do not modify an ongoing battle. The new touch-friendly armory panel does not replace or overlay the painted map or tactical board.
+
+The isolated QA page adds **KING CARD LEVELS · 96 BATTLES**, a deterministic test of uniform simulated card ranks. Source-executed logic checks passed 7/7 boss-phase cases and 30/30 preparation plans. The Hollow King outcomes varied sharply between hypothetical card levels, so no further unverified boss nerfs or new card art substitutes were shipped. Physical iPhone and final visual-browser QA are outstanding. See `V448_CROWNFALL_PREPARATION.md`.
