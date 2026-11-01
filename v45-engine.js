@@ -2596,6 +2596,15 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
       if(o.key==='N'&&mission.objective==='capture')return 2.2;
       if(o.key==='O'&&S.units.some(v=>v.team===1&&v.shield>=2))return 1.6;
       if(o.key==='P'&&S.units.some(v=>v.team===1&&v.shield>=2))return 1.8;
+      if(o.key==='Q'){
+       const affordable=S.hands[0].some(k=>D[k].spell&&
+        S.energy[0]>=o.q.cost+D[k].cost);
+       const eligible=S.units.some(v=>v.team===0&&(v.shield||0)<MAX_SHIELD);
+       return affordable&&eligible?5.4:1.5;
+      }
+      if(o.key==='R'&&S.units.some(v=>v.team===0&&v.k!=='R'))return 2.1;
+      if(o.key==='S'&&mission.objective==='defend')return 1.8;
+      if(o.key==='T'&&(S.traps||[]).some(t=>t.team===1))return 2.4;
       return 0;
      };
      const sa=a.q.atk*1.7+a.q.hp*.43+a.q.range*.6-a.q.cost*.35-
@@ -2623,6 +2632,11 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
      if(choice.key==='O'&&high.has(K(pt.x,pt.y)))score+=3;
      if(choice.key==='P'&&S.units.some(v=>v.team===1&&v.shield>0&&
        d(v,pt)<=choice.q.range))score+=3;
+     if(choice.key==='Q'&&S.units.some(v=>v.team===0&&d(v,pt)<=2&&
+       (v.shield||0)<MAX_SHIELD))score+=6;
+     if(choice.key==='R'&&S.units.some(v=>v.team===0&&d(v,pt)<=2))score+=2;
+     if(choice.key==='S'&&S.units.some(v=>v.team===1&&d(v,pt)<=2))score+=2;
+     if(choice.key==='T'&&(S.traps||[]).some(t=>t.team===1&&d(t,pt)<=2))score+=8;
      return score;
     };
     slots.sort((a,b)=>deployScore(b)-deployScore(a)||a.y-b.y||a.x-b.x);
