@@ -706,7 +706,7 @@ function resolveSpell(q,t,x,y){
  else if(type==='heal'){const heal=Math.min(3+boost,target.max-target.hp);target.hp+=heal;
   target.moved=false;target.attacked=false;target.renewedRound=S.round;abilityPulse(target,'heal',heal)}
  else if(type==='dash'){target.moved=false;target.stride=0;target.dashRound=S.round;if(boost)grantShield(target,boost);abilityPulse(target,'dash',0)}
- else if(type==='cleanse'){target.rooted=false;target.burning=false;target.shield+=2+boost;abilityPulse(target,'cleanse',2+boost)}
+ else if(type==='cleanse'){target.rooted=false;target.burning=false;const amt=grantShield(target,2+boost);abilityPulse(target,'cleanse',amt)}
  else if(type==='rally'){
   for(const ally of S.units.filter(v=>v.team===t&&d(v,target)<=1)){
    ally.rallied=1;if(boost)grantShield(ally,boost);abilityPulse(ally,'rally',0)
@@ -872,9 +872,22 @@ function aiTurn(){
      .sort((a,b)=>(a.hp-b.hp)||((b.k==='r'?1:0)-(a.k==='r'?1:0)));
     spot=opportunities.find(u=>q.spell==='frost'?!u.rooted:q.spell==='ignite'?!u.burning:true);
    }else if(q.spell==='cross'){
-    const targets=enemies.filter(u=>validSpellSpot(q,1,u.x,u.y));
-    targets.sort((a,b)=>enemies.filter(v=>d(v,b)<=1).length-enemies.filter(v=>d(v,a)<=1).length);
-    if(targets.length&&enemies.filter(v=>d(v,targets[0])<=1).length>=2)spot=targets[0];
+    // Target valid *empty* blast centres too. Previously only an occupied
+    // enemy tile could be the centre, missing some two-unit formations.
+    const blasts=[];
+    for(let cy=0;cy<8;cy++)for(let cx=0;cx<7;cx++){
+     if(!validSpellSpot(q,1,cx,cy))continue;
+     const center=P(cx,cy),victims=enemies.filter(v=>d(v,center)<=1);
+     const coreHit=d(center,core(0))<=1;
+     const raw=Math.max(1,powerFor(q,1));
+     const value=victims.reduce((sum,v)=>sum+
+      Math.min(raw,v.hp+v.shield)+(raw>=v.hp+v.shield?1.8:0),0)+
+      (coreHit?raw*1.3:0);
+     if(victims.length>=2||(coreHit&&victims.length>=1))
+      blasts.push({x:cx,y:cy,value});
+    }
+    blasts.sort((a,b)=>b.value-a.value||a.y-b.y||a.x-b.x);
+    spot=blasts[0]||null;
    }else if(q.spell==='heal'){
     spot=friends.filter(u=>u.hp<=u.max-2).sort((a,b)=>(a.hp/a.max)-(b.hp/b.max))[0];
    }else if(q.spell==='shield'){
@@ -1596,6 +1609,49 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   return{pass:result.length===22&&result.every(z=>z.pass)&&noQuick,
    checked:result.length,results:result,noQuick};
  },
+ // v4.4.5: prove the actual legal-action pipeline, including spell
+ // damage, one-tribute mythic and bounded cleanse. QA route only.
+ qaTacticalProbe:()=>{
+  const findings=[];
+  if(!startMission('v1',true,'rush'))return{pass:false,error:'mission start'};
+  S.hands[0]=['a','t'];S.energy[0]=10;S.turn=0;
+  const ally=S.units.find(u=>u.team===0);
+  const sacrifice=S.units.filter(u=>u.team===0&&u.id!==ally.id)[0];
+  const enemy=S.units.find(u=>u.team===1&&u.x===2&&u.y===1);
+  ally.x=2;ally.y=4;
+  const beforeHp=enemy?.hp||0;
+  const spell=!!enemy&&apply(0,{op:'card',idx:0,x:enemy.x,y:enemy.y,tributes:[]});
+  findings.push({name:'Legal targeted spell reduces enemy HP and pays Aeth',
+   pass:spell&&enemy.hp<beforeHp&&S.energy[0]===8});
+  const mythicIndex=S.hands[0].indexOf('t'),before=S.units.filter(u=>u.team===0).length;
+  const mythic=mythicIndex>=0&&!!sacrifice&&apply(0,
+   {op:'card',idx:mythicIndex,x:3,y:5,tributes:[sacrifice.id]});
+  findings.push({name:'Real 1-tribute mythic summon costs 7 and removes one ally',
+   pass:mythic&&S.energy[0]===1&&
+    S.units.some(u=>u.team===0&&u.k==='t'&&u.x===3&&u.y===5)&&
+    !S.units.some(u=>u.id===sacrifice.id)&&
+    S.units.filter(u=>u.team===0).length===before});
+  startMission('v1',true,'rush');S.hands[0]=['x'];S.energy[0]=10;
+  const v=S.units.find(u=>u.team===0);v.rooted=true;v.burning=true;v.shield=4;
+  const cleanse=apply(0,{op:'card',idx:0,x:v.x,y:v.y,tributes:[]});
+  findings.push({name:'Purifying Rain removes debuffs without violating max shield',
+   pass:cleanse&&!v.rooted&&!v.burning&&v.shield===MAX_SHIELD});
+  // Rival AI must use an empty yet legal centre to splash two units.
+  startMission('v1',true,'rush');
+  const duo=S.units.filter(u=>u.team===0),rivals=S.units.filter(u=>u.team===1);
+  duo[0].x=3;duo[0].y=3;duo[1].x=3;duo[1].y=5;
+  rivals[0].x=3;rivals[0].y=2;
+  S.hands[1]=['m'];S.energy[1]=10;S.turn=1;
+  const firstHP=duo.map(u=>u.hp);
+  aiTurn();
+  const aiCast=(S.usedCards?.[1]||[]).includes('m');
+  const bothDamaged=duo.every((u,i)=>u.hp<firstHP[i]||
+   !S.units.some(v=>v.id===u.id));
+  findings.push({name:'Enemy AI hits two units through empty legal area centre',
+   pass:aiCast&&bothDamaged});
+  startQuickMatch();
+  return{pass:findings.length===4&&findings.every(f=>f.pass),findings};
+ },
  qaBalance:(samples=2)=>{
   const originalRandom=Math.random;
   const reports=[],errors=[];
@@ -1638,22 +1694,121 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    const ground=high.has(K(p.x,p.y))&&u.range>1?1.4:0;
    return -near*2+shots+ground+(onSpring?springWorth:0)-hazard-danger*.23;
   };
-  const playerTurn=mission=>{
+ // Evaluate spell choices using only information visible to a player.
+ // Every proposed action passes through validSpellSpot() and apply(),
+ // preserving real card costs, effects and target restrictions.
+ const scoreSpell=(q,x,y,mission)=>{
+  if(!validSpellSpot(q,0,x,y))return -Infinity;
+  const type=q.spell,unit=entity(x,y),self=S.units.filter(u=>u.team===0);
+  const foes=S.units.filter(u=>u.team===1),pt=P(x,y);
+  const power=Math.max(1,powerFor(q,0));
+  const nearby=foes.filter(v=>d(v,pt)<=1);
+  const coreHit=x===3&&y===0;
+  let value=-Infinity;
+  if(type==='bolt'){
+   value=unit&&unit.team===1?
+    Math.min(power,unit.hp+unit.shield)*1.65+
+     (power>=unit.hp+unit.shield?5:0)+(unit.id===S.championId?7:0):
+    coreHit?power*1.6+(mission.objective==='assault'?10:0):-Infinity;
+  }else if(type==='cross'){
+   value=nearby.reduce((sum,v)=>sum+Math.min(power,v.hp+v.shield)*1.4+
+    (v.id===S.championId?6:0),0);
+   if(d(pt,core(1))<=1)value+=power*(mission.objective==='assault'?2.5:1);
+  }else if(type==='ignite'||type==='frost'){
+   value=unit&&unit.team===1?Math.min(power,unit.hp+unit.shield)*1.5+
+    (type==='frost'&&!unit.rooted?2.3:0)+
+    (type==='ignite'&&!unit.burning?1.4:0)+
+    (unit.id===S.championId?5:0):0;
+   if(type==='frost'&&unit?.rooted)value-=5;
+  }else if(type==='silence'){
+   value=unit&&unit.team===1?Math.min(3,unit.shield||0)*1.5+
+    (unit.rallied?2:0)+(unit.id===S.championId?3:0):0;
+  }else if(type==='heal'){
+   const gap=unit?Math.max(0,unit.max-unit.hp):0;
+   value=Math.min(3,gap)*2.1+(unit?.attacked?1.2:0)+
+    (unit?.id===S.championId?1:0);
+   if(gap===0)value-=5;
+  }else if(type==='shield'){
+   value=unit?Math.min(4,MAX_SHIELD-unit.shield)*1.2+
+    Math.min(3,unit.atk)*.5+
+    (mission.objective==='capture'&&springs.includes(K(x,y))?2:0):0;
+  }else if(type==='cleanse'){
+   value=unit?(unit.rooted?4.4:0)+(unit.burning?4.2:0)+
+    Math.min(2,MAX_SHIELD-unit.shield):0;
+  }else if(type==='rally'||type==='bond'){
+   const nearbyAllies=self.filter(v=>d(v,pt)<=1);
+   value=nearbyAllies.length>=2?nearbyAllies.reduce((sum,v)=>
+    sum+(v.rallied?0:2)+(type==='bond'&&v.shield<MAX_SHIELD?1.5:0),0):0;
+  }else if(type==='dash'){
+   value=unit?.moved&&!unit.rooted?2+Math.min(4,unit.atk)*.55:0;
+  }else if(type==='recall'){
+   value=S.hands[0].length<5&&S.discards[0].some(k=>!D[k].spell&&!D[k].tribute)?5:0;
+  }else if(type==='snare'){
+   const threat=foes.length?Math.min(...foes.map(v=>d(v,pt))):9;
+   value=threat<=2?4.3:0;
+  }else if(type==='exchange'){
+   value=unit&&unit.team===0&&unit.hp<=2&&self.length>=4?3.5:0;
+  }
+  return value-q.cost*.48;
+ };
+ const castSpell=mission=>{
+  const choices=[];
+  S.hands[0].forEach((key,idx)=>{
+   const q=D[key];
+   if(!q?.spell||q.cost>S.energy[0])return;
+   // Spells are region/position dependent. Search every legal tile to
+   // include both creatures and valid core-targeted/area effects.
+   for(let y=0;y<8;y++)for(let x=0;x<7;x++){
+    const score=scoreSpell(q,x,y,mission);
+    if(score>=3.5)choices.push({idx,x,y,score});
+   }
+  });
+  choices.sort((a,b)=>b.score-a.score||a.idx-b.idx||a.y-b.y||a.x-b.x);
+  for(const choice of choices)
+   if(apply(0,{op:'card',idx:choice.idx,x:choice.x,y:choice.y,tributes:[]}))
+    return true;
+  return false;
+ };
+  const playerTurn=(mission,activity)=>{
    if(S.phase!=='playing'||S.turn!==0)return;
-   // One legitimate affordable creature per round; spells aren't free
-   // and no mythical sacrifices are forged by the test.
+   // One legal summon per turn, including tributed mythics. Preserve
+   // spring defenders where possible, and never sacrifice an enemy unit.
    const candidates=S.hands[0].map((key,idx)=>({key,idx,q:D[key]}))
-    .filter(z=>z.q&&!z.q.spell&&!z.q.tribute&&z.q.cost<=S.energy[0]&&
-     S.units.filter(v=>v.team===0).length<8)
-    .sort((a,b)=>(b.q.atk*1.2+b.q.hp*.34-b.q.cost*.62)-
-                 (a.q.atk*1.2+a.q.hp*.34-a.q.cost*.62));
+    .filter(z=>z.q&&!z.q.spell&&z.q.cost<=S.energy[0])
+    .sort((a,b)=>{
+     const sa=a.q.atk*1.7+a.q.hp*.43+a.q.range*.6-a.q.cost*.35-
+      (a.q.tribute||0)*3.5;
+     const sb=b.q.atk*1.7+b.q.hp*.43+b.q.range*.6-b.q.cost*.35-
+      (b.q.tribute||0)*3.5;
+     return sb-sa||a.idx-b.idx;
+    });
    for(const choice of candidates){
-    let slots=[];
+    const tribute=choice.q.tribute||0,own=S.units.filter(u=>u.team===0);
+    if(own.length-tribute>=8||own.length<tribute)continue;
+    const sacrificial=own.slice().sort((a,b)=>
+     (springs.includes(K(a.x,a.y))?12:0)-
+      (springs.includes(K(b.x,b.y))?12:0)||
+      (a.hp*1.3+a.atk*1.6)-(b.hp*1.3+b.atk*1.6)||a.id-b.id);
+    const ids=sacrificial.slice(0,tribute).map(u=>u.id);
+    const slots=[];
     for(let y=2;y<=6;y++)for(let x=0;x<7;x++)
      if(deploy(0,x,y))slots.push({x,y});
-    slots.sort((a,b)=>moveScore({range:choice.q.range},b,mission)-
-     moveScore({range:choice.q.range},a,mission));
-    if(slots.some(p=>apply(0,{op:'card',idx:choice.idx,x:p.x,y:p.y,tributes:[]})))break;
+    slots.sort((a,b)=>moveScore({range:choice.q.range||1},b,mission)-
+     moveScore({range:choice.q.range||1},a,mission)||a.y-b.y||a.x-b.x);
+    for(const pos of slots){
+     if(apply(0,{op:'card',idx:choice.idx,x:pos.x,y:pos.y,tributes:ids})){
+      if(tribute)activity.mythicSummons++;
+      else activity.normalSummons++;
+      break;
+     }
+    }
+    if(activity.mythicSummons+activity.normalSummons>activity.startSummons)break;
+   }
+   // Up to two genuinely affordable and useful spells, after reserving
+   // enough energy to make a meaningful unit deployment.
+   for(let cast=0;cast<2&&S.phase==='playing';cast++){
+    if(castSpell(mission))activity.spells++;
+    else break;
    }
    for(const u of [...S.units].filter(v=>v.team===0)){
     if(S.phase!=='playing'||!S.units.some(v=>v.id===u.id))break;
@@ -1665,12 +1820,12 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
      const paths=movement(u).sort((a,b)=>moveScore(u,b,mission)-
        moveScore(u,a,mission)||a.n-b.n||a.y-b.y||a.x-b.x);
      if(paths.length&&moveScore(u,paths[0],mission)>moveScore(u,u,mission)+.12)
-      apply(0,{op:'move',id:u.id,x:paths[0].x,y:paths[0].y});
+      if(apply(0,{op:'move',id:u.id,x:paths[0].x,y:paths[0].y}))activity.moves++;
      if(!S.units.some(v=>v.id===u.id)||S.phase!=='playing')continue;
      eligible=targets().filter(v=>canAttack(u,v));
     }
     eligible.sort((a,b)=>scoreTarget(u,b,mission)-scoreTarget(u,a,mission));
-    if(eligible.length)apply(0,{op:'attack',id:u.id,x:eligible[0].x,y:eligible[0].y});
+    if(eligible.length&&apply(0,{op:'attack',id:u.id,x:eligible[0].x,y:eligible[0].y}))activity.attacks++;
    }
    if(S.phase==='playing')apply(0,{op:'end'});
    if(S.phase==='playing'&&S.turn===1)aiTurn();
@@ -1684,9 +1839,12 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
       rng(sampleSeed);
       if(!startMission(m.id,true,plan.kind)){errors.push(m.id+': failed start');continue}
       let steps=0,valid=true,orders=0;
+      const activity={spells:0,mythicSummons:0,normalSummons:0,
+       moves:0,attacks:0,startSummons:0};
       while(S.phase==='playing'&&steps<m.rounds+2){
        const prevRound=S.round;
-       playerTurn(m);orders++;steps++;
+       activity.startSummons=activity.mythicSummons+activity.normalSummons;
+       playerTurn(m,activity);orders++;steps++;
        const occupied=new Set(S.units.map(v=>K(v.x,v.y)));
        const noOverlap=occupied.size===S.units.length;
        valid=valid&&noOverlap&&S.units.every(v=>
@@ -1703,7 +1861,9 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
        rounds:S.round,playerCore:S.hp[0],enemyCore:S.hp[1],
        playerUnits:S.units.filter(v=>v.team===0).length,
        enemyUnits:S.units.filter(v=>v.team===1).length,
-       events:S.encounterState?.events||0,valid,steps:orders});
+       events:S.encounterState?.events||0,valid,steps:orders,
+       actions:{spells:activity.spells,mythicSummons:activity.mythicSummons,
+        normalSummons:activity.normalSummons,moves:activity.moves,attacks:activity.attacks}});
      }
     }
    }
@@ -1722,7 +1882,12 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   return{pass:!errors.length&&reports.length===CONQUEST.all.length*2*trials&&
     reports.every(r=>r.valid&&r.ended),samples:trials,
     games:reports.length,wins:reports.filter(r=>r.win).length,
-    errors,grouped,reports,agent:'simple legal-action heuristic, no spells'};
+    errors,grouped,reports,
+    actions:reports.reduce((tot,r)=>{
+     for(const key of Object.keys(tot))tot[key]+=r.actions?.[key]||0;
+     return tot;
+    },{spells:0,mythicSummons:0,normalSummons:0,moves:0,attacks:0}),
+    agent:'objective-driven legal-action heuristic with spell casting and sacrificial mythics'};
  },
  qaPreviewResult:(id='v1',defeat=false)=>{
   if(!startMission(id,true,'rush'))return{pass:false,reason:'mission start refused'};

@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.4.4 — Campaign Balance & Retry Reliability**
+**Current source release: v4.4.5 — Tactical Testing & Spell Balance**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -110,3 +110,6 @@ Restarting a mission now keeps the chosen preparation doctrine instead of revert
 
 ## v4.4.4 battlefield telegraphs
 Campaign battles now show clear, read-only advance warnings before scripted spring pulses, reinforcements, thorn snares, changing frost/lava tiles, and champion ward effects. Weather telegraphs identify the next affected grid squares. Boss warnings announce approaching health-threshold phases; they are informational and never change battle mechanics. The warning banner is styled for mobile and ignores pointer input, preserving battlefield tile touch targets. An isolated QA control checks 15 encounter warnings and seven boss warnings, with optional live weather/boss previews. See `V444_BALANCE_AUDIT.md`.
+
+## v4.4.5 — Tactical playtesting and targeted combat fixes
+The save-isolated campaign testing bot now plays actual spell cards, chooses legal area targets, and can summon mythic creatures by sacrificing its own units, spending normal energy and preserving spring holders where possible. The 60-game QA report includes spell, summon, move and attack usage. The game itself now enforces the five-shield cap for Purifying Rain, and rival Planar Meteor AI considers empty blast centers between multiple targets rather than only enemy-occupied tiles. The QA panel includes SPELL & MYTHIC QA tests for those rules. All existing v4 saves, missions, cards, collection, premium painted art and Forge remain intact. See `V445_TACTICAL_QA.md`.
