@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.4.1 — Seven Distinct Champion Boss Phases**
+**Current source release: v4.4.2 — Story Expeditions and Tactical Choices**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -98,3 +98,6 @@ All 12 Riftfront story missions and three Crown Trials now have named, scheduled
 
 ## v4.4.1 — Signature champion and Crown Trial mechanics
 Seven boss fights now include distinctive behavior at 65% and 30% HP: briar snares, reflection chills, volcanic fissures, Leviathan marks, Hollow King pursuit, Mirror Court retaliations, and Sovereign eruptions. Both phases and counterplay hints are explained in the illustrated world map before battle. A dedicated isolated QA action validates each boss and Mirror Court's 1-point reaction without changing real progression. Existing 15 signature battlefield encounters, 396 frames, and all saved content remain intact. See `V441_BOSS_PHASES.md`.
+
+## v4.4.2 — Narrative campaign and tactical choices
+All 15 campaign missions have a character-led opening scene and two authored preparation strategies. Players select a plan in the illustrated world-map mission briefing and start with meaningful benefits balanced by opening energy, Core health, or enemy resources. The chosen doctrine is saved inside the version-4 current match, without altering upgrades, mission unlocks, permanent collection or PvP. The isolated QA page tests all 30 doctrine/mission combinations. See `V442_STORY_EXPEDITIONS.md`.

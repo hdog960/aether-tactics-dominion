@@ -73,6 +73,41 @@
   m.encounter=signatures[m.id];
   if(bossKits[m.id])m.bossKit=bossKits[m.id];
  }
+ // v4.4.2 - the player chooses an expedition doctrine BEFORE each mission.
+ // Each option is narrated in-world and presents an actual tradeoff in combat.
+ const doctrines={
+  rush:{name:'Daring Vanguard',description:'Start with +2 Aeth, but your Core begins at 22 HP.',cost:'CORE −2 · OPENING AETH +2'},
+  ward:{name:'Shieldwall Advance',description:'Both starting soldiers gain +1 shield, but you start with 1 less Aeth.',cost:'STARTER SHIELDS +1 · OPENING AETH −1'},
+  lore:{name:'Read the Omens',description:'Draw a fifth starting card, but begin with 1 less Aeth.',cost:'OPENING CARD +1 · OPENING AETH −1'},
+  sabotage:{name:'Cut Their Supply',description:'Enemy Core starts 2 HP lower, but yours starts 2 HP lower too.',cost:'ENEMY CORE −2 · YOUR CORE −2'},
+  pledge:{name:'Hold the Line',description:'Your Core starts at 24 HP and both soldiers recover 1 HP when the first event fires.',cost:'OPENING AETH −1 · REACTIVE HEAL +1'},
+  gambit:{name:'Rift Gambit',description:'Your first hand has five cards. Both sides start with +1 Aeth.',cost:'OPENING CARD +1 · BOTH AETH +1'}
+ };
+ const chapters={
+  v1:['Captain Ellin','An outlaw captain guards the spring. A narrow causeway leads into his camp.',[['rush','Charge before the watchers summon help.'],['ward','Advance behind old valley shields.']]],
+  v2:['Wellkeeper Sera','Two springs feed the valley. The raiders count on you splitting your force.',[['lore','Study the spring glyphs before dividing the army.'],['pledge','Swear to defend the springs at any cost.']]],
+  v3:['Thorn Hermit','The Warden binds roots to the stones. His grove answers every careless footstep.',[['ward','Guard your front line against thorn snares.'],['lore','Read the ancient briar runes first.']]],
+  f1:['Scout Ysra','A blizzard swallows the northern passage. A signal fire must survive until dawn.',[['pledge','Hold the ridge and preserve the signal.'],['gambit','Risk the storm to seek a decisive opening hand.']]],
+  f2:['Frostfarer Kael','The frozen springs hide beneath mirrored ice. One crack could split the march.',[['lore','Trace the buried ley lines beneath the ice.'],['rush','Cross before the weather can close the path.']]],
+  f3:['Crystal Chronicler','The Seer reads each spell in the reflections. His court remembers every misstep.',[['gambit','Break symmetry with a wild first spell.'],['ward','Trust shield and steel over reflected predictions.']]],
+  e1:['Forge-Rider Tor','The ground glows red. Smoke conceals the enemy Core across a broken bridge.',[['rush','Sprint the bridge before its supports fail.'],['ward','Make a guarded crossing through the lava.']]],
+  e2:['Crucible Marshal','Foundry horns announce reinforcements. Every minute invites another assault.',[['sabotage','Cut the enemy’s furnace fuel before the siege.'],['pledge','Protect the workers and hold the gate.']]],
+  e3:['Ash Sage','The molten Colossus wakes beneath the temple. Each step of its march shakes the land.',[['lore','Study the pattern of the furnace heartbeat.'],['rush','Strike its unguarded Core before it wakes fully.']]],
+  r1:['Crown Archivist','Spectral soldiers march to an oath they can no longer remember.',[['gambit','Use an unexpected spell to interrupt the procession.'],['ward','March under a ward against the dead.']]],
+  r2:['Oathkeeper Veya','Two ancient springs lie between rival ritual armies. Neither side will retreat.',[['pledge','Bind the army to the old protective oath.'],['sabotage','Disrupt the ritual before it can gather strength.']]],
+  r3:['Keeper of the Tide','The Leviathan guards the Crown gate, and the water itself obeys its command.',[['lore','Find the gap between its tidal wards.'],['ward','Hold a shieldwall against its marked strikes.']]],
+  t1:['The Hollow Herald','The King of Shadows hunts the weak first. His hall has no refuge for the slow.',[['rush','Challenge the King before his hunters gather.'],['ward','Set a defensive line against his pursuit.']]],
+  t2:['Mirror Oracle','Every blade faces its own reflection in the Court. The first strike may be returned.',[['lore','Seek a spell the mirror cannot reflect.'],['gambit','Take a risky hand full of unexpected answers.']]],
+  t3:['Rift Witness','The Sovereign tears the land apart. This is the last approach to the heart of the Rift.',[['pledge','Swear the final oath and protect the Core.'],['rush','Spend everything on an early decisive assault.']]]
+ };
+ for(const m of [...missions,...trials]){
+  const chapter=chapters[m.id];
+  if(!chapter)continue;
+  m.storyScene={speaker:chapter[0],intro:chapter[1],
+   choices:chapter[2].map(([kind,prompt])=>({kind,prompt,
+    name:doctrines[kind].name,description:doctrines[kind].description,
+    tradeoff:doctrines[kind].cost}))};
+ }
  const all=[...missions,...trials];
  window.AetherConquest={regions,missions,trials,all};
 })();

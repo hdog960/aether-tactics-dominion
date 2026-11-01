@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button><button data-qa="story">30 STORY CHOICES</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -317,6 +317,28 @@ function auditBossPhases(){
  G.startQuickMatch();N.showTab('battle');
 }
 
+function auditStoryPlans(){
+ const missions=G.missions?.all||[],results=[];
+ for(const m of missions){
+  const choices=m.storyScene?.choices||[];
+  if(choices.length!==2){
+   results.push({id:m.id,pass:false,reason:'expected two unique story choices'});continue;
+  }
+  for(const choice of choices){
+   const r=G.qaPlan?.(m.id,choice.kind);
+   results.push(r||{pass:false,id:m.id,kind:choice.kind,reason:'missing QA plan runner'});
+  }
+ }
+ const passes=results.filter(r=>r.pass).length;
+ window.__qaStoryPlans={pass:passes===30&&results.length===30,
+  passed:passes,total:results.length,results};
+ G.startQuickMatch();N.showTab('battle');
+ status('STORY PLANS '+(passes===30?'PASS':'FAIL')+' · '+passes+'/'+results.length+' choices');
+ $('qa-report').textContent=results.map(r=>(r.pass?'✓ ':'✗ ')+r.id+' '+r.kind+
+  ' energy '+r.openingEnergy+' cores '+r.coreHealth+
+  ' hand '+r.handSize+(r.reason?' '+r.reason:'')).join('\\n');
+}
+
 panel.addEventListener('click',e=>{
  const b=e.target.closest('[data-qa]');if(!b)return;
  const mode=b.dataset.qa;
@@ -332,6 +354,7 @@ panel.addEventListener('click',e=>{
  else if(mode==='classic')auditClassicFrames();
  else if(mode==='campaign')auditCampaign();
  else if(mode==='boss')auditBossPhases();
+ else if(mode==='story')auditStoryPlans();
 });
 document.body.classList.add('qa-page');
 setTimeout(()=>{

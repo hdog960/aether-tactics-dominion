@@ -15,7 +15,7 @@ const positions={
 const chapterProgress=[[149,157],[145,447],[149,691],[151,959]];
 const types={assault:'⚔ Break the enemy core',capture:'✦ Hold both Aeth springs',hunt:'♜ Defeat the champion',defend:'◇ Survive the siege'};
 const safe=s=>String(s).replace(/[&<>"']/g,t=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[t]));
-let current=null,lastFocus=null,initialized=false;
+let current=null,lastFocus=null,initialized=false,pendingPlan=null;
 const ui=document.createElement('div');ui.id='atlas-experience';ui.innerHTML=`
  <div class="atlas-toolbar"><span class="atlas-help">✦ Swipe to explore · Tap a mission crest</span><div class="atlas-tools">
  <button type="button" data-pan="-1" aria-label="Pan map left">◀</button><button type="button" data-fit aria-pressed="false">FIT MAP</button><button type="button" data-pan="1" aria-label="Pan map right">▶</button></div></div>
@@ -29,16 +29,19 @@ const modal=document.createElement('div');modal.id='atlas-dialog';modal.classNam
  <div class="atlas-dialog-panel"><button type="button" class="atlas-dialog-close" data-close aria-label="Close mission details">✕</button>
  <div class="atlas-dialog-mark" id="atlas-dialog-mark"></div><div class="atlas-dialog-kicker" id="atlas-dialog-kicker"></div>
  <h2 id="atlas-dialog-title"></h2><p class="atlas-dialog-story" id="atlas-dialog-story"></p>
- <div class="atlas-dialog-objective" id="atlas-dialog-objective"></div><div class="atlas-dialog-twist" id="atlas-dialog-twist"></div><div class="atlas-dialog-reward" id="atlas-dialog-reward"></div>
+ <div class="atlas-dialog-objective" id="atlas-dialog-objective"></div><div class="atlas-dialog-twist" id="atlas-dialog-twist"></div><div class="atlas-dialog-story-scene" id="atlas-dialog-story-scene"></div><div class="atlas-dialog-plans" id="atlas-dialog-plans" role="group" aria-label="Choose expedition approach"></div><div class="atlas-dialog-reward" id="atlas-dialog-reward"></div>
  <div class="atlas-dialog-actions"><button type="button" data-close>BACK TO ATLAS</button><button type="button" id="atlas-launch">START MISSION</button></div></div>`;
 game.appendChild(modal);
-function close(){modal.classList.add('hidden');current=null;lastFocus?.focus?.()}
+function close(){modal.classList.add('hidden');current=null;pendingPlan=null;lastFocus?.focus?.()}
 modal.addEventListener('click',e=>{if(e.target===modal||e.target.closest('[data-close]'))close()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.classList.contains('hidden')){e.stopImmediatePropagation();close()}} ,true);
 function openMission(id,button){
  const info=G.campaign(),m=C.all.find(m=>m.id===id);if(!m)return;
  const available=info.available.includes(id),done=info.completed.includes(id);
  const active=G.get()?.missionId===id&&G.get()?.phase==='playing';
+ const story=m.storyScene;
+ const previous=active?G.get()?.expeditionPlan?.kind:null;
+ pendingPlan=story?.choices?.find(c=>c.kind===previous)?.kind||story?.choices?.[0]?.kind||null;
  current=id;lastFocus=button;
  const region=info.regions.find(r=>r.id===m.region);
  $('atlas-dialog-mark').textContent=m.trial?'♛':region?.icon||'✦';
@@ -53,6 +56,20 @@ function openMission(id,button){
    'AT 65% HP: '+m.bossKit.phase1+'\nAT 30% HP: '+m.bossKit.phase2+
    '\nTACTICAL TIP: '+m.bossKit.counter:'');
  $('atlas-dialog-twist').classList.toggle('hidden',!m.encounter);
+ $('atlas-dialog-story-scene').textContent=story?
+  '✧ '+story.speaker.toUpperCase()+' — '+story.intro:'';
+ $('atlas-dialog-story-scene').classList.toggle('hidden',!story);
+ $('atlas-dialog-plans').innerHTML=story?
+  '<div class="atlas-plans-label">CHOOSE YOUR EXPEDITION PLAN'+
+  (active?' · LOCKED FOR CURRENT MATCH':'')+'</div>'+
+  story.choices.map(plan=>
+   '<button type="button" class="atlas-plan'+(plan.kind===pendingPlan?' selected':'')+
+   '" data-plan="'+safe(plan.kind)+'" aria-pressed="'+(plan.kind===pendingPlan)+
+   '"'+(active?' disabled':'')+'><span class="atlas-plan-title">'+
+   safe(plan.prompt)+'</span><span class="atlas-plan-name">'+safe(plan.name)+
+   '</span><span class="atlas-plan-cost">'+safe(plan.tradeoff)+
+   '</span><span class="atlas-plan-desc">'+safe(plan.description)+
+   '</span></button>').join(''):'';
  $('atlas-dialog-reward').textContent='REWARDS  ✧ '+m.bonusXP+' XP   ◆ '+m.bonusGold+' GOLD'+(done?'   ★ '+(info.stars?.[id]||1)+'/3':'');
  const launch=$('atlas-launch');
  launch.disabled=!available;
@@ -61,6 +78,17 @@ function openMission(id,button){
  $('atlas-dialog-story').insertAdjacentText('beforeend',replacing?' Starting will replace your current unfinished match; your collection and completed missions stay saved.':'');
  modal.classList.remove('hidden');launch.focus();
 }
+modal.addEventListener('click',e=>{
+ const button=e.target.closest('[data-plan]');
+ if(!button||button.disabled||!current)return;
+ const mission=C.all.find(m=>m.id===current);
+ if(!mission?.storyScene?.choices.some(p=>p.kind===button.dataset.plan))return;
+ pendingPlan=button.dataset.plan;
+ modal.querySelectorAll('[data-plan]').forEach(b=>{
+  const chosen=b.dataset.plan===pendingPlan;b.classList.toggle('selected',chosen);
+  b.setAttribute('aria-pressed',String(chosen));
+ });
+});
 $('atlas-launch').addEventListener('click',()=>{
  if(!current)return;
  const info=G.campaign();if(!info.available.includes(current))return;
@@ -68,7 +96,7 @@ $('atlas-launch').addEventListener('click',()=>{
  if(s?.missionId===id&&s.phase==='playing'){
   close();N.showTab('battle');return;
  }
- if(G.startMission(id)){
+ if(G.startMission(id,false,pendingPlan)){
   close();N.showTab('battle');
  }
 });

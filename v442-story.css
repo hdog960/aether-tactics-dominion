@@ -1,0 +1,35 @@
+/* Dominion v4.4.2 — illustrated campaign story scenes and strategic choices. */
+#game .atlas-dialog-story-scene{
+ color:#f3e7d7;
+ font:650 12px/1.65 system-ui;
+ padding:12px 13px;margin:12px 0 10px;
+ border-radius:11px;border:1px solid #b59a78;
+ background:linear-gradient(140deg,#3e3446,#182b3e);
+ box-shadow:inset 0 1px #eedaba24;
+}
+#game .atlas-dialog-story-scene.hidden{display:none!important}
+#game .atlas-dialog-plans{display:grid;gap:8px;margin:12px 0}
+#game .atlas-plans-label{color:#ffe0a3;font:900 10px/1.4 system-ui;
+ letter-spacing:1.2px;text-align:center}
+#game .atlas-plan{
+ display:grid!important;gap:4px;text-align:left!important;
+ box-sizing:border-box;min-height:100px;padding:12px 13px!important;
+ border-radius:12px!important;border:2px solid #7c859c!important;
+ color:#e7e2ea!important;background:linear-gradient(130deg,#292940,#1a2939)!important;
+ box-shadow:0 4px 12px #0005!important;
+ touch-action:manipulation;
+}
+#game .atlas-plan.selected{
+ border-color:#ffe0a1!important;background:linear-gradient(125deg,#55425b,#2e3e52)!important;
+ box-shadow:inset 0 0 0 2px #c69e5666,0 0 13px #f5c4783d!important
+}
+#game .atlas-plan:focus-visible{outline:3px solid #d9fff0;outline-offset:2px}
+#game .atlas-plan:disabled{opacity:.82}
+#game .atlas-plan-title{color:#fff3d4;font:900 12px/1.5 Georgia,serif}
+#game .atlas-plan-name{color:#a5f0d1;font:900 10px system-ui;text-transform:uppercase;letter-spacing:.7px}
+#game .atlas-plan-cost{color:#ffe0a9;font:900 10px/1.4 system-ui;letter-spacing:.35px}
+#game .atlas-plan-desc{color:#ddddea;font:600 11px/1.5 system-ui}
+@media(max-width:400px){
+ #game .atlas-dialog-panel{padding:17px 13px!important}
+ #game .atlas-plan{min-height:104px;padding:10px!important}
+}

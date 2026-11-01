@@ -251,6 +251,12 @@ function encounterTick(){
  if(S.round<nextRound||S.round===state.lastRound)return false;
  const id=S.round,phase=state.events;
  let description='';
+ if(phase===0&&S.expeditionPlan?.kind==='pledge'){
+  const rescued=S.units.filter(u=>u.team===0&&u.hp<u.max);
+  for(const u of rescued){u.hp=Math.min(u.max,u.hp+1);abilityPulse(u,'heal',1)}
+  S.expeditionPlan.pledgeTriggered=true;
+  S.expeditionPlan.pledgeRecovered=rescued.length;
+ }
  if(e.type==='spring'){
   const holders=springs.map(k=>{const [x,y]=k.split(',').map(Number);return entity(x,y)})
    .filter(Boolean);
@@ -304,7 +310,9 @@ function encounterTick(){
    'Enemy reinforcements are delayed by the crowded battlefield.';
  }
  state.events++;state.lastRound=id;state.nextRound=id+e.cadence;
- state.notice=e.name+' — '+description;
+ state.notice=e.name+' — '+description+
+  (phase===0&&S.expeditionPlan?.kind==='pledge'?
+   ' · Oath of endurance restores '+S.expeditionPlan.pledgeRecovered+' wounded ally(s).':'');
  state.history=(state.history||[]).slice(-2);state.history.push({round:id,text:state.notice});
  log=state.notice;
  return true;
@@ -321,11 +329,13 @@ function commanderReinforce(){
   }
  }
 }
-function startMission(id,qa=false){
+function startMission(id,qa=false,planKind=null){
  const m=MISSION_BY_ID[id];
  const testMode=qa===true&&window.__qaIsolatedStorage===true&&
   location.pathname.endsWith('/qa-v39.html');
  if(!m||(!testMode&&!campaignAvailable(id)))return false;
+ const choices=m.storyScene?.choices||[];
+ const selected=choices.find(p=>p.kind===planKind)||choices[0]||null;
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
  seed('ai');S.missionId=id;S.missionProgress=0;S.arenaId=m.region;S.missionGoal=m.objective;
  S.missionRoundLimit=m.rounds;S.aiStyle=m.style;
@@ -350,9 +360,27 @@ function startMission(id,qa=false){
   S.units.push(champion);
  }
  S.hp[1]=m.objective==='assault'?24+Math.max(0,m.tier-2)*2:24;
+ // The expedition doctrine belongs to this match only; existing v4 saves
+ // and commander profile need no migration.
+ if(selected){
+  S.expeditionPlan={kind:selected.kind,name:selected.name,description:selected.description};
+  switch(selected.kind){
+   case 'rush':S.energy[0]=Math.min(10,S.energy[0]+2);S.hp[0]=22;break;
+   case 'ward':
+    S.energy[0]=Math.max(0,S.energy[0]-1);
+    for(const u of S.units.filter(v=>v.team===0).slice(0,2))grantShield(u,1);
+    break;
+   case 'lore':S.energy[0]=Math.max(0,S.energy[0]-1);draw(0,1);break;
+   case 'sabotage':S.hp[0]=22;S.hp[1]=Math.max(1,S.hp[1]-2);break;
+   case 'pledge':S.energy[0]=Math.max(0,S.energy[0]-1);break;
+   case 'gambit':
+    S.energy[0]=Math.min(10,S.energy[0]+1);
+    S.energy[1]=Math.min(10,S.energy[1]+1);draw(0,1);break;
+  }
+ }
  $('mode-ai').classList.add('active');$('mode-online').classList.remove('active');
  $('lobby').classList.add('hidden');
- message('<b>'+m.name+'</b> · '+m.story,
+ message('<b>'+m.name+'</b> · '+m.story+(selected?' · '+selected.name+' selected.':''),
   m.objective==='capture'?'Capture BOTH Aeth springs for '+m.needed+' consecutive turns.':
   m.objective==='defend'?'Keep your Core intact until round '+m.needed+'.':
   m.objective==='hunt'?'Defeat the marked boss to complete the mission.':
@@ -1466,6 +1494,26 @@ window.addEventListener('aether-card-art-ready',()=>{
 });
 window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
  ...(window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html')?{
+ qaPlan:(id,kind)=>{
+  const m=MISSION_BY_ID[id],choice=m?.storyScene?.choices?.find(x=>x.kind===kind);
+  if(!choice||!startMission(id,true,kind))return{pass:false,id,kind,reason:'invalid choice'};
+  const p=S.expeditionPlan,units=S.units.filter(u=>u.team===0);
+  const expected={
+   rush:S.hp[0]===22&&S.energy[0]===5,
+   ward:S.energy[0]===2&&units.slice(0,2).every(u=>u.shield>=1),
+   lore:S.energy[0]===2&&S.hands[0].length===5,
+   sabotage:S.hp[0]===22&&S.hp[1]===Math.max(1,
+     (m.objective==='assault'?24+Math.max(0,m.tier-2)*2:24)-2),
+   pledge:S.energy[0]===2,
+   gambit:S.energy[0]===4&&S.energy[1]===4&&S.hands[0].length===5
+  };
+  const pass=p?.kind===kind&&expected[kind]===true&&
+   S.hp.every(h=>h>0&&h<=28)&&S.energy.every(e=>e>=0&&e<=10);
+  const result={pass,id,kind,openingEnergy:S.energy.slice(),
+   coreHealth:S.hp.slice(),handSize:S.hands[0].length,
+   starterShields:units.slice(0,2).map(u=>u.shield)};
+  startQuickMatch();return result;
+ },
  qaBoss:(id)=>{
   if(!startMission(id,true))return{pass:false,id,reason:'start refused'};
   const mission=MISSION_BY_ID[id],boss=S.units.find(u=>u.id===S.championId);
