@@ -14,6 +14,9 @@ Expand existing 12 missions with distinct encounter scripts (reinforcement warni
 ### v4.4.6 — Objective Clarity & Focused QA (shipped)
 Battle HUD now reports live mission victory conditions in a mobile-readable layout. QA-only objective behavior was corrected and 48 focused battle sessions were run on difficult missions. More human-level Hollow King review remains necessary; no premature champion nerfs. See `V446_OBJECTIVE_QA.md`.
 
+### v4.4.7–v4.4.8 — Crownfall Fairness & Deck Preparation (shipped)
+The Hollow King's authored reinforcement waves no longer stack with the generic campaign spawn schedule. A/B combat comparison and uniform-card-level sensitivity QA now exist. Players can inspect their actual loadout and jump to the fully functional deck builder directly from an illustrated campaign briefing. These changes preserve in-progress battles and saved upgrades. See `V448_CROWNFALL_PREPARATION.md`.
+
 ### v4.5 — The Great Card Expansion
 Grow to ~60 carefully balanced cards, designed across distinct viable archetypes (sacrifice, flying, terrain control, spells, counterspells, frontline). Create bespoke card/battlefield matching art and descriptions before shipping each batch. Regression test existing 24-card deck construction and local progression.
 
