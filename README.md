@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current release: v3.5 — Battlefield Art Unity**
+**Current release: v3.6 — Painted Battlefield Roster**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -50,3 +50,12 @@ All 25 formerly geometric or recolored cards now have independently designed SVG
 
 ## v3.5 battlefield visuals
 Aether Titan, Abyssal Leviathan, Ember Adept and Thorn Warden now have painted transparent unit cutouts derived from their high-detail card paintings; Aeth Renewal uses the matching cleric as its heal effect. Six classic painted monsters are kept, while eight other new summons use themed painted stand-ins pending bespoke pose art. Meteor, ice, fire, shield, silence and heal effects have dedicated battlefield signatures. The tactical combat engine, XP, collection and saves remain unchanged. Real iPhone QA is still required.
+
+## v3.6 painted roster and translation pass
+- Introduces eight independent transparent pixel-fantasy sprite cutouts for Tidecaller, Storm Lancer, Wisp Familiar, Echo Scribe, Crypt Keeper, Rune Conductor, Dusk Reclaimer, and Oath Sentinel. These are painterly game sprites extracted from an illustrated 18-character sprite study, not eight independently hand-animated animations.
+- All eight use their identical character cutout as the subject in the card library, over illustrated region backgrounds. This removes mismatched blocky card illustrations and hue-shifted unit stand-ins for those eight.
+- The scene draws six existing classic painted monsters, four previously painted new creatures, and eight additional character sprites. The renderer no longer uses the eight recolored classic characters.
+- Enemy affiliation is shown by red HP bars and ground auras without recoloring a character's actual artwork.
+- Unit poses remain composited idle, movement, hit, attack and defeat transitions, not hand-drawn frame-by-frame animation sets. Sixteen-to-thirty-two-frame pose atlas work remains a future goal.
+- No combat rules, save keys, player collections or campaign progression changed. iPhone hardware QA is still required.
+- See `V36_PAINTED_ROSTER.md` for source mapping, limitations and tests.

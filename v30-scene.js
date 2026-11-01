@@ -21,20 +21,22 @@ scenic.src='./art/rift-valley-background.jpg';groundTexture.src='./art/terrain-n
 const monsterFrames={v:0,r:1,b:2,s:3,f:4,g:5};
 const paintedAtlas=new Image();
 paintedAtlas.decoding='async';paintedAtlas.src='./art/units-painted-v35.png';
+// Eight extra matching paintings, exported from the fantasy sprite study.
+const paintedAtlas36=new Image();paintedAtlas36.decoding='async';
+paintedAtlas36.src='./art/units-painted-v36.png';
 const customFrames={t:0,l:1,c:2,j:3};
-const unitAliases={p:['f','hue-rotate(24deg) saturate(1.4)'],k:['v','hue-rotate(18deg) saturate(1.2)'],
- d:['f','hue-rotate(36deg) brightness(1.23)'],o:['r','hue-rotate(63deg) saturate(1.12)'],
- y:['s','hue-rotate(72deg) saturate(.75)'],z:['b','hue-rotate(45deg) saturate(1.15)'],
- A:['s','hue-rotate(125deg) saturate(.94)'],B:['b','hue-rotate(-16deg) brightness(1.1)']};
+const paintedFrames36={p:0,k:1,d:2,o:3,y:4,z:5,A:6,B:7};
 const unitColors={t:'#e7c36c',l:'#64daff',c:'#fa9e57',j:'#9be776',p:'#75eedc',
  k:'#a8ccff',d:'#c8edff',o:'#dab0fa',y:'#94d9b5',z:'#a29aff',A:'#f5a0c8',B:'#ffe1a7'};
 function unitSprite(k){
+ if(paintedFrames36[k]!==undefined&&paintedAtlas36.complete&&paintedAtlas36.naturalWidth)
+  return{img:paintedAtlas36,x:paintedFrames36[k]*96,sourceW:96,sourceH:120,tone:'none',boss:false};
  if(customFrames[k]!==undefined&&paintedAtlas.complete&&paintedAtlas.naturalWidth)
   return{img:paintedAtlas,x:customFrames[k]*64,sourceW:64,sourceH:88,
    tone:'none',boss:(k==='t'||k==='l')};
- const a=unitAliases[k],classic=a?a[0]:k,index=monsterFrames[classic];
+ const index=monsterFrames[k];
  if(index!==undefined&&monsterAtlas.complete&&monsterAtlas.naturalWidth)
-  return{img:monsterAtlas,x:index*128,sourceW:128,sourceH:148,tone:a?a[1]:'none',boss:false};
+  return{img:monsterAtlas,x:index*128,sourceW:128,sourceH:148,tone:'none',boss:false};
  return null;
 }
 const col={ink:'#081a2a',stone:'#526775',stone2:'#385363',moss:'#486e66',light:'#bbd3bb',gold:'#ddbc84',magic:'#75efdb',enemy:'#f68fb1'};
@@ -215,8 +217,9 @@ function renderBattleFX(t){
    if(p>.18&&p<.66){
     const sx=from[0],sy=from[1]-39,tx=to[0],ty=to[1]-(core?35:58);
     const px=sx+(tx-sx)*q,py=sy+(ty-sy)*q-18*Math.sin(Math.PI*q);
-    c.save();c.shadowColor='#b0fcff';c.shadowBlur=16;
-    c.strokeStyle='#e8ffff';c.lineWidth=3.2;c.lineCap='round';
+    const boltColor=unitColors[e.from?.k]||'#b0fcff';
+    c.save();c.shadowColor=boltColor;c.shadowBlur=16;
+    c.strokeStyle=boltColor;c.lineWidth=3.2;c.lineCap='round';
     c.beginPath();c.moveTo(px-(tx-sx)*.10,py-(ty-sy)*.10);c.lineTo(px,py);c.stroke();
     ellipse(px,py,4,4,'#e4ffff');ellipse(px,py,8,3,'#72dbe5ad');c.restore();
    }
@@ -306,7 +309,6 @@ function renderBattleFX(t){
     c.save();c.globalAlpha=opacity;c.imageSmoothingEnabled=false;
     const dy=to[1]-h+7*scale+collapse*25*scale;
     if(p>=impact&&p<impact+.16)c.filter='brightness(2.1) saturate(.45)';
-    else if(e.to.team!==seat)c.filter='hue-rotate(126deg) saturate(1.2) brightness(.91)';
     else if(sprite.tone!=='none')c.filter=sprite.tone;
     c.drawImage(sprite.img,sprite.x,0,sprite.sourceW,sprite.sourceH,
       to[0]-w/2,dy,w,h*(1-collapse*.13));
@@ -537,11 +539,11 @@ function unitVisual(u,t){
 function drawUnit(view,t){
  const {u,x,y,z,scale,walking,stepPhase}=view;
  const front=u.team===seat;
- const art=imageFor(u.k),ww=112*scale,hh=152*scale;
+ // Summons only render transparent painted sprites. No legacy geometric fallback.
  const pose=unitPose(u,t);
   // A ground-contact shadow sits UNDER the painted boots; a second small halo
   // fixes the illusion of the character hovering above or ending in mid-air.
-  const isFlying=!!u.fly;
+  const isFlying=!!u.fly||u.k==='d';
   const stepLift=walking&&!isFlying?Math.abs(Math.sin(stepPhase))*3.0*scale:0;
   ellipse(z[0],z[1]+5,38*scale-(walking?3*scale:0),12*scale,'#0b223e7c');
   ellipse(z[0],z[1]+2,24*scale,7*scale,front?'#65e1d42b':'#e77eaf2b');
@@ -560,8 +562,9 @@ function drawUnit(view,t){
    const dx=z[0]-vw/2+sway+pose.dx,dy=footY-vh+3*scale+idleBob+pose.dy;
    const tint=unitColors[u.k]||(front?'#69f7da':'#fc839e');
    c.save();c.imageSmoothingEnabled=false;c.shadowColor=tint;c.shadowBlur=9*scale;
-   if(!front)c.filter=(sprite.tone==='none'?'':sprite.tone+' ')+'hue-rotate(126deg) brightness(.88)';
-   else if(sprite.tone!=='none')c.filter=sprite.tone;
+   // Enemy ownership is shown by red ground halos and health bars;
+   // never recolor the actual character identity from its card illustration.
+   if(sprite.tone!=='none')c.filter=sprite.tone;
    if(pose.rotate){c.translate(z[0]+pose.dx,footY+pose.dy);c.rotate(pose.rotate);
     c.translate(-z[0]-pose.dx,-footY-pose.dy)}
    c.drawImage(sprite.img,sprite.x,0,sprite.sourceW,sprite.sourceH,dx,dy,vw,vh);
