@@ -1,5 +1,5 @@
 /* Dominion v4.5.4 — exact painted character identity.
- * ONLY four approved M/N/O/P image assets are accepted. The collection must
+ * ONLY four approved Q/R/S/T image assets are accepted. The collection must
  * remain art-gated while these files do not exist or fail dimensions.
  * This script never mutates battle state, profile, decks, or network messages.
  */
@@ -9,8 +9,8 @@
  if(!art)return;
  const ids=['Q','R','S','T'],cardW=128,cardH=96,spriteW=96,spriteH=120;
  const atlas={
-  cards:{image:new Image(),url:'./art/cards-creatures-v454.webp?v=453',w:cardW*4,h:cardH},
-  units:{image:new Image(),url:'./art/units-creatures-v454.png?v=453',w:spriteW*4,h:spriteH}
+  cards:{image:new Image(),url:'./art/cards-creatures-v454.webp?v=454',w:cardW*4,h:cardH},
+  units:{image:new Image(),url:'./art/units-creatures-v454.png?v=454',w:spriteW*4,h:spriteH}
  };
  const originalCard=art.get.bind(art),originalSprite=art.sprite?.bind(art);
  const transparent='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
