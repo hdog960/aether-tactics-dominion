@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.4.3 — Campaign Epilogues & Result Integrity**
+**Current source release: v4.4.4 — Campaign Balance & Retry Reliability**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -104,3 +104,6 @@ All 15 campaign missions have a character-led opening scene and two authored pre
 
 ## v4.4.3 — Post-battle stories and mission completion QA
 Every campaign mission and Crown Trial now has its own narrated victory and defeat epilogue, displayed in a mobile-scrollable match-end panel alongside the expedition doctrine, event count, stars and one-time clear status. A 45-case save-isolated mission audit exercises loss, first victory and replay for all 15 missions, checking correct objective completion, unlocks, reward idempotence, and no double-claim. See `V443_CAMPAIGN_RESULTS_QA.md`. Physical iPhone Safari and statistical balancing remain pending.
+
+## v4.4.4 — Strategy retry and tactical balance diagnostics
+Restarting a mission now keeps the chosen preparation doctrine instead of reverting to the default. A dedicated, save-isolated QA control runs 60 actual-engine simulated campaign battles, matching two seeds across both available plans for all 15 missions. It checks battle legality and compares results by choice, mission and Core preservation. This is a basic bot benchmark rather than human win-rate data; no unvalidated card nerfs or boss buffs are introduced. See `V444_BALANCE_AUDIT.md`.

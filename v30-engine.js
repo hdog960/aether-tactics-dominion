@@ -1425,12 +1425,12 @@ $('cycle').addEventListener('click',()=>{if(chosenCard<0){message('<b>Select a c
 $('reset').addEventListener('click',()=>{
  if(mode==='online'){if(confirm('Leave this duel and return to solo play?'))startAI()}
  else if(confirm(S.missionId?'Restart this campaign mission?':'Start a fresh solo battle?')){
-  if(S.missionId)startMission(S.missionId);else{seed('ai');clearSelection();save();render()}
+  if(S.missionId)startMission(S.missionId,false,S.expeditionPlan?.kind||null);else{seed('ai');clearSelection();save();render()}
  }
 });
 $('again').addEventListener('click',()=>{
  if(mode==='online')startOnline();
- else if(S.missionId)startMission(S.missionId);
+ else if(S.missionId)startMission(S.missionId,false,S.expeditionPlan?.kind||null);
  else {seed('ai');clearSelection();save();render()}
 });
 $('mode-ai').addEventListener('click',startAI);$('mode-online').addEventListener('click',()=>{if(mode==='online'){$('lobby').classList.toggle('hidden');return}startOnline()});$('close-lobby').addEventListener('click',()=>{$('lobby').classList.add('hidden')});
@@ -1516,6 +1516,137 @@ window.addEventListener('aether-card-art-ready',()=>{
 });
 window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
  ...(window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html')?{
+ // v4.4.4: deterministic, self-contained tactical playtest, restricted to
+ // save-isolated QA. Both choices for a mission use the SAME seeded RNG and
+ // actual apply()/aiTurn() pipeline. This is a heuristic bot, not a human.
+ qaBalance:(samples=2)=>{
+  const originalRandom=Math.random;
+  const reports=[],errors=[];
+  const trials=Math.max(1,Math.min(4,Math.floor(samples)||2));
+  const rng=(seed)=>{
+   let x=(seed>>>0)||1;
+   Math.random=()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296};
+  };
+  const scoreTarget=(u,v,mission)=>{
+   const coreHit=!!v.core,lethal=coreHit?S.hp[1]<=u.atk:v.hp-v.shield<=u.atk;
+   let sc=(lethal?12:0)+(coreHit?mission.objective==='assault'?16:1:Math.max(0,6-v.hp)*.65);
+   if(mission.objective==='hunt'&&v.id===S.championId)sc+=18;
+   if(mission.objective==='capture'&&!coreHit&&springs.includes(K(v.x,v.y)))sc+=10;
+   if(!coreHit)sc+=Math.min(4,v.atk)*.55;
+   return sc;
+  };
+  const objectives=(mission,u)=>{
+   if(mission.objective==='capture'){
+    const free=springs.map(k=>{const [x,y]=k.split(',').map(Number);return{x,y}})
+     .filter(p=>entity(p.x,p.y)?.team!==0);
+    return free.length?free:springs.map(k=>{const [x,y]=k.split(',').map(Number);return{x,y}});
+   }
+   if(mission.objective==='defend')return [...S.units.filter(v=>v.team===1),core(0)];
+   if(mission.objective==='hunt'){
+    const boss=S.units.find(v=>v.id===S.championId);
+    return boss?[boss]:[core(1)];
+   }
+   return[core(1)];
+  };
+  const moveScore=(u,p,mission)=>{
+   const targets=objectives(mission,u);
+   const near=targets.length?Math.min(...targets.map(v=>d(p,v))):9;
+   const onSpring=springs.includes(K(p.x,p.y));
+   const springWorth=mission.objective==='capture'?7.5:2.2;
+   const nearbyEnemies=S.units.filter(v=>v.team===1);
+   const shots=nearbyEnemies.some(v=>d(p,v)<=u.range&&los(p,v))?3.3:0;
+   const danger=nearbyEnemies.filter(v=>d(p,v)<=v.range&&los(v,p))
+    .reduce((n,v)=>n+Math.min(4,v.atk),0);
+   const hazard=(S.hazards||[]).includes(K(p.x,p.y))?6:0;
+   const ground=high.has(K(p.x,p.y))&&u.range>1?1.4:0;
+   return -near*2+shots+ground+(onSpring?springWorth:0)-hazard-danger*.23;
+  };
+  const playerTurn=mission=>{
+   if(S.phase!=='playing'||S.turn!==0)return;
+   // One legitimate affordable creature per round; spells aren't free
+   // and no mythical sacrifices are forged by the test.
+   const candidates=S.hands[0].map((key,idx)=>({key,idx,q:D[key]}))
+    .filter(z=>z.q&&!z.q.spell&&!z.q.tribute&&z.q.cost<=S.energy[0]&&
+     S.units.filter(v=>v.team===0).length<8)
+    .sort((a,b)=>(b.q.atk*1.2+b.q.hp*.34-b.q.cost*.62)-
+                 (a.q.atk*1.2+a.q.hp*.34-a.q.cost*.62));
+   for(const choice of candidates){
+    let slots=[];
+    for(let y=2;y<=6;y++)for(let x=0;x<7;x++)
+     if(deploy(0,x,y))slots.push({x,y});
+    slots.sort((a,b)=>moveScore({range:choice.q.range},b,mission)-
+     moveScore({range:choice.q.range},a,mission));
+    if(slots.some(p=>apply(0,{op:'card',idx:choice.idx,x:p.x,y:p.y,tributes:[]})))break;
+   }
+   for(const u of [...S.units].filter(v=>v.team===0)){
+    if(S.phase!=='playing'||!S.units.some(v=>v.id===u.id))break;
+    const targets=()=>[...S.units.filter(v=>v.team===1),core(1)];
+    let eligible=targets().filter(v=>canAttack(u,v));
+    // If the unit can attack already, don't sacrifice an attack for
+    // movement; attacks are scored rather than always hitting the core.
+    if(!eligible.length&&!u.moved&&!u.rooted){
+     const paths=movement(u).sort((a,b)=>moveScore(u,b,mission)-
+       moveScore(u,a,mission)||a.n-b.n||a.y-b.y||a.x-b.x);
+     if(paths.length&&moveScore(u,paths[0],mission)>moveScore(u,u,mission)+.12)
+      apply(0,{op:'move',id:u.id,x:paths[0].x,y:paths[0].y});
+     if(!S.units.some(v=>v.id===u.id)||S.phase!=='playing')continue;
+     eligible=targets().filter(v=>canAttack(u,v));
+    }
+    eligible.sort((a,b)=>scoreTarget(u,b,mission)-scoreTarget(u,a,mission));
+    if(eligible.length)apply(0,{op:'attack',id:u.id,x:eligible[0].x,y:eligible[0].y});
+   }
+   if(S.phase==='playing')apply(0,{op:'end'});
+   if(S.phase==='playing'&&S.turn===1)aiTurn();
+  };
+  try{
+   for(const m of CONQUEST.all){
+    for(const plan of m.storyScene?.choices||[]){
+     for(let seed=1;seed<=trials;seed++){
+      const sampleSeed=0x123ad+seed*137+m.id.charCodeAt(0)*991+
+       m.id.charCodeAt(1)*163;
+      rng(sampleSeed);
+      if(!startMission(m.id,true,plan.kind)){errors.push(m.id+': failed start');continue}
+      let steps=0,valid=true,orders=0;
+      while(S.phase==='playing'&&steps<m.rounds+2){
+       const prevRound=S.round;
+       playerTurn(m);orders++;steps++;
+       const occupied=new Set(S.units.map(v=>K(v.x,v.y)));
+       const noOverlap=occupied.size===S.units.length;
+       valid=valid&&noOverlap&&S.units.every(v=>
+        bounds(v.x,v.y)&&v.hp>0&&v.shield>=0&&v.shield<=5)&&
+        S.energy.every(e=>e>=0&&e<=10)&&S.hp.every(h=>h>=0&&h<=36)&&
+        S.units.every(v=>v.team===0||v.team===1)&&
+        S.units.filter(v=>v.team===0).length<=8&&
+        S.units.filter(v=>v.team===1).length<=8&&
+        S.round>=prevRound&&S.round<=prevRound+1;
+       if(!valid){errors.push(m.id+'/'+plan.kind+': invalid board turn '+steps);break}
+      }
+      reports.push({id:m.id,region:m.region,objective:m.objective,
+       plan:plan.kind,seed,win:S.winner===0,ended:S.phase==='over',
+       rounds:S.round,playerCore:S.hp[0],enemyCore:S.hp[1],
+       playerUnits:S.units.filter(v=>v.team===0).length,
+       enemyUnits:S.units.filter(v=>v.team===1).length,
+       events:S.encounterState?.events||0,valid,steps:orders});
+     }
+    }
+   }
+  }catch(error){errors.push('Runtime: '+String(error?.message||error))}
+  finally{Math.random=originalRandom;startQuickMatch()}
+  const grouped=CONQUEST.all.map(m=>{
+   const plans=(m.storyScene?.choices||[]).map(p=>{
+    const r=reports.filter(z=>z.id===m.id&&z.plan===p.kind);
+    return{kind:p.kind,games:r.length,wins:r.filter(z=>z.win).length,
+     winRate:r.length?r.filter(z=>z.win).length/r.length:0,
+     averageRounds:r.length?+(r.reduce((sum,z)=>sum+z.rounds,0)/r.length).toFixed(1):0,
+     averageCore:r.length?+(r.reduce((sum,z)=>sum+z.playerCore,0)/r.length).toFixed(1):0};
+   });
+   return{id:m.id,title:m.name,region:m.region,objective:m.objective,plans};
+  });
+  return{pass:!errors.length&&reports.length===CONQUEST.all.length*2*trials&&
+    reports.every(r=>r.valid&&r.ended),samples:trials,
+    games:reports.length,wins:reports.filter(r=>r.win).length,
+    errors,grouped,reports,agent:'simple legal-action heuristic, no spells'};
+ },
  qaPreviewResult:(id='v1',defeat=false)=>{
   if(!startMission(id,true,'rush'))return{pass:false,reason:'mission start refused'};
   if(defeat)applyDamage(core(0),S.hp[0]);
