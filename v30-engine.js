@@ -1659,7 +1659,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   return{pass:findings.length===4&&findings.every(f=>f.pass),findings};
  },
  qaBalance:(samples=2,missionIds=null,options=null)=>{
-  const originalRandom=Math.random;
+  const originalRandom=Math.random,originalDeck=chosenDeck;
   const reports=[],errors=[];
   const trials=Math.max(1,Math.min(12,Math.floor(samples)||2));
   const scenarios=Array.isArray(missionIds)&&missionIds.length?
@@ -1667,6 +1667,10 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   const useLegacyWaves=options?.legacyWaves===true;
   const testOnly=window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html');
   if(!testOnly)return{pass:false,errors:['Requires memory-isolated QA page'],reports:[]};
+  if(options?.testDeck!==undefined){
+   if(!checkDeck(options.testDeck))return{pass:false,errors:['Invalid 24-card QA test deck'],reports:[]};
+   chosenDeck=options.testDeck.slice();
+  }
   const rng=(seed)=>{
    let x=(seed>>>0)||1;
    Math.random=()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296};
@@ -1900,7 +1904,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     }
    }
   }catch(error){errors.push('Runtime: '+String(error?.message||error))}
-  finally{Math.random=originalRandom;startQuickMatch()}
+  finally{Math.random=originalRandom;chosenDeck=originalDeck;startQuickMatch()}
   const grouped=scenarios.map(m=>{
    const plans=(m.storyScene?.choices||[]).map(p=>{
     const r=reports.filter(z=>z.id===m.id&&z.plan===p.kind);
