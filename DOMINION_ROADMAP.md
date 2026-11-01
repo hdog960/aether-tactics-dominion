@@ -35,5 +35,8 @@ Rift Gauntlet, milestone rewards, mastery challenges, progression pacing and lon
 ### v4.7 — Multiplayer Reliability
 First prove private duel between actual devices and network configurations. Only then plan authoritative profiles, matchmaking/ranking, and seasonal rewards. Do not advertise ranked matchmaking as currently available.
 
+## Mandatory stopping point after v4.7
+**User-approved development boundary:** Complete v4.5 card expansion, v4.6 progression/replayability and v4.7 multiplayer reliability, then **STOP** and ask the creator for fresh direction. Do not begin v5.0, a new expansion, a revised monetization plan, or any post-v4.7 roadmap without the creator's input. This is a future stop condition, **not** a statement that v4.7 is completed.
+
 ## Safety and preservation
 Protect version 4 match save and existing commander profile keys. Keep all new testing on the separate isolated QA route; do not clear real player saves. Home Screen cache updates must use versioned assets.
