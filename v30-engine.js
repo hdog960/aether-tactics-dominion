@@ -1772,9 +1772,55 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     const cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
     check('Ashen Reprisal respects the five-shield cap',cast&&ally.shield===5);
    }
+   {
+    const {ally,enemy}=setup('I');
+    enemy.x=3;enemy.y=4;enemy.atk=12;enemy.moved=false;enemy.attacked=false;
+    ally.hp=1;ally.shield=0;
+    const initial=enemy.hp;
+    const cast=apply(0,{op:'card',idx:0,x:ally.x,y:ally.y,tributes:[]});
+    S.turn=1;
+    const hit=apply(1,{op:'attack',id:enemy.id,x:ally.x,y:ally.y});
+    check('Defeated Reprisal bearer never retaliates from beyond death',
+     cast&&hit&&!S.units.some(u=>u.id===ally.id)&&enemy.hp===initial);
+   }
+   {
+    const {ally}=setup('I');
+    const cast=apply(0,{op:'card',idx:0,x:ally.x,y:ally.y,tributes:[]});
+    S.round++;startStatusTurn(0);
+    check('Reprisal expires by the next allied turn',cast&&!ally.reprisal);
+   }
+   {
+    const {ally}=setup('K');
+    const cast=apply(0,{op:'card',idx:0,x:ally.x,y:ally.y,tributes:[]});
+    S.round++;startStatusTurn(0);
+    check('Dawn Edict does not persist beyond recipient next turn',cast&&!ally.edict);
+   }
+   {
+    const mission=startMission('t1',true,'rush');
+    const boss=S.units.find(u=>u.id===S.championId);
+    S.turn=0;S.energy[0]=10;S.hands[0]=['J'];
+    const ally=S.units.find(u=>u.team===0);
+    if(ally&&boss){ally.x=boss.x;ally.y=Math.min(7,boss.y+2)}
+    const before=boss?{x:boss.x,y:boss.y,hp:boss.hp}:null;
+    const energy=S.energy[0];
+    const cast=boss&&apply(0,{op:'card',idx:0,x:boss.x,y:boss.y,tributes:[]});
+    check('Undertow cannot displace a champion or consume a failed card',
+     mission&&boss&&!cast&&S.energy[0]===energy&&
+      boss.x===before.x&&boss.y===before.y&&boss.hp===before.hp&&S.hands[0][0]==='J');
+   }
+   {
+    const {ally}=setup('I');
+    const cast=apply(0,{op:'card',idx:0,x:ally.x,y:ally.y,tributes:[]});
+    save();const expected=S.units.find(u=>u.id===ally.id)?.reprisal;
+    const serialized=localStorage.getItem('aether-dominion-v04');
+    S=null;const restored=load();
+    check('Legacy version-four save restores new ward state without a schema migration',
+     cast&&!!serialized&&restored&&expected===1&&
+      S.units.find(u=>u.id===ally.id)?.reprisal===1&&S.version===4);
+   }
   }catch(err){results.push({name:'Runtime error',pass:false,info:String(err)})}
   finally{startQuickMatch()}
-  return{pass:results.length===7&&results.every(r=>r.pass),results};
+  return{pass:results.length===12&&results.every(r=>r.pass),results};
  },
  // v4.4.4: deterministic, self-contained tactical playtest, restricted to
  // save-isolated QA. Both choices for a mission use the SAME seeded RNG and
