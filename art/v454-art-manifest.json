@@ -1,0 +1,33 @@
+{
+  "version": "4.5.3",
+  "characters": [
+    "Q",
+    "R",
+    "S",
+    "T"
+  ],
+  "frames_per_character": 22,
+  "atlases": {
+    "cards-creatures-v454.webp": {
+      "dimensions": [
+        512,
+        96
+      ],
+      "bytes": 11524
+    },
+    "units-creatures-v454.png": {
+      "dimensions": [
+        384,
+        120
+      ],
+      "bytes": 73151
+    },
+    "battlefield-frames-v454.webp": {
+      "dimensions": [
+        2112,
+        480
+      ],
+      "bytes": 478718
+    }
+  }
+}
