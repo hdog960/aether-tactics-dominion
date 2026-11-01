@@ -1,0 +1,22 @@
+name: Dominion v4.5.4 rule regressions (staging)
+on:
+  push:
+    branches: [dev/v454-second-creatures]
+    paths:
+      - .github/workflows/v454-rules-qa.yml
+      - tools/v454_rules_qa.mjs
+      - v45-engine.js
+      - v30-campaign-data.js
+permissions:
+  contents: read
+jobs:
+  rules-and-saves:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run actual-engine tactical rules and save-isolation tests
+        run: node tools/v454_rules_qa.mjs
