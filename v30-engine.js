@@ -70,6 +70,10 @@ const V45_QA=window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-
 const V45_ENABLED=V45_QA||window.DOMINION_V45_ART_RELEASE===true;
 const CARD_KEYS=Object.keys(D).filter(k=>V45_ENABLED||!V45_SPELL_KEYS.includes(k)),
  DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
+// Two copies of each new spell leave room for 16 distinct existing creature
+// slots. The preset is invisible until artwork is explicitly available.
+if(V45_ENABLED)PACKS.Astral=['v','v','v','b','b','r','r','s','s','f','f',
+ 'g','c','j','p','k','H','H','I','I','J','J','K','K'];
 function checkDeck(deck){
  if(!Array.isArray(deck)||deck.length!==DECK_SIZE||deck.some(k=>!CARD_KEYS.includes(k)))return false;
  const copies={},units=deck.filter(k=>!D[k].spell),mythics=units.filter(k=>D[k].tribute);
@@ -620,7 +624,7 @@ function basicStrike(attacker,target){
  applyDamage(target,actual);
  // Ashen Reprisal triggers only once against a genuine physical strike.
  // It never recurses: its 1-damage return is a spell impact, not a strike.
- if(wasUnit&&target.reprisal&&S.units.some(v=>v.id===attacker.id)){
+ if(wasUnit&&S.units.some(v=>v.id===target.id)&&target.reprisal&&S.units.some(v=>v.id===attacker.id)){
   target.reprisal=0;
   fxSpell(attacker,1,'reprisal',target.x,target.y,target.team);
   applyDamage(attacker,1);
@@ -1301,6 +1305,12 @@ function deckStatus(){
  }).join('');
 }
 function openBuilder(){
+ if(V45_ENABLED&&!$('deck-presets').querySelector('[data-preset="Astral"]')){
+  const button=document.createElement('button');
+  button.type='button';button.dataset.preset='Astral';
+  button.innerHTML='ASTRAL<small>Position & Counterplay</small>';
+  $('deck-presets').appendChild(button);
+ }
  closeGuide();draftDeck=chosenDeck.slice();$('deck-builder').classList.remove('hidden');
  $('deck-status').textContent='Your saved deck will be used for your next match. This battle stays unchanged.';
  deckStatus();
