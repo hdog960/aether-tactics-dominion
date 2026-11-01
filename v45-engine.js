@@ -2389,6 +2389,28 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
  };
   const playerTurn=(mission,activity)=>{
    if(S.phase!=='playing'||S.turn!==0)return;
+   // A player can move before summoning. Practice that legal sequence when
+   // Zephyr is in hand; otherwise the bot never tests Tailwind Dispatch.
+   // Move one grounded ally only if it improves the actual mission position
+   // and can remain within two tiles of a legal Zephyr deployment square.
+   if(S.hands[0].includes('M')&&S.energy[0]>=D.M.cost&&
+      S.zephyrRound?.[0]!==S.round){
+    const staging=[];
+    for(let y=2;y<=6;y++)for(let x=0;x<7;x++)
+     if(deploy(0,x,y))staging.push({x,y});
+    const candidates=S.units.filter(u=>u.team===0&&!u.moved&&!u.rooted&&!u.fly&&!u.attacked);
+    for(const ally of candidates){
+     const moves=movement(ally).filter(pt=>staging.some(s=>d(pt,s)<=2))
+      .sort((a,b)=>moveScore(ally,b,mission)-moveScore(ally,a,mission)||
+       a.n-b.n||a.y-b.y||a.x-b.x);
+     const best=moves[0];
+     if(best&&moveScore(ally,best,mission)>=moveScore(ally,ally,mission)+.2&&
+       apply(0,{op:'move',id:ally.id,x:best.x,y:best.y})){
+      activity.moves++;
+      break;
+     }
+    }
+   }
    // One legal summon per turn, including tributed mythics. Preserve
    // spring defenders where possible, and never sacrifice an enemy unit.
    const candidates=S.hands[0].map((key,idx)=>({key,idx,q:D[key]}))
