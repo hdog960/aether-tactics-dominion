@@ -32,3 +32,13 @@ Each encounter offers only two appropriately narrated doctrine choices. The orig
 
 ## Roadmap follow-up
 Next is completing and balancing the remaining v4.4 campaign work through end-to-end mission challenge testing, richer post-battle story outcomes, and an optional repeatable strategy challenge. v4.5 card expansion is planned only after campaign balance and stability are satisfactory.
+
+## Published live QA — November 1, 2026
+- GitHub Pages deployment for commit `ea6b11c282a320da7947c46f3d7dd8c43952513e` finished successfully.
+- Live browser evidence and screenshots: https://agent.tinyfish.ai/runs/352a73d5-e644-4e6b-b800-87e0bf36e9d8
+- **STORY PLAN AUDIT: 30/30 PASS**, both choices across each of 15 missions; all starting resource, hand-size and Core-health checks met expectations; zero JavaScript errors.
+- **CAMPAIGN EVENT AUDIT: 15/15 PASS**; all six event types still function.
+- **BOSS PHASE AUDIT: 7/7 PASS**, including Mirror Court reflection.
+- **Manual browser interaction:** Map → First Footsteps → story scene from Captain Ellin → select Shieldwall Advance → Start Mission. Starting Aeth was 2, matching the plan. On returning to Map, First Footsteps retained its in-progress marker, and navigation remained available.
+- The browser agent did not directly read the shield icons of the two starting soldiers, though the engine-level plan audit verified their shield values. The story option CSS selection was observed; browser inspection of the accessibility attribute was inconclusive (source sets `aria-pressed`).
+- Isolated QA only. Native iPhone gesture performance, full end-to-end mission-clear playthroughs and long-term tactical balance remain unverified.
