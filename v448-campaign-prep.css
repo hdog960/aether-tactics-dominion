@@ -1,0 +1,33 @@
+/* Dominion v4.4.8 — campaign briefing armory access.
+   Uses existing gold/ink fantasy UI. No overlay over battle tile input. */
+#game .atlas-dialog-loadout{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;
+ align-items:center;margin:12px 0 7px;padding:12px;
+ border:1px solid #d7af72;border-radius:11px;
+ background:linear-gradient(145deg,#1e3048ed,#29243eeb);
+ box-shadow:inset 0 1px #f4d9aa30,0 5px 16px #070b1f65;
+}
+#game .atlas-loadout-copy{display:flex;flex-direction:column;min-width:0;gap:5px}
+#game .atlas-loadout-copy span{
+ font:850 10px/1.2 system-ui;letter-spacing:.8px;color:#e9bf88;
+}
+#game .atlas-loadout-copy strong{
+ font:750 11px/1.35 system-ui;color:#f3e4c8;overflow-wrap:anywhere;
+}
+#game .atlas-dialog-loadout [data-deck-prep]{
+ min-height:46px;padding:8px 13px!important;touch-action:manipulation;
+ border:1px solid #ffe4ac!important;border-radius:8px!important;
+ color:#29263d!important;background:linear-gradient(165deg,#ffe6b2,#cba06f)!important;
+ font:900 11px/1.2 system-ui!important;box-shadow:0 3px 9px #0305138c;
+}
+#game .atlas-dialog-loadout [data-deck-prep]:focus-visible{
+ outline:3px solid #a7f1d5;outline-offset:3px;
+}
+#game .atlas-dialog-loadout p{
+ grid-column:1/-1;margin:0;
+ color:#c3cece;font:600 10px/1.4 system-ui;
+}
+@media(max-width:365px){
+ #game .atlas-dialog-loadout{grid-template-columns:1fr}
+ #game .atlas-dialog-loadout [data-deck-prep]{width:100%}
+}
