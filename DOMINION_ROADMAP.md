@@ -20,11 +20,11 @@ The Hollow King's authored reinforcement waves no longer stack with the generic 
 ### v4.4.9 — Deck-aware Campaign Counsel (shipped)
 The real world-map mission briefing now reads the current saved deck, the authored objective and boss counterplay, then shows preparation and upgrade suggestions. No save schema, card levels, enemy balance or artwork changed. See `V449_TACTICIAN_BRIEFINGS.md`.
 
-### v4.5 — The Great Card Expansion (experimental first batch under active development)
-The `dev/v45-first-spell-batch` branch contains four new spell mechanics, AI handling, Grimoire text, isolated rules tests and VFX. **Not publicly released**: approved original matching portraits, mobile visual QA and integrated balance testing are required before enabling these spells. See `V45_FIRST_SPELL_BATCH.md` on that branch.
+### v4.5.1 — The Great Card Expansion, first batch (shipped)
+Four new illustrated spell cards have been added: **Starfall Lattice, Ashen Reprisal, Undertow and Dawn Edict**. A new art-gated **ASTRAL** playstyle provides the eighth valid premade 24-card deck, with original 32 cards and legacy deck/progression keys intact. Card art is loaded from four distinct 128×96 painted fantasy surfaces, with corresponding battlefield spell effects. Live browser QA passed all 12 spell rules, all four art crops, and 60/60 initial tactical simulations without invalid states. See `V451_RELEASE_AND_QA.md` for verified results and limitations.
 
-
-Grow to ~60 carefully balanced cards, designed across distinct viable archetypes (sacrifice, flying, terrain control, spells, counterspells, frontline). Create bespoke card/battlefield matching art and descriptions before shipping each batch. Regression test existing 24-card deck construction and local progression.
+### v4.5.2 onward — 24 more cards to reach 60 (planned)
+Grow the current **36-card** library toward **60** in small polished batches of distinctive units and spells across sacrifice, flying, terrain control, counterplay and frontline archetypes. A creature is not ready to ship until the illustration, transparent battlefield cutout, animation frames, card reference, true behavior and balance tests all match. Continue protecting the 24-card deck restrictions, existing achievements and save progression. First planned batch includes truly different units and matching battlefield art; do not ship flat shape icons, recolors, or concept-only mockups as real assets.
 
 ### v4.6 — Progression & Replayability
 Rift Gauntlet, milestone rewards, mastery challenges, progression pacing and long-run variety. Include challenge reset safeguards and migration tests.
