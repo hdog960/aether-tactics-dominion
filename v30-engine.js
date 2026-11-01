@@ -331,6 +331,7 @@ function startMission(id,qa=false){
  S.missionRoundLimit=m.rounds;S.aiStyle=m.style;
  S.aiTier=Math.max(S.aiTier||1,m.tier);
  S.hazards=[];
+ S.bossHistory=[];S.bossNotice='';
  S.encounterState=m.encounter?{events:0,lastRound:0,notice:'',
   nextRound:m.encounter.first}:null;
  setArena(m.region);
@@ -383,13 +384,80 @@ function onUnitDeath(u){
 }
 // Multi-phase campaign champions: meaningful changes to positioning and
 // survival rather than simply oversized health bars.
+// v4.4.1 — signature boss transitions. No new attacks are granted by
+// these helpers. They only change bounded positional/status state.
+function bossSignature(boss,mission,phase){
+ const foes=S.units.filter(u=>u.team===0)
+  .sort((a,b)=>d(a,boss)-d(b,boss)||a.hp-b.hp||a.id-b.id);
+ const friends=S.units.filter(u=>u.team===1&&u.id!==boss.id)
+  .sort((a,b)=>d(a,boss)-d(b,boss)||a.id-b.id);
+ const id=mission.id;
+ let text='';
+ if(id==='v3'){
+  const targets=foes.filter(u=>d(u,boss)<=4).slice(0,phase===1?1:2);
+  for(const u of targets){u.rooted=true;abilityPulse(u,'frost',0)}
+  text=targets.length?'Briars catch '+targets.length+' challenger(s).':'Briars surround the Warden, but reach no one.';
+ }else if(id==='f3'){
+  if(phase===1){
+   const u=friends[0];
+   if(u){const n=grantShield(u,1);if(n)abilityPulse(u,'shield',n)}
+   text=u?'The Seer shields its closest retainer.':'The Seer finds no ally to shield.';
+  }else{
+   const u=foes.find(v=>d(v,boss)<=4);
+   if(u){u.frosted=true;abilityPulse(u,'frost',0)}
+   text=u?'An icy reflection slows the closest challenger.':'The Seer projects an icy reflection.';
+  }
+ }else if(id==='e3'||id==='t3'){
+  const candidates=id==='e3'?
+   (phase===1?['2,3']:['4,4']):(phase===1?['2,3','4,3']:['2,4','4,4']);
+  const legal=candidates.filter(k=>{
+   const [x,y]=k.split(',').map(Number);
+   return bounds(x,y)&&!rocks.has(k)&&!(x===3&&(y===0||y===7));
+  });
+  S.hazards=Array.from(new Set([...(S.hazards||[]),...legal])).slice(0,8);
+  text=legal.length?'New glowing fissures open. Avoid them before the next terrain tick.':
+   'The furnace shakes, but the fissures remain blocked.';
+ }else if(id==='r3'){
+  if(phase===1){
+   const u=foes.find(v=>d(v,boss)<=4);
+   if(u){u.brandedFor=1;abilityPulse(u,'silence',0)}
+   text=u?'The Leviathan brands a challenger for its next strike.':'The Leviathan searches for a challenger to brand.';
+  }else{
+   for(const u of friends.slice(0,2)){
+    const n=grantShield(u,1);if(n)abilityPulse(u,'shield',n);
+   }
+   text='The deepwater oath shields the Leviathan’s defenders.';
+  }
+ }else if(id==='t1'){
+  if(phase===1){
+   boss.move=Math.min(3,boss.move+1);
+   text='The Hollow King strides farther on its next move.';
+  }else{
+   const u=foes[0];
+   if(u){u.brandedFor=1;abilityPulse(u,'silence',0)}
+   text=u?'The King marks its nearest challenger.':'The King seeks a challenger to mark.';
+  }
+ }else if(id==='t2'){
+  boss.mirrorCharge=Math.min(2,(boss.mirrorCharge||0)+1);
+  if(phase===2)boss.mirrorCharge=2;
+  abilityPulse(boss,'shield',0);
+  text='The Court’s mirror stores '+boss.mirrorCharge+' retaliation'+
+   (boss.mirrorCharge===1?'':'s')+' against basic attacks.';
+ }
+ if(text){
+  S.bossHistory=(S.bossHistory||[]).slice(-3);
+  S.bossHistory.push({phase,id,text,round:S.round});
+  S.bossNotice='PHASE '+phase+' · '+text;
+ }
+ return text;
+}
 function bossReaction(boss){
  if(!S.missionId||boss.id!==S.championId||boss.hp<=0)return;
  const ratio=boss.hp/Math.max(1,boss.max),phase=boss.bossPhase||0;
  const mission=MISSION_BY_ID[S.missionId];if(!mission)return;
  if(ratio<=.65&&phase<1){
   boss.bossPhase=1;
-  const shield=grantShield(boss,2);if(shield)abilityPulse(boss,'shield',shield);
+  const shield=grantShield(boss,1);if(shield)abilityPulse(boss,'shield',shield);
   // Bosses call a distinct defender. At most one minion per phase.
   const minion=mission.id==='t1'?'s':mission.id==='t2'?'b':mission.id==='t3'?'c':
    mission.region==='frost'?'j':mission.region==='ember'?'c':'v';
@@ -399,17 +467,15 @@ function bossReaction(boss){
     S.units.push(unit(minion,1,xx,yy,false));break;
    }
   }
-  log='The '+mission.name+' guardian calls its defenders!';
+  const special=bossSignature(boss,mission,1);
+  log=mission.name+' — PHASE TWO! '+(special||'The guardian calls its defenders.');
  }
  if(ratio<=.3&&(boss.bossPhase||0)<2){
   boss.bossPhase=2;
   boss.atk=Math.min(7,boss.atk+1);
   grantShield(boss,1);
-  if(mission.id==='t3'){
-   const hazard=K(3,4);
-   if(!(S.hazards||[]).includes(hazard))S.hazards.push(hazard);
-  }
-  log='Final phase! The guardian draws on the Rift.';
+  const special=bossSignature(boss,mission,2);
+  log=mission.name+' — FINAL PHASE! '+(special||'The guardian draws on the Rift.');
  }
 }
 function onSacrifice(t){
@@ -492,6 +558,18 @@ function basicStrike(attacker,target){
  fxStrike(attacker,target,actual);
  const wasUnit=!target.core&&S.units.some(v=>v.id===target.id);
  applyDamage(target,actual);
+ // Mirror Court reflects at most one point per stored charge. It does not
+ // reflect spells, hit an already defeated striker, or chain into itself.
+ if(S.missionId==='t2'&&!target.core&&target.id===S.championId&&
+    target.hp>0&&target.mirrorCharge>0&&attacker.team===0&&
+    S.units.some(u=>u.id===attacker.id)){
+  target.mirrorCharge--;
+  fxSpell(attacker,1,'exchange',target.x,target.y,1);
+  applyDamage(attacker,1);
+  S.bossNotice='MIRROR COUNTER · The Court reflects 1 damage. '+
+   target.mirrorCharge+' charge(s) remain.';
+  log=S.bossNotice;
+ }
  if(wasUnit&&attacker.k==='A'&&!S.units.some(v=>v.id===target.id)){
   const heal=Math.min(2,attacker.max-attacker.hp);attacker.hp+=heal;
   if(heal)abilityPulse(attacker,'heal',heal);
@@ -1128,8 +1206,9 @@ function closeProfile(){$('player-profile').classList.add('hidden')}
 
 function renderLabels(){
  $('instruction').innerHTML=msg||'<b>Welcome, Commander.</b> Select a card or unit.';
- $('tip').textContent=(S?.missionId&&S.encounterState?.notice?
-  S.encounterState.notice+' · ':'')+(hint||'Summon, position and conquer.');
+ $('tip').textContent=(S?.bossNotice?S.bossNotice+' · ':'')+
+  (S?.missionId&&S.encounterState?.notice?S.encounterState.notice+' · ':'')+
+  (hint||'Summon, position and conquer.');
  $('feed').textContent=log||'The Riftfront awaits your orders.';
 }
 function render(){
@@ -1387,6 +1466,38 @@ window.addEventListener('aether-card-art-ready',()=>{
 });
 window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
  ...(window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html')?{
+ qaBoss:(id)=>{
+  if(!startMission(id,true))return{pass:false,id,reason:'start refused'};
+  const mission=MISSION_BY_ID[id],boss=S.units.find(u=>u.id===S.championId);
+  if(!mission?.bossKit||!boss)return{pass:false,id,reason:'no unique champion'};
+  const player=S.units.find(u=>u.team===0);
+  // Move a challenger into readable range so positional phases activate.
+  if(player){player.x=3;player.y=4;}
+  boss.hp=Math.max(1,Math.floor(boss.max*.62));
+  bossReaction(boss);
+  const phaseOne=boss.bossPhase===1&&(S.bossHistory||[]).length===1;
+  boss.hp=Math.max(1,Math.floor(boss.max*.26));
+  bossReaction(boss);
+  const phaseTwo=boss.bossPhase===2&&(S.bossHistory||[]).length===2;
+  const unique=new Set(S.units.map(u=>K(u.x,u.y)));
+  const legal=unique.size===S.units.length&&S.units.length<=16&&
+   S.units.every(u=>bounds(u.x,u.y)&&u.hp>0&&u.shield<=5);
+  let mirrorCheck=true,reflection=0;
+  if(id==='t2'&&player){
+   boss.hp=Math.max(10,boss.hp);boss.shield=0;
+   // A basic strike on the mirror must consume exactly one charge.
+   player.x=3;player.y=3;player.hp=player.max;player.atk=2;
+   const oldHp=player.hp,oldCharge=boss.mirrorCharge;
+   basicStrike(player,boss);
+   reflection=oldHp-player.hp;
+   mirrorCheck=reflection===1&&boss.mirrorCharge===oldCharge-1;
+  }
+  const result={id,pass:phaseOne&&phaseTwo&&legal&&mirrorCheck,
+   phaseOne,phaseTwo,legal,mirrorCheck,reflection,kit:mission.bossKit.name,
+   phases:S.bossHistory?.map(x=>x.text),bossShield:boss.shield,bossMove:boss.move};
+  startQuickMatch();
+  return result;
+ },
  qaEncounter:(id,round)=>{
   if(!startMission(id,true))return{pass:false,reason:'mission setup failed'};
   const mission=MISSION_BY_ID[id],state=S.encounterState;

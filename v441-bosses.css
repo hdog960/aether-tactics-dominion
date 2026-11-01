@@ -1,0 +1,12 @@
+/* v4.4.1 — boss phase briefing readability in mobile atlas dialog. */
+#game .atlas-dialog-twist{
+ white-space:pre-line;
+ line-height:1.7;
+ overflow-wrap:anywhere;
+}
+#game[data-tab="battle"] .command-dock .hint small{
+ overflow-wrap:anywhere;
+}
+@media(max-width:410px){
+ #game .atlas-dialog-twist{font-size:11px;padding:11px}
+}

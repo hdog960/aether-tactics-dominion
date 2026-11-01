@@ -44,7 +44,35 @@
   t2:{name:'Mirror Court',description:'Crystal warding reflects into the champion and a nearby retainer.',type:'mirror',first:3,cadence:3},
   t3:{name:'Sovereign’s Rupture',description:'The final Titan rotates searing fault lines as the fight escalates.',type:'weather',first:2,cadence:2,patterns:[['1,3','3,3','5,4'],['2,4','3,4','4,3'],['0,3','3,5','6,4']]}
  };
- for(const m of [...missions,...trials])m.encounter=signatures[m.id];
+ // v4.4.1: individual boss phases, not merely a HP threshold and minion.
+ // Every phase is previewed in the mission briefing before the player starts.
+ const bossKits={
+  v3:{name:'Briarheart Warden',phase1:'Root one nearby attacker with awakening briars.',
+   phase2:'Snare up to two nearby attackers as the thorn crown blooms.',
+   counter:'Keep ranged units outside the briar reach and save movement-refresh spells.'},
+  f3:{name:'The Glassbound Reflection',phase1:'Grant a nearby crystal defender an additional shield.',
+   phase2:'Freeze the closest enemy of the Seer for one movement phase.',
+   counter:'Bring multiple attack angles; frost control is strongest near the champion.'},
+  e3:{name:'Furnace Heart',phase1:'A glowing fault opens by the southern approach.',
+   phase2:'A second magma fault opens, narrowing the safe lanes.',
+   counter:'Read the glowing hazard tiles and reposition before the fire ticks.'},
+  r3:{name:'Deepwater Oath',phase1:'The Leviathan marks the nearest challenger for a stronger follow-up.',
+   phase2:'Its remaining defenders gain one protective shield.',
+   counter:'Spread out from the Leviathan and protect whichever unit receives the mark.'},
+  t1:{name:'The King’s Pursuit',phase1:'The Hollow King gains a longer stride and calls a hunter.',
+   phase2:'The King brands a vulnerable challenger for extra damage.',
+   counter:'Use roots, summons and blockers to stop the King reaching fragile allies.'},
+  t2:{name:'The Mirror’s Verdict',phase1:'The mirror charges one counterattack against a basic strike.',
+   phase2:'The mirror gains two additional reflection charges, up to two stored.',
+   counter:'Break the mirror’s charges using armored attackers; spells never reflect.'},
+  t3:{name:'Sovereign’s Reckoning',phase1:'A volcanic fissure tears through a flank of the arena.',
+   phase2:'More fissures appear as the Sovereign enters its final rage.',
+   counter:'Do not cluster on the center line; time your final attack before the next eruption.'}
+ };
+ for(const m of [...missions,...trials]){
+  m.encounter=signatures[m.id];
+  if(bossKits[m.id])m.bossKit=bossKits[m.id];
+ }
  const all=[...missions,...trials];
  window.AetherConquest={regions,missions,trials,all};
 })();

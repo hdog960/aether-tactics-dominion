@@ -46,8 +46,12 @@ function openMission(id,button){
  $('atlas-dialog-title').textContent=m.name;
  $('atlas-dialog-story').textContent=m.story;
  $('atlas-dialog-objective').textContent=types[m.objective]||'⚔ Tactical encounter';
- $('atlas-dialog-twist').textContent=m.encounter?'✦ BATTLEFIELD TWIST · '+m.encounter.name.toUpperCase()+
-  ' — '+m.encounter.description:'';
+ $('atlas-dialog-twist').textContent=
+  (m.encounter?'✦ BATTLEFIELD TWIST · '+m.encounter.name.toUpperCase()+
+   ' — '+m.encounter.description:'')+
+  (m.bossKit?'\n♛ BOSS PHASES · '+m.bossKit.name+'\n'+
+   'AT 65% HP: '+m.bossKit.phase1+'\nAT 30% HP: '+m.bossKit.phase2+
+   '\nTACTICAL TIP: '+m.bossKit.counter:'');
  $('atlas-dialog-twist').classList.toggle('hidden',!m.encounter);
  $('atlas-dialog-reward').textContent='REWARDS  ✧ '+m.bonusXP+' XP   ◆ '+m.bonusGold+' GOLD'+(done?'   ★ '+(info.stars?.[id]||1)+'/3':'');
  const launch=$('atlas-launch');
