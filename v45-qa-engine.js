@@ -44,7 +44,17 @@ I:{name:'Ashen Reprisal',cost:2,spell:'reprisal',role:'Battle Ward',
 J:{name:'Undertow',cost:3,spell:'undertow',power:1,role:'Tide Hex',
  desc:'Deal 1 damage and pull a non-boss enemy one open tile toward your army.'},
 K:{name:'Dawn Edict',cost:3,spell:'edict',role:'War Blessing',
- desc:'Empower an ally’s next basic attack by 1 and strip up to 3 shield first.'}
+ desc:'Empower an ally’s next basic attack by 1 and strip up to 3 shield first.'},
+// v4.5.3 CREATURE PROTOTYPES. NOT PUBLIC — unique painted portraits, matching
+// battlefield silhouettes and frame atlas must ship before the release flag.
+M:{name:'Zephyr Cartographer',cost:3,hp:4,atk:1,range:2,move:3,fly:true,
+ role:'Winged Scout',desc:'On summon, refresh one nearby grounded ally’s movement.'},
+N:{name:'Verdant Bastion',cost:4,hp:8,atk:1,range:1,move:1,shield:1,
+ role:'Spring Guardian',desc:'On a spring, shield a nearby ally at turn start.'},
+O:{name:'Cragsunder Duelist',cost:3,hp:5,atk:2,range:1,move:2,
+ role:'Highland Duelist',desc:'First high-ground strike each round pierces 2 shield.'},
+P:{name:'Umbral Siphon',cost:4,hp:5,atk:2,range:2,move:2,
+ role:'Hex Hunter',desc:'First attack on a shielded enemy steals 1 shield.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
 const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"p":{"move":2},"o":{"hp":4,"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
@@ -55,7 +65,11 @@ Object.assign(ABILITIES,{
  y:{name:'Parting Lantern',desc:'On defeat, grant 2 shield to the closest surviving ally, within 2 tiles.'},
  z:{name:'Rune Echo',desc:'Your first spell cast each round gives this unit +1 on its next attack that round.'},
  A:{name:'Dusk Harvest',desc:'If this unit defeats another creature with a basic attack, restore 2 health (up to maximum).'},
- B:{name:'Oathbound',desc:'When you sacrifice an allied unit, this Sentinel gains 2 shield and +1 on its next attack, once each round.'}
+ B:{name:'Oathbound',desc:'When you sacrifice an allied unit, this Sentinel gains 2 shield and +1 on its next attack, once each round.'},
+ M:{name:'Tailwind Dispatch',desc:'When summoned, refresh the movement (never attack) of the closest ground ally within 2 tiles. Once per round per team.'},
+ N:{name:'Spring Sentinel',desc:'At the beginning of your turn, if holding an Aeth spring, grant 1 shield to the nearest allied creature within 2 tiles (or self). Respect the 5-shield cap.'},
+ O:{name:'Summit Breaker',desc:'Your first basic strike launched from elevated terrain each round removes up to 2 enemy shield before normal damage. No extra attack.'},
+ P:{name:'Shadow Tithe',desc:'Your first basic strike against a shielded creature each round transfers 1 shield from that target to this unit, if below the 5-shield cap.'}
 });
 for(const [key,a] of Object.entries(ABILITIES)){D[key].ability=a.name;D[key].abilityText=a.desc}
 const portraitIndices={v:0,r:1,b:2,s:3,f:4,g:5,a:6};
@@ -68,7 +82,13 @@ Object.assign(PACKS,{"Echo":["v","v","o","o","o","z","z","z","p","p","b","b","r"
 const V45_SPELL_KEYS=['H','I','J','K'];
 const V45_QA=window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html');
 const V45_ENABLED=V45_QA||window.DOMINION_V45_ART_RELEASE===true;
-const CARD_KEYS=Object.keys(D).filter(k=>V45_ENABLED||!V45_SPELL_KEYS.includes(k)),
+// v4.5.3 units are specifically art-gated. QA may exercise real mechanics
+// in memory without introducing missing sprites to the released collection.
+const V453_UNIT_KEYS=['M','N','O','P'];
+const V453_ENABLED=V45_QA||window.DOMINION_V453_ART_RELEASE===true;
+const CARD_KEYS=Object.keys(D).filter(k=>
+ (V45_ENABLED||!V45_SPELL_KEYS.includes(k))&&
+ (V453_ENABLED||!V453_UNIT_KEYS.includes(k))),
  DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
 // Two copies of each new spell leave room for 16 distinct existing creature
 // slots. The preset is invisible until artwork is explicitly available.
@@ -526,6 +546,32 @@ function nearestAlly(u,radius=2){
  return S.units.filter(v=>v.team===u.team&&v.id!==u.id&&d(v,u)<=radius)
    .sort((a,b)=>d(a,u)-d(b,u)||a.hp/a.max-b.hp/b.max||a.id-b.id)[0]||null;
 }
+// On-summon movement assistance does not create a new attack, affect flyers
+// or ignore roots. Its round quota is shared between cards of the same team.
+function onCreatureSummoned(u){
+ if(u.k!=='M'||S.zephyrRound?.[u.team]===S.round)return;
+ const ally=S.units.filter(v=>v.team===u.team&&v.id!==u.id&&
+  !v.fly&&v.moved&&!v.rooted&&d(v,u)<=2)
+  .sort((a,b)=>d(a,u)-d(b,u)||a.id-b.id)[0];
+ if(!ally)return;
+ ally.moved=false;ally.stride=0;
+ S.zephyrRound||=[-1,-1];S.zephyrRound[u.team]=S.round;
+ abilityPulse(ally,'dash',0);
+}
+// Only spring-holding Bastions produce their shield, once at the start
+// of their own side's turn. No ongoing aura and never above shield cap.
+function springBastionPulse(team){
+ for(const keeper of S.units.filter(v=>v.team===team&&v.k==='N'&&
+  springs.includes(K(v.x,v.y)))){
+  const allies=S.units.filter(v=>v.team===team&&v.id!==keeper.id&&
+   d(v,keeper)<=2&&v.shield<MAX_SHIELD)
+   .sort((a,b)=>d(a,keeper)-d(b,keeper)||a.shield-b.shield||a.id-b.id);
+  const beneficiary=allies[0]||(keeper.shield<MAX_SHIELD?keeper:null);
+  if(!beneficiary)continue;
+  const n=grantShield(beneficiary,1);
+  if(n)abilityPulse(beneficiary,'shield',n);
+ }
+}
 function onUnitDeath(u){
  if(S?.missionId&&u.id===S.championId&&u.team===1&&S.missionGoal==='hunt')missionWin();
  if(u.k==='y'){const ally=nearestAlly(u,2);
@@ -704,6 +750,24 @@ function mitigate(target,n,physical){
  return value;
 }
 function basicStrike(attacker,target){
+ // Cragsunder Duelist: high-ground advantage *instead* of a raw power
+ // multiplier. Applies once per round, and never against a Core.
+ if(attacker.k==='O'&&!target.core&&high.has(K(attacker.x,attacker.y))&&
+    attacker.summitRound!==S.round){
+  attacker.summitRound=S.round;
+  target.shield=Math.max(0,(target.shield||0)-2);
+  abilityPulse(attacker,'edict',0);
+ }
+ // Umbral Siphon transfers actual existing shield before ordinary damage,
+ // once per round. It creates no shield if the opponent had none or the
+ // siphon was already capped, and never affects Cores.
+ if(attacker.k==='P'&&!target.core&&(target.shield||0)>0&&
+    (attacker.shield||0)<MAX_SHIELD&&attacker.siphonRound!==S.round){
+  target.shield=Math.max(0,target.shield-1);
+  const gained=grantShield(attacker,1);
+  attacker.siphonRound=S.round;
+  if(gained)abilityPulse(attacker,'shield',gained);
+ }
  // Dawn Edict is a single-use offensive effect. It removes at most three
  // existing shield points, without touching unit health or creating attacks.
  const edict=!!attacker.edict;
@@ -812,6 +876,7 @@ function startStatusTurn(team){
   fxSpell(u,1,'ignite',u.x,u.y,1-team);
   applyDamage(u,1);
  }
+ springBastionPulse(team);
 }
 // Pull only into genuinely free, legal adjacent tiles. Never relocate bosses
 // or bypass collision, even if the target has flying movement.
@@ -983,7 +1048,9 @@ function apply(t,a){
      const spell=S.discards[t].splice(pos,1)[0];S.decks[t].push(spell);
     }else{grantShield(S.units[S.units.length-1],1)}
    }
-   trapImpact(S.units[S.units.length-1]);
+   const spawned=S.units[S.units.length-1];
+   trapImpact(spawned);
+   if(S.units.some(v=>v.id===spawned.id))onCreatureSummoned(spawned);
    log=q.name+' summoned!';
   }else{
    if(!resolveSpell(q,t,x,y))return false;
@@ -1255,6 +1322,10 @@ const GUIDE={
  I:{feature:'One-hit reactive defense.',detail:'Grant an ally 2 shield up to the global five-shield cap. The first enemy basic strike against it before its next turn takes 1 retaliation damage. Does not stack.',tip:'Protect an exposed spring holder; the ward is consumed on its first incoming basic strike.'},
  J:{feature:'Controlled positional displacement.',detail:'Deal 1 damage to a non-boss enemy within 3 of your army; move it one clear tile toward its nearest allied-side challenger when possible. The target must have a valid open landing tile.',tip:'Pull ranged enemies off high ground into melee range, or disturb a fortified formation.'},
  K:{feature:'Counter-protection attack blessing.',detail:'The next basic attack from one allied creature gains 1 damage and strips up to 3 shield before the hit. Expires at the start of that creature’s next turn.',tip:'Time this immediately before striking a heavily shielded boss or frontline guardian.'},
+ M:{feature:'Flying squad mobility support.',detail:'When summoned, restore movement to the nearest grounded, unrooted ally within two tiles that already moved. Once per round for your entire army; attacks are never refreshed.',tip:'Move your frontline, then summon the Cartographer close enough to dispatch it again.'},
+ N:{feature:'Spring-based fortification.',detail:'If this defender is standing on an Aeth spring when your turn begins, grant one shield to a nearby ally within two tiles. If none qualifies, shield itself. Maximum five shield per creature.',tip:'Hold contested springs rather than using it as an ordinary slow bruiser.'},
+ O:{feature:'Elevation-based shield breaker.',detail:'Its first basic attack launched from high ground each round removes up to two enemy shield before ordinary damage. A Core cannot be pierced this way.',tip:'Use elevation to counter ward-heavy opponents without dealing more raw damage.'},
+ P:{feature:'Steal an opponent’s defenses.',detail:'The first basic attack against a shielded creature each round transfers exactly one shield from the target to this unit, provided the hunter is below the five-shield cap.',tip:'Pick protected targets to swing shield advantage, rather than finishing unshielded weaklings.'},
 
  c:{feature:'Ranged elemental pressure.',detail:'Basic attacks burn a target for 1 additional damage at the start of its next turn. Burn does not stack.',tip:'Keep enemies burning while controlling their movement.'},
  j:{feature:'Lock down enemy advances.',detail:'Basic attacks root the target for its next turn. The victim may still attack but cannot move.',tip:'Block a dangerous rush near a choke point.'},
@@ -1857,6 +1928,118 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
  },
  // v4.5 staging — verify four actual spell cards using legal apply()
  // actions in memory-isolated scenario states. No player profile is touched.
+ // v4.5.3 authored creature-mechanic QA. Runs against the *actual* combat
+ // helpers in a memory-isolated build. Never touches normal player saves.
+ qaV453Creatures:()=>{
+  const checks=[],check=(name,ok,detail='')=>
+   checks.push({name,pass:!!ok,detail});
+  const setup=()=>{
+   if(!startMission('v1',true,'rush'))throw Error('Could not start isolated mission');
+   S.energy[0]=10;S.turn=0;S.hands[0]=[];
+   return{ally:S.units.find(u=>u.team===0),
+    other:S.units.filter(u=>u.team===0)[1],enemy:S.units.find(u=>u.team===1)};
+  };
+  try{
+   {
+    const{ally,other}=setup();
+    ally.moved=true;ally.attacked=true;other.moved=false;
+    S.hands[0]=['M'];const cost=S.energy[0];
+    const ok=apply(0,{op:'card',idx:0,x:3,y:5,tributes:[]});
+    check('Zephyr summon refreshes movement, not attacks',ok&&
+      !ally.moved&&ally.attacked&&S.energy[0]===cost-3&&
+      S.units.some(v=>v.k==='M'&&v.team===0));
+    ally.moved=true;S.hands[0]=['M'];S.energy[0]=10;
+    const second=apply(0,{op:'card',idx:0,x:1,y:5,tributes:[]});
+    check('Zephyr same-team bonus cannot trigger twice per round',
+      second&&ally.moved&&S.zephyrRound[0]===S.round);
+   }
+   {
+    const {ally}=setup();
+    ally.moved=true;ally.rooted=true;
+    onCreatureSummoned({k:'M',team:0,x:3,y:5,id:-100});
+    check('Zephyr cannot remove roots or refresh rooted movement',ally.moved&&ally.rooted);
+   }
+   {
+    const {ally}=setup();
+    ally.moved=true;S.hands[0]=['M'];
+    S.traps=[{team:1,x:3,y:5,damage:9,expires:S.round+2}];
+    const used=apply(0,{op:'card',idx:0,x:3,y:5,tributes:[]});
+    check('A destroyed Zephyr cannot grant movement',used&&ally.moved&&
+      !S.units.some(u=>u.k==='M')&&S.traps.length===0);
+   }
+   {
+    setup();
+    const [x,y]=springs[0].split(',').map(Number);
+    const keeper=unit('N',0,x,y,true);
+    const ally=unit('v',0,x+1,y,true);ally.shield=0;
+    S.units=[keeper,ally];S.traps=[];startStatusTurn(0);
+    check('Bastion gives nearest ally one shield while on spring',
+      ally.shield===1&&keeper.shield===1);
+    startStatusTurn(0);
+    check('Bastion grants at most one shield per turn start',
+      ally.shield===2); // second call emulates a new turn, not a passive aura
+   }
+   {
+    setup();
+    const keeper=unit('N',0,0,5,true);
+    const ally=unit('v',0,1,5,true);
+    S.units=[keeper,ally];const initial=ally.shield;
+    springBastionPulse(0);
+    check('Bastion off spring cannot shield',ally.shield===initial);
+   }
+   {
+    setup();
+    const [x,y]=springs[0].split(',').map(Number);
+    const keeper=unit('N',0,x,y,true);keeper.shield=5;
+    S.units=[keeper];springBastionPulse(0);
+    check('Bastion never breaks five-shield cap',keeper.shield===5);
+   }
+   {
+    setup();
+    const [x,y]=[...high][0].split(',').map(Number);
+    const duelist=unit('O',0,x,y,true);
+    const enemy=unit('b',1,x+1,y,true);
+    enemy.shield=3;enemy.hp=enemy.max=8;
+    S.units=[duelist,enemy];
+    basicStrike(duelist,enemy);
+    check('Cragsunder first elevated strike pierces two shield',
+      duelist.summitRound===S.round&&enemy.shield===0);
+    enemy.shield=3;const before=enemy.hp,expected=Math.max(0,3-damage(duelist,enemy));
+    basicStrike(duelist,enemy);
+    check('Cragsunder cannot pierce a second time in the same round',
+      enemy.shield===expected&&enemy.hp===before,
+      'shield='+enemy.shield+' hp='+enemy.hp+' before='+before);
+   }
+   {
+    setup();
+    const hunter=unit('P',0,2,5,true);
+    const enemy=unit('b',1,3,5,true);
+    hunter.shield=0;enemy.shield=4;S.units=[hunter,enemy];
+    const initialHit=damage(hunter,enemy);
+    basicStrike(hunter,enemy);
+    check('Umbral siphon transfers real opponent shield once',
+      hunter.shield===1&&enemy.shield===Math.max(0,3-initialHit)&&hunter.siphonRound===S.round,
+      'hunter='+hunter.shield+' foe='+enemy.shield+' round='+hunter.siphonRound);
+    enemy.shield=4;basicStrike(hunter,enemy);
+    check('Umbral siphon cannot trigger again in same round',
+      hunter.shield===1&&enemy.shield===Math.max(0,4-initialHit),
+      'hunter='+hunter.shield+' foe='+enemy.shield);
+   }
+   {
+    setup();
+    const hunter=unit('P',0,2,5,true);
+    const enemy=unit('b',1,3,5,true);
+    hunter.shield=5;enemy.shield=4;S.units=[hunter,enemy];
+    const initialHit=damage(hunter,enemy);
+    basicStrike(hunter,enemy);
+    check('Umbral siphon cannot create shield above cap',
+      hunter.shield===5&&enemy.shield===Math.max(0,4-initialHit)&&!hunter.siphonRound,
+      'hunter='+hunter.shield+' foe='+enemy.shield+' siphon='+hunter.siphonRound);
+   }
+  }catch(e){checks.push({name:'Runtime exception',pass:false,detail:String(e)})}
+  finally{startQuickMatch()}
+  return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
+ },
  qaV45Spells:()=>{
   const results=[],check=(name,pass,info='')=>results.push({name,pass:!!pass,info});
   const setup=(card)=>{
