@@ -1,0 +1,35 @@
+name: Dominion v4.5.3 art atlas generation
+on:
+  push:
+    branches:
+      - dev/v453-first-creatures
+    paths:
+      - .github/workflows/v453-build-art.yml
+permissions:
+  contents: write
+jobs:
+  build-verified-creature-atlases:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev/v453-first-creatures
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated image dependencies
+        run: python -m pip install --disable-pip-version-check "numpy==1.26.4" "opencv-python-headless==4.10.0.84" "pillow==11.3.0"
+      - name: Build original four-character painted atlases
+        env:
+          SOURCE_URL: "https://dnznrvs05pmza.cloudfront.net/gemini/gemini-3-pro-image/images/ad5d827c-ea90-4f6b-9ce0-0aae4e84db78/51ce169e-a752-4289-8c03-7d557bf64a91/A_2_by_2_contact_sheet_of_FOUR_DISTINCT_original_fantasy_tac.png?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZTJmZmZiMGE4OTJkMTA2MyIsImJ1Y2tldCI6InJ1bndheS10YXNrLWFydGlmYWN0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc5MzY2NTE2Mn0.Y9KfLfRkSCnvzlTzvhQMex9iBp-5eS4euyHhTnPfLGo"
+        run: python tools/v453_build_art.py
+      - name: Commit validated staging art, not public game release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add art/cards-creatures-v453.webp art/units-creatures-v453.png art/battlefield-frames-v453.webp art/v453-art-manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Add 4 unique v4.5.3 creatures with matching portraits, cutouts and 88 animation frames"
+            git push origin HEAD:dev/v453-first-creatures
+          fi
