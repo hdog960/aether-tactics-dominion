@@ -24,3 +24,12 @@ The 45 cases validate controlled objective progression and reward settlement, no
 
 ## Next
 Compare longer campaign challenge results and the six preparation plans before beginning v4.5 card expansion.
+
+## Published browser regression — November 1, 2026
+- GitHub Pages deployed main game commit `9ff498569b97ed8a5a8cf0c73bad917cb16f7717` successfully. Subsequently, a small, source-checked v4.4.3 HUD/cache update was published.
+- Actual browser QA and screenshots: https://agent.tinyfish.ai/runs/85d14f7c-42eb-4d41-a7f5-ec58005a762d
+- **45/45 objective-result checks PASS:** each of 15 missions lost, first cleared and replay-cleared in controlled scenarios. Losses did not newly unlock stages, first clears awarded story bonuses once and replay wins did not re-award first-clear bonuses. The existing claim guard did not duplicate XP, coins or card copies for the same match.
+- **30/30 expedition choice checks PASS**, **15/15 encounter checks PASS**, **7/7 unique boss phase checks PASS**; zero reported JavaScript errors.
+- Live map and First Footsteps launch worked, with the selected Daring Vanguard plan giving 5 starting Aeth and 22 player Core HP. Card illustrations and bottom navigation rendered without blank artwork.
+- **HUD follow-up:** corrected temporary Aeth capacity and variable Core max labels, plus added save-isolated VICTORY SCENE and DEFEAT SCENE preview controls. Source QA passed 15/15. Follow-up physical iPhone animation and scrolling checks remain pending.
+- Important distinction: the 45 cases are *controlled victory-gate and reward-state tests*, not 45 complete human-played tactical battles. The live browser QA confirmed mission launch and the result audit; the animated post-battle panel's full appearance was not independently rated in a native phone browser.
