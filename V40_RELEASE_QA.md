@@ -30,8 +30,13 @@ No generic character portraits were copied into these spells.
 - Combat simulator through actual `AetherGame.apply`: eight new summons × (move, basic attack) = **16/16 PASS**, zero JS errors: https://agent.tinyfish.ai/runs/e09aadd2-1e97-4944-8082-00ebafa22445
 - Production Quick Battle regression: campaign First Footsteps -> Hall -> Keep Current Match -> Start Quick Battle; both choices work with custom mobile-styled modal: https://agent.tinyfish.ai/runs/3f34ef86-f774-4953-9623-cd497b3c2b9f
 
+## Post-deployment visual QA (completed)
+- **PASS:** Actual live v4.0 QA page loaded the new ten-spell strip and all ten images were inspected one by one in the collection: https://agent.tinyfish.ai/runs/12d66996-08ea-4105-b580-c0cfcd7febed
+- **PASS:** Spell atlas 1280×96; unit atlas 768×120; unit card atlas 1024×96; classic atlas 320×88. No empty artwork, unwanted labels, missing images, or JS errors in that run.
+- **Artistic note:** Null Chime's oversized bell is not visibly cracked; it is still recognizably a bell and was accepted by the QA visual review.
+- GitHub Actions Pages deploy for commit `ad13dd388f46c333213e9fe71f1002963b02f4ef` completed successfully; live page title confirmed v4.0.
+
 ## QA that remains
-- The newly replaced v4.0 spell artwork must be checked from the **published** production build once GitHub Pages deployment completes. Visual asset validation was done from the authoring PNG and generated WebP strip.
 - Distinct spell art does not, by itself, create unique battlefield spell animation for all ten effects. Their existing engine effects remain; a dedicated VFX quality pass is still an opportunity.
 - Tests ran in browser-based automation, not physical iPhone Safari/WebKit. Two-device multiplayer still requires real-device verification.
 - Current unit animations are composited motions of painted still sprites, not bespoke multi-frame spritesheets.
