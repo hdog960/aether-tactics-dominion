@@ -320,12 +320,18 @@ function encounterTick(){
 function commanderReinforce(){
  if(!S?.missionId||S.phase!=='playing'||S.round%4!==0||S.round>16)return;
  const m=MISSION_BY_ID[S.missionId];if(!m||m.tier<=1)return;
+ // Signature encounter waves replace generic reinforcements; do not stack
+ // independent spawning every 3 and 4 rounds on the Hollow King trial.
+ const isolatedQA=window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html');
+ if(m.encounter?.type==='wave'&&!(isolatedQA&&S.qaAllowGenericReinforcements))return;
  if(S.units.filter(v=>v.team===1).length>=7)return;
  const pool=(PACKS[m.style]||PACKS.Balanced).filter(k=>!D[k].spell&&!D[k].tribute&&D[k].cost<=Math.min(4,m.tier));
  const type=pool[(Math.floor(S.round/4)+m.tier)%pool.length]||'v';
  for(const [x,y]of [[0,1],[6,1],[1,2],[5,2]]){
   if(!entity(x,y)&&!rocks.has(K(x,y))){
-   S.units.push(unit(type,1,x,y,false));log='Enemy commander calls reinforcements.';break;
+   S.units.push(unit(type,1,x,y,false));
+   if(isolatedQA)S.qaGenericCount=(S.qaGenericCount||0)+1;
+   log='Enemy commander calls reinforcements.';break;
   }
  }
 }
@@ -1652,12 +1658,15 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   startQuickMatch();
   return{pass:findings.length===4&&findings.every(f=>f.pass),findings};
  },
- qaBalance:(samples=2,missionIds=null)=>{
+ qaBalance:(samples=2,missionIds=null,options=null)=>{
   const originalRandom=Math.random;
   const reports=[],errors=[];
   const trials=Math.max(1,Math.min(12,Math.floor(samples)||2));
   const scenarios=Array.isArray(missionIds)&&missionIds.length?
    CONQUEST.all.filter(m=>missionIds.includes(m.id)):CONQUEST.all;
+  const useLegacyWaves=options?.legacyWaves===true;
+  const testOnly=window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html');
+  if(!testOnly)return{pass:false,errors:['Requires memory-isolated QA page'],reports:[]};
   const rng=(seed)=>{
    let x=(seed>>>0)||1;
    Math.random=()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296};
@@ -1856,6 +1865,8 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
        m.id.charCodeAt(1)*163;
       rng(sampleSeed);
       if(!startMission(m.id,true,plan.kind)){errors.push(m.id+': failed start');continue}
+      S.qaAllowGenericReinforcements=useLegacyWaves;
+      S.qaGenericCount=0;
       let steps=0,valid=true,orders=0;
       const activity={spells:0,mythicSummons:0,normalSummons:0,
        moves:0,attacks:0,startSummons:0};
@@ -1879,7 +1890,10 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
        rounds:S.round,playerCore:S.hp[0],enemyCore:S.hp[1],
        playerUnits:S.units.filter(v=>v.team===0).length,
        enemyUnits:S.units.filter(v=>v.team===1).length,
-       events:S.encounterState?.events||0,valid,steps:orders,
+       events:S.encounterState?.events||0,genericWaves:S.qaGenericCount||0,
+       championHP:S.units.find(v=>v.id===S.championId)?.hp||0,
+       remainingBossShield:S.units.find(v=>v.id===S.championId)?.shield||0,
+       valid,steps:orders,
        actions:{spells:activity.spells,mythicSummons:activity.mythicSummons,
         normalSummons:activity.normalSummons,moves:activity.moves,attacks:activity.attacks}});
      }
@@ -1897,7 +1911,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    });
    return{id:m.id,title:m.name,region:m.region,objective:m.objective,plans};
   });
-  return{pass:!errors.length&&reports.length===scenarios.length*2*trials&&
+  return{legacyWaves:useLegacyWaves,pass:!errors.length&&reports.length===scenarios.length*2*trials&&
     reports.every(r=>r.valid&&r.ended),samples:trials,
     games:reports.length,wins:reports.filter(r=>r.win).length,
     errors,grouped,reports,
