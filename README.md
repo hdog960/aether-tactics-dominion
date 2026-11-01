@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.4.8 — Crownfall Deck Preparation & Trial Balance**
+**Current source release: v4.4.9 — Deck-aware Expedition Briefings**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -126,3 +126,8 @@ The Hollow King's unique scheduled shadow-hunter reinforcement event now **repla
 In the illustrated mission briefing, **EDIT DECK** opens the existing functional 24-card builder. The briefing displays your real saved deck's unit/spell breakdown and average card upgrade level. Saved decks apply on the next new match and do not modify an ongoing battle. The new touch-friendly armory panel does not replace or overlay the painted map or tactical board.
 
 The isolated QA page adds **KING CARD LEVELS · 96 BATTLES**, a deterministic test of uniform simulated card ranks. Source-executed logic checks passed 7/7 boss-phase cases and 30/30 preparation plans. The Hollow King outcomes varied sharply between hypothetical card levels, so no further unverified boss nerfs or new card art substitutes were shipped. Physical iPhone and final visual-browser QA are outstanding. See `V448_CROWNFALL_PREPARATION.md`.
+
+## v4.4.9 — The Tactician's Note
+The illustrated campaign briefing now reads your real selected 24-card deck and offers objective-aware preparation advice for capture, defend, hunt and assault, including authored boss counterplay and card-upgrade guidance for difficult trials. The panel sits directly before the real EDIT DECK action. It does not modify match saves, campaign progress or card upgrades. See `V449_TACTICIAN_BRIEFINGS.md`.
+
+**v4.5 is being developed separately**, in `dev/v45-first-spell-batch`, with four experimental spells, tested mechanics and VFX. They are *not released* until their painted portraits and iPhone integration are finished. No existing card art has been replaced by procedural fallback.
