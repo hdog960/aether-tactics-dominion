@@ -1,0 +1,31 @@
+/* Dominion 4.4.9: Deck-aware tactical counsel in the real illustrated
+   mission briefing. Display-only: never overlays battle touch targets. */
+#game .atlas-dialog-counsel{
+ margin:12px 0;padding:12px 13px 11px;border:1px solid #a8c4b0;
+ border-radius:11px;background:
+ linear-gradient(115deg,#112c34ee,#1e3143ee 67%,#24243eec);
+ box-shadow:inset 0 1px #c9f3dd24,0 4px 15px #04081877;
+}
+#game .atlas-dialog-counsel.hidden{display:none!important}
+#game .atlas-counsel-title{
+ display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;
+ gap:5px 11px;color:#e5deb3;font:900 11px/1.4 Georgia,serif;
+ letter-spacing:.4px;text-shadow:0 1px 2px #0009;
+ padding-bottom:7px;border-bottom:1px solid #8fbea953;
+}
+#game .atlas-counsel-title small{
+ font:750 8.5px/1.4 system-ui;color:#a6dfcf;letter-spacing:.6px;
+}
+#game .atlas-counsel-items{display:grid;gap:8px;margin:9px 1px 2px}
+#game .atlas-counsel-items p{
+ position:relative;margin:0;padding-left:16px;
+ color:#e9e4d9;font:600 11px/1.55 system-ui;
+}
+#game .atlas-counsel-items p:before{
+ content:'✧';position:absolute;left:0;top:0;color:#d7b782;
+ font-size:12px;line-height:1.5;
+}
+@media(max-width:370px){
+ #game .atlas-dialog-counsel{padding:10px 11px}
+ #game .atlas-counsel-items p{font-size:10px}
+}
