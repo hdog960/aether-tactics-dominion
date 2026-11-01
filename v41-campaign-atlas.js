@@ -29,7 +29,11 @@ const modal=document.createElement('div');modal.id='atlas-dialog';modal.classNam
  <div class="atlas-dialog-panel"><button type="button" class="atlas-dialog-close" data-close aria-label="Close mission details">✕</button>
  <div class="atlas-dialog-mark" id="atlas-dialog-mark"></div><div class="atlas-dialog-kicker" id="atlas-dialog-kicker"></div>
  <h2 id="atlas-dialog-title"></h2><p class="atlas-dialog-story" id="atlas-dialog-story"></p>
- <div class="atlas-dialog-objective" id="atlas-dialog-objective"></div><div class="atlas-dialog-twist" id="atlas-dialog-twist"></div><div class="atlas-dialog-story-scene" id="atlas-dialog-story-scene"></div><div class="atlas-dialog-plans" id="atlas-dialog-plans" role="group" aria-label="Choose expedition approach"></div><div class="atlas-dialog-reward" id="atlas-dialog-reward"></div>
+ <div class="atlas-dialog-objective" id="atlas-dialog-objective"></div><div class="atlas-dialog-twist" id="atlas-dialog-twist"></div><div class="atlas-dialog-story-scene" id="atlas-dialog-story-scene"></div><div class="atlas-dialog-plans" id="atlas-dialog-plans" role="group" aria-label="Choose expedition approach"></div><div class="atlas-dialog-loadout" id="atlas-dialog-loadout">
+  <div class="atlas-loadout-copy"><span>YOUR BATTLE DECK</span><strong id="atlas-dialog-deck-stats">24 CARDS</strong></div>
+  <button type="button" data-deck-prep>EDIT DECK</button>
+  <p id="atlas-dialog-deck-note">Changes to your deck apply when starting a new battle.</p>
+ </div><div class="atlas-dialog-reward" id="atlas-dialog-reward"></div>
  <div class="atlas-dialog-actions"><button type="button" data-close>BACK TO ATLAS</button><button type="button" id="atlas-launch">START MISSION</button></div></div>`;
 game.appendChild(modal);
 function close(){modal.classList.add('hidden');current=null;pendingPlan=null;lastFocus?.focus?.()}
@@ -70,6 +74,14 @@ function openMission(id,button){
    '</span><span class="atlas-plan-cost">'+safe(plan.tradeoff)+
    '</span><span class="atlas-plan-desc">'+safe(plan.description)+
    '</span></button>').join(''):'';
+ const deck=G.deckInfo?.();
+ if(deck){
+  $('atlas-dialog-deck-stats').textContent=deck.cards+' CARDS · '+deck.units+
+   ' UNITS · '+deck.spells+' SPELLS · AVG LV '+deck.averageLevel;
+ }
+ $('atlas-dialog-deck-note').textContent=active?
+  'This battle is already underway. Deck edits apply only to your next new battle.':
+  'Choose a strategy for this mission. Deck edits apply to your next new battle.';
  $('atlas-dialog-reward').textContent='REWARDS  ✧ '+m.bonusXP+' XP   ◆ '+m.bonusGold+' GOLD'+(done?'   ★ '+(info.stars?.[id]||1)+'/3':'');
  const launch=$('atlas-launch');
  launch.disabled=!available;
@@ -79,6 +91,13 @@ function openMission(id,button){
  modal.classList.remove('hidden');launch.focus();
 }
 modal.addEventListener('click',e=>{
+ if(e.target.closest('[data-deck-prep]')){
+  // Close the atlas first so its higher z-index cannot cover the armory.
+  // Open the real deck builder, preserving the selected match and all saves.
+  close();
+  $('open-builder')?.click();
+  return;
+ }
  const button=e.target.closest('[data-plan]');
  if(!button||button.disabled||!current)return;
  const mission=C.all.find(m=>m.id===current);
