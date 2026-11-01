@@ -1985,6 +1985,122 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
  // actions in memory-isolated scenario states. No player profile is touched.
  // v4.5.3 authored creature-mechanic QA. Runs against the *actual* combat
  // helpers in a memory-isolated build. Never touches normal player saves.
+ // v4.5.4 four-unit isolated legality and balance boundary checks.
+ qaV454Creatures:()=>{
+  const checks=[],check=(name,pass,detail='')=>
+   checks.push({name,pass:!!pass,detail});
+  const setup=()=>{
+   if(!startMission('v1',true,'rush'))throw Error('Isolated v454 mission setup failed');
+   S.turn=0;S.energy[0]=10;S.hands[0]=[];S.traps=[];
+   S.units=[];S.next=Math.max(S.next||1,800);
+  };
+  const add=(k,team,x,y)=>{
+   const u=unit(k,team,x,y,true);S.units.push(u);return u;
+  };
+  try{
+   {
+    setup();
+    const oracle=add('Q',0,2,5),ally=add('v',0,2,6),enemy=add('b',1,2,2);
+    S.hands[0]=['I'];
+    const old=S.energy[0],cast=apply(0,{op:'card',idx:0,x:2,y:6,tributes:[]});
+    check('Oracle responds to a valid allied spell with exactly one bonus shield',
+     cast&&ally.shield===3&&oracle.oracleRound===S.round&&S.energy[0]===old-2);
+    S.hands[0]=['K'];S.energy[0]=10;
+    const second=apply(0,{op:'card',idx:0,x:2,y:6,tributes:[]});
+    check('Oracle cannot give a second shield on another spell in same round',
+     second&&ally.shield===3);
+   }
+   {
+    setup();
+    const oracle=add('Q',0,2,5),ally=add('v',0,2,6);
+    S.hands[0]=['I'];const before=S.energy[0];
+    const rejected=apply(0,{op:'card',idx:0,x:6,y:2,tributes:[]});
+    check('Rejected spell does not activate Oracle or spend Aeth',
+     !rejected&&ally.shield===0&&!oracle.oracleRound&&S.energy[0]===before);
+   }
+   {
+    setup();
+    const oracle=add('Q',1,2,2),ally=add('v',1,2,3);
+    onFriendlySpell(0);
+    check('Oracle never triggers from an opponent spell',ally.shield===0&&!oracle.oracleRound);
+   }
+   {
+    setup();
+    const oracle=add('Q',0,2,5),ally=add('v',0,2,6);ally.shield=5;
+    onFriendlySpell(0);
+    check('Oracle respects max shield and does not produce free health',
+     ally.shield===5&&!oracle.oracleRound);
+   }
+   {
+    setup();
+    const harrier=add('R',0,2,5),friend=add('v',0,3,4),enemy=add('b',1,3,5);
+    enemy.max=enemy.hp=20;harrier.moved=true;
+    basicStrike(harrier,enemy);
+    check('Harrier refreshes movement after a real flank',!harrier.moved&&
+     harrier.harrierRound===S.round);
+    harrier.moved=true;basicStrike(harrier,enemy);
+    check('Harrier flank movement cannot refresh twice same round',harrier.moved);
+   }
+   {
+    setup();
+    const harrier=add('R',0,2,5),enemy=add('b',1,3,5);
+    harrier.moved=true;basicStrike(harrier,enemy);
+    check('Harrier receives no refresh without a flanking ally',
+     harrier.moved&&!harrier.harrierRound);
+   }
+   {
+    setup();
+    const warden=add('S',0,2,5),enemy=add('b',1,3,5);
+    const other=add('v',1,4,5),boss=add('g',1,2,4);boss.boss=true;
+    applyDamage(warden,40);
+    check('Defeated Warden roots nearest nonboss enemy only',
+     !S.units.some(v=>v.id===warden.id)&&enemy.rooted&&!other.rooted&&!boss.rooted);
+   }
+   {
+    setup();
+    const warden=add('S',0,2,5),enemy=add('g',1,2,4);enemy.boss=true;
+    applyDamage(warden,40);
+    check('Warden death cannot root boss or Core',!enemy.rooted);
+   }
+   {
+    setup();
+    const art=add('T',0,2,5);
+    S.traps=[{team:1,x:3,y:5,damage:3,expires:S.round+3},
+             {team:0,x:2,y:4,damage:3,expires:S.round+3}];
+    onCreatureSummoned(art);
+    check('Artificer removes one enemy snare and leaves friendly trap',
+     S.traps.length===1&&S.traps[0].team===0&&art.shield===1);
+   }
+   {
+    setup();
+    const art=add('T',0,2,5);
+    S.traps=[{team:1,x:6,y:6,damage:3,expires:S.round+3}];
+    onCreatureSummoned(art);
+    check('Artificer cannot disarm remote traps or gain free shield',
+     S.traps.length===1&&art.shield===0);
+   }
+   {
+    setup();
+    S.traps=[{team:1,x:3,y:5,damage:9,expires:S.round+3}];
+    S.hands[0]=['T'];const before=S.energy[0];
+    const cast=apply(0,{op:'card',idx:0,x:3,y:5,tributes:[]});
+    check('Artificer killed on its summoning tile cannot disarm afterward',
+     cast&&S.energy[0]===before-3&&
+      !S.units.some(v=>v.k==='T')&&S.traps.length===0);
+   }
+   {
+    setup();
+    S.traps=[{team:1,x:4,y:5,damage:3,expires:S.round+3}];
+    S.hands[0]=['T'];
+    const cast=apply(0,{op:'card',idx:0,x:3,y:5,tributes:[]});
+    const u=S.units.find(v=>v.k==='T');
+    check('Actual legal Artificer summon activates trap counterplay',
+     cast&&u&&u.shield===1&&S.traps.length===0);
+   }
+  }catch(err){checks.push({name:'Runtime exception',pass:false,detail:String(err)})}
+  finally{startQuickMatch()}
+  return{pass:checks.length===13&&checks.every(v=>v.pass),checks};
+ },
  qaV453Creatures:()=>{
   const checks=[],check=(name,ok,detail='')=>
    checks.push({name,pass:!!ok,detail});
