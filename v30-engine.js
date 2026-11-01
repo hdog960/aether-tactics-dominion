@@ -212,6 +212,44 @@ function campaignAvailable(id){
   (t===0||profile.campaign.completed.includes(CONQUEST.trials[t-1].id));
  return false;
 }
+// Read-only mission-preparation guidance. Uses the currently saved 24-card
+// loadout and published campaign rules; never modifies a match or collection.
+function campaignCounsel(id){
+ const m=MISSION_BY_ID[id];if(!m)return null;
+ const count=fn=>chosenDeck.filter(k=>fn(D[k],k)).length;
+ const mobility=count(q=>!!q.fly||q.move>=3);
+ const guards=count(q=>!q.spell&&(q.shield||q.hp>=7||q.role==='Guardian'));
+ const damageSpells=count(q=>['bolt','cross','frost','ignite'].includes(q.spell));
+ const healShields=count(q=>['heal','shield','cleanse','bond'].includes(q.spell));
+ const average=+(chosenDeck.reduce((n,k)=>n+cardLevel(k),0)/DECK_SIZE).toFixed(1);
+ const advice=[];
+ if(m.objective==='capture'){
+  advice.push(mobility>=4?
+   'You have '+mobility+' fast or flying creatures. Split your pressure between both springs; the hold counter resets if you lose control.':
+   'Only '+mobility+' of your cards are fast or flying. Add Sky Manta, Rift Stalker, or Wisp Familiar to reach both springs sooner.');
+ }else if(m.objective==='hunt'){
+  advice.push(damageSpells>=4?
+   'Your deck contains '+damageSpells+' direct-damage spells. Save finishing damage for the champion after its next phase warning.':
+   'Your deck has '+damageSpells+' direct-damage spells. Consider more Rift Barrage, Frostbind, or Ember Sigil before this champion.');
+ }else if(m.objective==='defend'){
+  advice.push(guards+healShields>=7?
+   'Your '+guards+' defenders and '+healShields+' protective spells give you options to hold the approaches.':
+   'You have '+guards+' durable defenders and '+healShields+' protective spells. Consider Bulwark, Golem, Ward, or Renewal to protect your Core.');
+ }else{
+  advice.push('Pressure the rival Core, but keep a defender on an Aeth spring to fund later summons.');
+ }
+ if(m.trial&&average<2){
+  advice.push('Your average card level is '+average+' versus a tier-'+m.tier+' Crown Trial. Upgrading your most-used creatures may help; the encounter is not tuned around equal levels.');
+ }else if(m.tier>=3&&average<2){
+  advice.push('Your average card level is '+average+' in this tier-'+m.tier+' encounter. Concentrate upgrades on the units and spells you actually play.');
+ }else{
+  advice.push('Average deck level '+average+'. Match preparation still matters more than simply having the highest-cost cards.');
+ }
+ if(m.bossKit?.counter)advice.push('Champion counterplay: '+m.bossKit.counter);
+ else if(m.encounter?.description)advice.push('Field condition: '+m.encounter.description);
+ return{mission:id,averageLevel:average,fastOrFlying:mobility,durable:guards,
+  directDamage:damageSpells,defenseSpells:healShields,tips:advice.slice(0,3)};
+}
 function campaignStatus(){
  return{completed:profile.campaign.completed.slice(),stars:{...profile.campaign.stars},
    storyTotal:CONQUEST.missions.length,storyDone:CONQUEST.missions.filter(m=>profile.campaign.completed.includes(m.id)).length,
@@ -1696,6 +1734,7 @@ window.addEventListener('aether-card-art-ready',()=>{
  render();
 });
 window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
+ campaignCounsel,
  deckInfo:()=>({cards:chosenDeck.length,units:chosenDeck.filter(k=>!D[k].spell).length,
   spells:chosenDeck.filter(k=>!!D[k].spell).length,
   mythics:chosenDeck.filter(k=>!!D[k].tribute).length,
