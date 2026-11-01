@@ -28,3 +28,12 @@ Review the deployed 60-game report, verify any actual exploits or severe outlier
 - When a champion approaches its first or final health threshold, display its next phase effect as an advance warning. These warnings use only visible mission rules and champion HP; hidden hands and multiplayer state are never exposed.
 - The alert ignores touch input and does not replace character artwork or occupy tiles.
 - QA page includes 22 read-only warning checks (15 event plus seven boss previews), and live weather/boss preview buttons. Source and browser verification required for the follow-up release.
+
+## Final battlefield-warning browser QA — November 1, 2026
+- Warning release deployed successfully from commit `26cbfced3038e699e3c5e8cd91c0f61074ef31ff`.
+- Live QA and rendered battlefield screenshots: https://agent.tinyfish.ai/runs/76152a7c-e86a-4c06-a1a9-d6d0756ae50d
+- **22/22 early-warning checks PASS:** 15 scheduled mission events and seven first-phase boss thresholds. Quick Battle correctly showed no campaign warning.
+- Live weather preview showed **NEXT ROUND · WHITEOUT FRONT** and **B4 · C5 · D5** tile coordinates with no clipping; card art and battlefield remained visible.
+- Live Mirror Court preview showed **CHAMPION PREPARES · PHASE 1** with the forthcoming reflection effect; no clipping or blocked controls.
+- **45/45 campaign objective and reward regression cases passed**, with no reported JavaScript errors. The five bottom navigation tabs remained usable.
+- Limitation: second boss-phase thresholds are implemented but not individually checked by this 22-case QA. Physical iPhone performance, touch/scroll and human-level battle balance still need testing.
