@@ -2099,7 +2099,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    }
   }catch(err){checks.push({name:'Runtime exception',pass:false,detail:String(err)})}
   finally{startQuickMatch()}
-  return{pass:checks.length===13&&checks.every(v=>v.pass),checks};
+  return{pass:checks.length===14&&checks.every(v=>v.pass),checks};
  },
  qaV453Creatures:()=>{
   const checks=[],check=(name,ok,detail='')=>
