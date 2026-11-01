@@ -63,7 +63,7 @@ async function assetReport(){
  const a=[
   ['unit atlas','./art/units-character-v37.png?v=37',768,120],
   ['unit card atlas','./art/cards-character-v37.webp?v=37',1024,96],
-  ['spell card atlas','./art/cards-spells-v37.webp?v=37',1280,96],
+  ['spell card atlas','./art/cards-spells-v40.webp?v=40',1280,96],
   ['classic','./art/units-painted-v35.png',320,88]
  ];
  const rs=await Promise.all(a.map(([name,url,w,h])=>new Promise(resolve=>{

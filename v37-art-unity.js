@@ -12,7 +12,7 @@
  const spells=['q','e','i','n','x','C','D','E','F','G'];
  const sources={
   characters:{image:new Image(),ids:units,src:'./art/cards-character-v37.webp?v=37',w:128,h:96},
-  spells:{image:new Image(),ids:spells,src:'./art/cards-spells-v37.webp?v=37',w:128,h:96},
+  spells:{image:new Image(),ids:spells,src:'./art/cards-spells-v40.webp?v=40',w:128,h:96},
   sprites:{image:new Image(),ids:units,src:'./art/units-character-v37.png?v=37',w:96,h:120}
  };
  const cache=new Map(),transparent='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
