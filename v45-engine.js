@@ -44,7 +44,17 @@ I:{name:'Ashen Reprisal',cost:2,spell:'reprisal',role:'Battle Ward',
 J:{name:'Undertow',cost:3,spell:'undertow',power:1,role:'Tide Hex',
  desc:'Deal 1 damage and pull a non-boss enemy one open tile toward your army.'},
 K:{name:'Dawn Edict',cost:3,spell:'edict',role:'War Blessing',
- desc:'Empower an ally’s next basic attack by 1 and strip up to 3 shield first.'}
+ desc:'Empower an ally’s next basic attack by 1 and strip up to 3 shield first.'},
+// v4.5.3 CREATURE PROTOTYPES. NOT PUBLIC — unique painted portraits, matching
+// battlefield silhouettes and frame atlas must ship before the release flag.
+M:{name:'Zephyr Cartographer',cost:3,hp:4,atk:1,range:2,move:3,fly:true,
+ role:'Winged Scout',desc:'On summon, refresh one nearby grounded ally’s movement.'},
+N:{name:'Verdant Bastion',cost:4,hp:8,atk:1,range:1,move:1,shield:1,
+ role:'Spring Guardian',desc:'On a spring, shield a nearby ally at turn start.'},
+O:{name:'Cragsunder Duelist',cost:3,hp:5,atk:2,range:1,move:2,
+ role:'Highland Duelist',desc:'First high-ground strike each round pierces 2 shield.'},
+P:{name:'Umbral Siphon',cost:4,hp:5,atk:2,range:2,move:2,
+ role:'Hex Hunter',desc:'First attack on a shielded enemy steals 1 shield.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
 const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"p":{"move":2},"o":{"hp":4,"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
@@ -55,7 +65,11 @@ Object.assign(ABILITIES,{
  y:{name:'Parting Lantern',desc:'On defeat, grant 2 shield to the closest surviving ally, within 2 tiles.'},
  z:{name:'Rune Echo',desc:'Your first spell cast each round gives this unit +1 on its next attack that round.'},
  A:{name:'Dusk Harvest',desc:'If this unit defeats another creature with a basic attack, restore 2 health (up to maximum).'},
- B:{name:'Oathbound',desc:'When you sacrifice an allied unit, this Sentinel gains 2 shield and +1 on its next attack, once each round.'}
+ B:{name:'Oathbound',desc:'When you sacrifice an allied unit, this Sentinel gains 2 shield and +1 on its next attack, once each round.'},
+ M:{name:'Tailwind Dispatch',desc:'When summoned, refresh the movement (never attack) of the closest ground ally within 2 tiles. Once per round per team.'},
+ N:{name:'Spring Sentinel',desc:'At the beginning of your turn, if holding an Aeth spring, grant 1 shield to the nearest allied creature within 2 tiles (or self). Respect the 5-shield cap.'},
+ O:{name:'Summit Breaker',desc:'Your first basic strike launched from elevated terrain each round removes up to 2 enemy shield before normal damage. No extra attack.'},
+ P:{name:'Shadow Tithe',desc:'Your first basic strike against a shielded creature each round transfers 1 shield from that target to this unit, if below the 5-shield cap.'}
 });
 for(const [key,a] of Object.entries(ABILITIES)){D[key].ability=a.name;D[key].abilityText=a.desc}
 const portraitIndices={v:0,r:1,b:2,s:3,f:4,g:5,a:6};
@@ -68,7 +82,13 @@ Object.assign(PACKS,{"Echo":["v","v","o","o","o","z","z","z","p","p","b","b","r"
 const V45_SPELL_KEYS=['H','I','J','K'];
 const V45_QA=window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html');
 const V45_ENABLED=V45_QA||window.DOMINION_V45_ART_RELEASE===true;
-const CARD_KEYS=Object.keys(D).filter(k=>V45_ENABLED||!V45_SPELL_KEYS.includes(k)),
+// v4.5.3 units are specifically art-gated. QA may exercise real mechanics
+// in memory without introducing missing sprites to the released collection.
+const V453_UNIT_KEYS=['M','N','O','P'];
+const V453_ENABLED=V45_QA||window.DOMINION_V453_ART_RELEASE===true;
+const CARD_KEYS=Object.keys(D).filter(k=>
+ (V45_ENABLED||!V45_SPELL_KEYS.includes(k))&&
+ (V453_ENABLED||!V453_UNIT_KEYS.includes(k))),
  DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
 // Two copies of each new spell leave room for 16 distinct existing creature
 // slots. The preset is invisible until artwork is explicitly available.
