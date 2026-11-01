@@ -1516,6 +1516,15 @@ window.addEventListener('aether-card-art-ready',()=>{
 });
 window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
  ...(window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html')?{
+ qaPreviewResult:(id='v1',defeat=false)=>{
+  if(!startMission(id,true,'rush'))return{pass:false,reason:'mission start refused'};
+  if(defeat)applyDamage(core(0),S.hp[0]);
+  else applyDamage(core(1),S.hp[1]);
+  render();
+  const record=profile.claimed[S.matchId];
+  return{pass:S.phase==='over'&&!!record&&!!MISSION_BY_ID[id]?.epilogue,
+   id,defeat,result:record,story:MISSION_BY_ID[id]?.epilogue};
+ },
  qaMissionOutcome:(id,variant='win')=>{
   const m=MISSION_BY_ID[id];
   if(!m||!startMission(id,true))return{pass:false,id,variant,reason:'mission setup'};
