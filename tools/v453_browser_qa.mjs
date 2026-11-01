@@ -55,6 +55,24 @@ try{
   // The real browser's canvas has exactly four painted characters in two
   // distinct sheets. Screen capture remains available for visual review.
   await page.screenshot({path:'art/v453-staging-browser-390px.png',fullPage:false});
+  // Visual acceptance capture through the actual tactical renderer.
+  await page.evaluate(()=>{
+    const s=window.AetherGame.get();
+    const identities=[
+      {k:'M',id:801,x:0,y:5,hp:4,max:4,atk:1,range:2,move:3,fly:true},
+      {k:'N',id:802,x:2,y:5,hp:8,max:8,atk:1,range:1,move:1,shield:1},
+      {k:'O',id:803,x:4,y:5,hp:5,max:5,atk:2,range:1,move:2},
+      {k:'P',id:804,x:6,y:5,hp:5,max:5,atk:2,range:2,move:2}
+    ];
+    s.phase='playing';s.round=1;s.turn=0;
+    s.units=identities.map(unit=>({team:0,shield:0,moved:false,attacked:false,
+      rooted:false,frosted:false,burning:false,stride:0,rallied:false,...unit}));
+    window.AetherScene.sync(s,0,{unit:null,card:-1,tributes:[]});
+    const qa=document.querySelector('#qa-panel');
+    if(qa)qa.style.display='none';
+  });
+  await page.waitForTimeout(700);
+  await page.screenshot({path:'art/v453-creatures-on-battlefield-390px.png',fullPage:false});
   const report={pass:errors.length===0,viewport:'390x844 mobile',art:{
     complete:art.status.complete,cardDimensions:art.status.cardDimensions,
     spriteDimensions:art.s.spriteDimensions,frameDimensions:art.s.frameDimensions,
