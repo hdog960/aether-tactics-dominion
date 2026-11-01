@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.4.5 — Tactical Testing & Spell Balance**
+**Current source release: v4.4.6 — Objective Clarity & Focused Tactical QA**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -113,3 +113,9 @@ Campaign battles now show clear, read-only advance warnings before scripted spri
 
 ## v4.4.5 — Tactical playtesting and targeted combat fixes
 The save-isolated campaign testing bot now plays actual spell cards, chooses legal area targets, and can summon mythic creatures by sacrificing its own units, spending normal energy and preserving spring holders where possible. The 60-game QA report includes spell, summon, move and attack usage. The game itself now enforces the five-shield cap for Purifying Rain, and rival Planar Meteor AI considers empty blast centers between multiple targets rather than only enemy-occupied tiles. The QA panel includes SPELL & MYTHIC QA tests for those rules. All existing v4 saves, missions, cards, collection, premium painted art and Forge remain intact. See `V445_TACTICAL_QA.md`.
+
+## v4.4.6 — Tactical objective clarity and focused balance verification
+- Production battlefield status now displays real capture control/hold turns, defense survival/Core, champion HP, and enemy Core HP. The two-line responsive header avoids the previous single-line clipping of objective details.
+- Improved **QA-only** objective priorities for capture/hunt, and added a memory-isolated **48 HARD-ENCOUNTER BATTLES** action for Oaths in Shadow, Crown Guardian and Hollow King. None of these bot changes affect real rival AI, card stats, campaign progression or rewards.
+- In a published isolated browser test, 48 games completed with **21 wins and 0 invalid states**; 366 spells and 68 mythic summons were exercised. **4/4** targeted spell/mythic regression checks passed. The Hollow King remains challenging (1/16 bot wins); further human-caliber testing is required before balance changes.
+- See `V446_OBJECTIVE_QA.md` for full details and testing limitations. Real iPhone Safari layout and touch performance have not yet been verified.
