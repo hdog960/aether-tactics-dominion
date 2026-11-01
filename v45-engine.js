@@ -2394,10 +2394,21 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    const candidates=S.hands[0].map((key,idx)=>({key,idx,q:D[key]}))
     .filter(z=>z.q&&!z.q.spell&&z.q.cost<=S.energy[0])
     .sort((a,b)=>{
+     // Genuine positional creature roles deserve credit alongside raw stats.
+     // In particular, mobility-support M is worthless only if there is no
+     // already-moved, unrooted ground ally to dispatch again.
+     const utility=o=>{
+      if(o.key==='M'&&S.zephyrRound?.[0]!==S.round&&
+       S.units.some(v=>v.team===0&&v.moved&&!v.attacked&&!v.rooted&&!v.fly))return 4.2;
+      if(o.key==='N'&&mission.objective==='capture')return 2.2;
+      if(o.key==='O'&&S.units.some(v=>v.team===1&&v.shield>=2))return 1.6;
+      if(o.key==='P'&&S.units.some(v=>v.team===1&&v.shield>=2))return 1.8;
+      return 0;
+     };
      const sa=a.q.atk*1.7+a.q.hp*.43+a.q.range*.6-a.q.cost*.35-
-      (a.q.tribute||0)*3.5;
+      (a.q.tribute||0)*3.5+utility(a);
      const sb=b.q.atk*1.7+b.q.hp*.43+b.q.range*.6-b.q.cost*.35-
-      (b.q.tribute||0)*3.5;
+      (b.q.tribute||0)*3.5+utility(b);
      return sb-sa||a.idx-b.idx;
     });
    for(const choice of candidates){
@@ -2411,8 +2422,17 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     const slots=[];
     for(let y=2;y<=6;y++)for(let x=0;x<7;x++)
      if(deploy(0,x,y))slots.push({x,y});
-    slots.sort((a,b)=>moveScore({range:choice.q.range||1},b,mission)-
-     moveScore({range:choice.q.range||1},a,mission)||a.y-b.y||a.x-b.x);
+    const deployScore=pt=>{
+     let score=moveScore({range:choice.q.range||1},pt,mission);
+     if(choice.key==='M'&&S.zephyrRound?.[0]!==S.round&&
+      S.units.some(v=>v.team===0&&v.moved&&!v.rooted&&!v.fly&&d(v,pt)<=2))score+=9;
+     if(choice.key==='N'&&springs.includes(K(pt.x,pt.y)))score+=9;
+     if(choice.key==='O'&&high.has(K(pt.x,pt.y)))score+=3;
+     if(choice.key==='P'&&S.units.some(v=>v.team===1&&v.shield>0&&
+       d(v,pt)<=choice.q.range))score+=3;
+     return score;
+    };
+    slots.sort((a,b)=>deployScore(b)-deployScore(a)||a.y-b.y||a.x-b.x);
     for(const pos of slots){
      if(apply(0,{op:'card',idx:choice.idx,x:pos.x,y:pos.y,tributes:ids})){
       if(tribute)activity.mythicSummons++;
