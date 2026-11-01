@@ -460,7 +460,7 @@ function signatureFX(e,p,to,from){
   cross:'#ffc38e',aftershock:'#ffa371',silence:'#caa4ff',
   exchange:'#f7b0df',heal:'#9cf7ce',shield:'#b9d6ff',
   cleanse:'#c4ffe5',dash:'#a6dfff',rally:'#ffdaa4',bond:'#e2c4ff',
-  snare:'#cdaaff',recall:'#dbbaff',diagonal:'#ffedb3',reprisal:'#ff916e',undertow:'#83e3fa',edict:'#ffeb98'};
+  snare:'#cdaaff',recall:'#dbbaff',diagonal:'#ffedb3',reprisal:'#ff916e',undertow:'#83e3fa',edict:'#ffeb98',breach:'#c4f5ff',gale:'#a5f2d5',covenant:'#ffbd83',refrain:'#d6b3ff'};
  const color=palette[kind]||'#dfd2ff';
  c.save();c.globalAlpha=.85*f;c.strokeStyle=color;c.fillStyle=color;
  c.lineCap='round';c.lineJoin='round';c.lineWidth=3;
@@ -529,6 +529,32 @@ function signatureFX(e,p,to,from){
    const a=Math.PI+i*Math.PI/6;
    const r=22+p*13;
    line(x+Math.cos(a)*r,y+Math.sin(a)*r,x+Math.cos(a)*(r+14),y+Math.sin(a)*(r+14));
+  }
+ }else if(kind==='breach'){
+  // Splintered blue glass sweeps outward from the struck shield.
+  for(let i=0;i<8;i++){
+   const a=i*Math.PI/4,rx=(20+33*p)*Math.cos(a),ry=(11+20*p)*Math.sin(a);
+   line(x+rx*.35,y+ry*.35,x+rx,y+ry);
+   line(x+rx,y+ry,x+rx+8*Math.cos(a+.8),y+ry+8*Math.sin(a+.8));
+  }
+ }else if(kind==='gale'){
+  // A travelling wind ribbon follows a displaced creature.
+  for(let i=0;i<3;i++){
+   c.beginPath();c.moveTo(x-44,y+12-i*10);
+   c.bezierCurveTo(x-9,y-11-i*13-p*12,x+8,y+14-i*10,x+41,y-8-i*7);
+   c.stroke();
+  }
+ }else if(kind==='covenant'){
+  // Ember threads converge toward the two protected survivors.
+  for(let i=0;i<6;i++){
+   const a=i*Math.PI/3,rad=18+25*p;
+   line(x,y+8,x+Math.cos(a)*rad,y+Math.sin(a)*rad*.6);
+  }
+ }else if(kind==='refrain'){
+  // Two offset lunar crescents show the conditional chain effect.
+  for(const side of [-1,1]){
+   c.beginPath();c.arc(x+side*(8+16*p),y,19+9*p,side<0?-.6:2.5,side<0?1.9:5.6);
+   c.stroke();
   }
  }else if(kind==='recall'){
   c.beginPath();c.moveTo(x-28,y+11-22*p);c.quadraticCurveTo(x-14,y-13-22*p,x,y+6-22*p);
