@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.0 — Distinct Painted Spell Art and Live QA**
+**Current source release: v4.1 — Illustrated Riftfront Living World Map**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -70,3 +70,8 @@ A live browser smoke test checked the Commander's Hall, campaign battle, 32-card
 
 ## v4.0: ten distinct painted spell scenes
 Quickstep, Frostbind, Ember Sigil, Rallying Cry, Purifying Rain, Echo Retrieval, Veil Snare, Twin Convergence, Fateful Exchange, and Null Chime now use ten original spell-themed painted images instead of reusing portraits of summonable creatures. New art is in `art/cards-spells-v40.webp` (1280×96; ten 128×96 cells). v37's character cards and painted battlefield sprites remain unchanged. The browser QA suite verified the eight new summons' movement and attacks (16/16) and confirmed the v3.8 Quick Battle confirmation works in live production. See the QA environment `qa-v39.html` (save-isolated) and `V40_RELEASE_QA.md` for full details.
+
+## v4.1 — Interactive Riftfront world map
+The Map tab is now a fully interactive illustrated four-region fantasy world matching the approved design. Twelve correctly gated campaign mission crests open real mission briefs (name, objectives, story, XP and gold), can launch battles, resume an unfinished mission or replay cleared missions, and preserve previous progression. Four chapter progress counters and the global sigil and mission totals remain live; horizontal pan and Fit Map work on mobile. Crown Trials retain their existing gated endgame controls. A dedicated source QA report is in `V41_LIVING_WORLD_MAP.md`.
+
+**Published browser QA:** [v4.1 world map smoke test](https://agent.tinyfish.ai/runs/a2893c3e-0396-4017-ac27-6ce59394d4b6) confirmed the map asset, 12 markers, First Footsteps battle launch, locked Two Wells mission, in-progress mission return, and five tabs. iPhone hardware verification remains outstanding.
