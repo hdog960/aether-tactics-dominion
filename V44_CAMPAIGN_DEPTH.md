@@ -38,6 +38,16 @@ All of the above use the authoritative solo match state. Events never fire durin
 - Existing 264/132 frame audits and combat/AI checks remain available.
 - Do not count the release as browser-verified until a real published QA session completes.
 
+## Live deployment and browser QA — November 1, 2026
+- GitHub Pages successfully deployed game commit `e1d565d4db7252379f7d1522979e11f942d2b03c`.
+- Live browser session with real rendered screenshots: https://agent.tinyfish.ai/runs/2193c2ec-fafa-4be5-a807-693b7ac0cb63
+- **CAMPAIGN AUDIT: 15/15 PASS**, all six event mechanisms exercised in isolated mission states, zero illegal or overlapping units and no shield/unit caps exceeded. Checks reject repeating an event twice during the same round.
+- **SOLO AI: 12/12 legal turns**; **newer roster combat: 16/16 movement/attack actions**.
+- **Animation regression:** 264/264 premium sprite frames and 132/132 classic sprite frames visible and distinct; zero JavaScript errors.
+- **Real campaign navigation:** First Footsteps crest opened its real briefing; starting the mission launched the actual battlefield. Arena header displayed **FIRST FOOTSTEPS · VALLEY AETHRISE · NEXT RD 4**.
+- All QA combat state changes occurred on the isolated sandbox page with in-memory localStorage. The normal saved progress and card upgrades were not altered by tests.
+- **Testing limitation:** The encounter auditor invokes each event at its scheduled round and verifies legal resulting game state, but this does not constitute winning all 15 missions or a physical iPhone performance assessment. Longer match balance tuning and full campaign completion remain open.
+
 ## Not yet done
 - Extended story scenes, dialog choices, bespoke boss art/animation keyframes, full 15-mission start-to-clear tests, physical iPhone/WebKit touch/performance testing and two-device multiplayer.
 - v4.4 will receive further encounter depth and balance tuning before the project moves to v4.5 card expansion.
