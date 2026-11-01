@@ -236,6 +236,79 @@ function terrainTurn(team){
   }
  }
 }
+// v4.4 campaign scripts: deterministic events on the player's next round.
+// No new save version or online duel logic. Old unfinished missions migrate
+// lazily: they receive their next future event, never retroactive damage.
+function encounterTick(){
+ if(!S?.missionId||S.phase!=='playing'||S.mode!=='ai')return false;
+ const mission=MISSION_BY_ID[S.missionId],e=mission?.encounter;
+ if(!e)return false;
+ const state=S.encounterState||(S.encounterState={events:0,lastRound:0,notice:'',
+  nextRound:e.first+Math.ceil(Math.max(0,S.round-e.first)/e.cadence)*e.cadence});
+ const nextRound=Number.isInteger(state.nextRound)?state.nextRound:
+  e.first+Math.ceil(Math.max(0,S.round-e.first)/e.cadence)*e.cadence;
+ state.nextRound=nextRound;
+ if(S.round<nextRound||S.round===state.lastRound)return false;
+ const id=S.round,phase=state.events;
+ let description='';
+ if(e.type==='spring'){
+  const holders=springs.map(k=>{const [x,y]=k.split(',').map(Number);return entity(x,y)})
+   .filter(Boolean);
+  for(const u of holders){const value=grantShield(u,1);
+   if(value)abilityPulse(u,'shield',value);
+  }
+  description=holders.length?'The Aeth wells pulse. '+holders.length+' controlling unit(s) gain shield.':
+   'The Aeth wells pulse, but neither side controls them.';
+ }else if(e.type==='roots'){
+  const targets=S.units.filter(u=>e.tiles.includes(K(u.x,u.y)));
+  for(const u of targets){u.rooted=true;abilityPulse(u,'frost',0)}
+  description=targets.length?targets.length+' creature(s) bound by creeping roots.':
+   'Briars spread across the central pathway.';
+ }else if(e.type==='weather'){
+  const pattern=e.patterns[phase%e.patterns.length];
+  const region=CONQUEST.regions.find(r=>r.id===mission.region);
+  const legal=pattern.filter(k=>{
+   const [x,y]=k.split(',').map(Number);
+   return bounds(x,y)&&!rocks.has(k)&&!(x===3&&(y===0||y===7));
+  });
+  S.hazards=legal;
+  description=(region?.hazard==='frost'?'A whiteout sweeps across new tiles.':
+   region?.hazard==='ember'?'Magma fractures move to new tiles.':
+   'Unstable arcane ground shifts.')+' Move before the next terrain pulse.';
+ }else if(e.type==='ward'||e.type==='mirror'){
+  const boss=S.units.find(u=>u.id===S.championId&&u.team===1);
+  let targets=boss?[boss]:[];
+  if(e.type==='mirror'&&boss){
+   const ally=S.units.filter(u=>u.team===1&&u.id!==boss.id)
+     .sort((a,b)=>d(a,boss)-d(b,boss)||a.id-b.id)[0];
+   if(ally)targets.push(ally);
+  }
+  for(const u of targets){const shield=grantShield(u,1);
+   if(shield)abilityPulse(u,'shield',shield);
+  }
+  description=targets.length?e.type==='mirror'?'The Court grants a mirror ward to its defenders.':
+   'The champion renews its ancient protective ward.':
+   'The ancient ward flickers with no champion left.';
+ }else if(e.type==='wave'){
+  const sites=[[0,1],[6,1],[1,2],[5,2],[2,1],[4,1]];
+  let recruited=false;
+  if(S.units.filter(u=>u.team===1).length<7){
+   for(let j=0;j<sites.length;j++){
+    const [x,y]=sites[(j+phase*2)%sites.length];
+    if(rocks.has(K(x,y))||entity(x,y)||x===3&&(y===0||y===7))continue;
+    const type=e.pool[phase%e.pool.length];
+    S.units.push(unit(type,1,x,y,false));recruited=true;break;
+   }
+  }
+  description=recruited?'Enemy reinforcements emerge from the side passages.':
+   'Enemy reinforcements are delayed by the crowded battlefield.';
+ }
+ state.events++;state.lastRound=id;state.nextRound=id+e.cadence;
+ state.notice=e.name+' — '+description;
+ state.history=(state.history||[]).slice(-2);state.history.push({round:id,text:state.notice});
+ log=state.notice;
+ return true;
+}
 function commanderReinforce(){
  if(!S?.missionId||S.phase!=='playing'||S.round%4!==0||S.round>16)return;
  const m=MISSION_BY_ID[S.missionId];if(!m||m.tier<=1)return;
@@ -248,13 +321,18 @@ function commanderReinforce(){
   }
  }
 }
-function startMission(id){
- const m=MISSION_BY_ID[id];if(!m||!campaignAvailable(id))return false;
+function startMission(id,qa=false){
+ const m=MISSION_BY_ID[id];
+ const testMode=qa===true&&window.__qaIsolatedStorage===true&&
+  location.pathname.endsWith('/qa-v39.html');
+ if(!m||(!testMode&&!campaignAvailable(id)))return false;
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
  seed('ai');S.missionId=id;S.missionProgress=0;S.arenaId=m.region;S.missionGoal=m.objective;
  S.missionRoundLimit=m.rounds;S.aiStyle=m.style;
  S.aiTier=Math.max(S.aiTier||1,m.tier);
  S.hazards=[];
+ S.encounterState=m.encounter?{events:0,lastRound:0,notice:'',
+  nextRound:m.encounter.first}:null;
  setArena(m.region);
  S.decks[1]=shuffle(PACKS[m.style]||PACKS.Balanced);
  S.hands[1]=[];S.discards[1]=[];
@@ -569,7 +647,7 @@ function next(t){
  if(S.phase!=='playing')return;
  if(t===1){S.round++;S.cap=Math.min(10,2+S.round);
   if(S.missionId){
-   commanderReinforce();missionCheck(t);if(S.phase!=='playing')return;
+   commanderReinforce();encounterTick();missionCheck(t);if(S.phase!=='playing')return;
    if(S.round>(S.missionRoundLimit||ROUND_LIMIT)){
     S.winner=1;S.phase='over';log='The enemy held out until the mission timer expired.';return
    }
@@ -1050,7 +1128,9 @@ function closeProfile(){$('player-profile').classList.add('hidden')}
 
 function renderLabels(){
  $('instruction').innerHTML=msg||'<b>Welcome, Commander.</b> Select a card or unit.';
- $('tip').textContent=hint||'Summon, position and conquer.';$('feed').textContent=log||'The Riftfront awaits your orders.';
+ $('tip').textContent=(S?.missionId&&S.encounterState?.notice?
+  S.encounterState.notice+' · ':'')+(hint||'Summon, position and conquer.');
+ $('feed').textContent=log||'The Riftfront awaits your orders.';
 }
 function render(){
  if(!S)return;
@@ -1065,6 +1145,11 @@ function render(){
   mission.objective==='defend'?'SURVIVE TO ROUND '+mission.needed:
   mission.objective==='hunt'?'DEFEAT BOSS · '+(S.units.find(u=>u.id===S.championId)?.hp||0)+' HP':
   'BREAK ENEMY CORE': 'BLUE MOVE · RED ATTACK · VIOLET SPELL';
+ if(mission?.encounter&&$('arena-details')){
+  const event=S.encounterState;
+  $('arena-details').textContent+=' · '+mission.encounter.name.toUpperCase()+
+   (S.phase==='playing'?' · NEXT RD '+(event?.nextRound||mission.encounter.first):'');
+ }
  $('round').textContent=S.round;$('turnlabel').textContent=S.phase==='over'?'MATCH OVER':S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
  $('aeth').textContent=S.energy[my];$('capacity').textContent=' / '+S.cap;
  $('deckcount').textContent=S.decks[my].length+' IN DECK';$('profile-open').textContent='LV '+profile.level;$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
@@ -1143,7 +1228,14 @@ function startQuickMatch(){
 function startAI(){
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
  $('mode-ai').classList.add('active');$('mode-online').classList.remove('active');$('lobby').classList.add('hidden');
- if(!load())seed('ai');setArena(S?.arenaId||'verdant');message('<b>Single Player</b> · Rune Valley','Tap a card to summon, or tap an ally to command it.');render();
+ const resumed=load();
+ if(!resumed)seed('ai');
+ // Do not erase shifting weather from a saved, in-progress campaign match.
+ const activeHazards=resumed&&S.missionId&&S.encounterState?.events>0?
+  S.hazards?.slice():null;
+ setArena(S?.arenaId||'verdant');
+ if(activeHazards)S.hazards=activeHazards;
+ message('<b>Single Player</b> · Rune Valley','Tap a card to summon, or tap an ally to command it.');render();
 }
 function disconnect(){if(net){try{net.leave()}catch(e){}net=null}room='';connected=false}
 function startOnline(){
@@ -1293,7 +1385,23 @@ window.addEventListener('aether-card-art-ready',()=>{
  if(!$('deck-builder').classList.contains('hidden'))deckStatus();
  render();
 });
-window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel};
+window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
+ ...(window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html')?{
+ qaEncounter:(id,round)=>{
+  if(!startMission(id,true))return{pass:false,reason:'mission setup failed'};
+  const mission=MISSION_BY_ID[id],state=S.encounterState;
+  if(!mission?.encounter||!state)return{pass:false,reason:'missing encounter'};
+  S.round=round||mission.encounter.first;
+  const before=S.units.length,oldEvent=state.events,oldHazards=S.hazards.slice();
+  const fired=encounterTick(),repeated=encounterTick();
+  const unique=new Set(S.units.map(u=>K(u.x,u.y)));
+  const pass=fired&&!repeated&&state.events===oldEvent+1&&S.units.length<=16&&
+   S.units.every(u=>bounds(u.x,u.y)&&u.hp>0&&u.shield<=5)&&unique.size===S.units.length;
+  return{pass,id,kind:mission.encounter.type,round:S.round,fired,
+   unitCount:S.units.length,unitIncrease:S.units.length-before,
+   hazardCount:S.hazards.length,hazardsChanged:oldHazards.join('|')!==S.hazards.join('|'),
+   note:state.notice};
+ }}:{})};
 startAI();
 const inviteCode=new URLSearchParams(location.search).get('room');if(inviteCode){startOnline();$('roomid').value=inviteCode.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);$('roomstatus').textContent='Invitation detected. Tap Join Room to connect.'}
 })();

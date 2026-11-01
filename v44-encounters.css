@@ -1,0 +1,24 @@
+/* Dominion v4.4 — encounter-specific campaign information.
+   Existing illustrated world art and mission markers stay unchanged. */
+#game .atlas-dialog-twist{
+ margin:10px 0 11px;
+ padding:12px 13px;
+ border:1px solid #9ed5ce80;
+ border-left:3px solid #a7f0d8;
+ border-radius:9px;
+ color:#dcf8ed;
+ background:linear-gradient(115deg,#123e488f,#252847b8);
+ font:750 11px/1.6 system-ui;
+ letter-spacing:.04px;
+}
+#game .atlas-dialog-twist.hidden{display:none!important}
+#game[data-tab="battle"] .vista-top{min-height:36px;gap:8px;align-items:center}
+#game[data-tab="battle"] #arena-details{
+ max-width:72%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+ font:750 10px/1.4 system-ui!important;
+ color:#b3f1d9!important;
+}
+@media(max-width:410px){
+ #game[data-tab="battle"] .vista-top{min-height:38px}
+ #game[data-tab="battle"] #arena-details{max-width:65%;font-size:9px!important}
+}

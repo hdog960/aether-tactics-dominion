@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -279,6 +279,30 @@ function auditClassicFrames(){
   '\\nIssues: '+(failures.join(', ')||'none');
 }
 
+// Save-isolated authoring QA — exercises every mission's own real event
+// runner without unlocking anything in the production player profile.
+function auditCampaign(){
+ const missions=G.missions?.all||[],results=[];
+ const kinds=new Set(),rounds=new Set();
+ for(const m of missions){
+  const e=m.encounter;
+  if(!e){results.push({id:m.id,pass:false,reason:'missing encounter rule'});continue}
+  kinds.add(e.type);
+  const r=G.qaEncounter?.(m.id,e.first);
+  results.push({id:m.id,pass:!!r?.pass,kind:e.type,round:r?.round,
+   reason:r?.pass?r.note||'event fired':r?.reason||'event failed'});
+  if(r?.round)rounds.add(r.round);
+ }
+ G.startQuickMatch();N.showTab('battle');
+ const count=results.filter(x=>x.pass).length,pass=count===15&&results.length===15&&kinds.size>=5;
+ window.__qaCampaignResult={pass,count,total:results.length,kinds:[...kinds],
+  distinctTriggerRounds:rounds.size,results};
+ status('CAMPAIGN '+(pass?'PASS':'FAIL')+' · '+count+'/'+results.length+
+  ' missions · '+kinds.size+' tactical rules');
+ $('qa-report').textContent=results.map(x=>(x.pass?'✓ ':'✗ ')+x.id+
+  ' '+(x.kind||'none')+' '+x.reason).join('\\n');
+}
+
 panel.addEventListener('click',e=>{
  const b=e.target.closest('[data-qa]');if(!b)return;
  const mode=b.dataset.qa;
@@ -292,6 +316,7 @@ panel.addEventListener('click',e=>{
  else if(mode==='stress')stressAI();
  else if(mode==='frames')auditFrames();
  else if(mode==='classic')auditClassicFrames();
+ else if(mode==='campaign')auditCampaign();
 });
 document.body.classList.add('qa-page');
 setTimeout(()=>{

@@ -25,6 +25,26 @@
  {id:'t2',region:'frost',name:'Trial II — The Mirror Court',story:'Crystalline defenders return every advantage to the enemy.',objective:'hunt',champion:'y',champHP:31,champATK:5,style:'Fortress',rounds:24,tier:5,bonusXP:165,bonusGold:145,card:'y',trial:true},
  {id:'t3',region:'ember',name:'Trial III — The Rift Sovereign',story:'Face the last titan of the sundering in the burning sky.',objective:'hunt',champion:'t',champHP:36,champATK:6,style:'Ritual',rounds:24,tier:6,bonusXP:210,bonusGold:185,card:'t',trial:true}
  ];
+ // v4.4: Every campaign battle has a distinct authored battlefield rule.
+ // Descriptions appear in the world map; events execute via the solo engine.
+ const signatures={
+  v1:{name:'Valley Aethrise',description:'Held Aeth springs grant a brief shield every four rounds.',type:'spring',first:4,cadence:4},
+  v2:{name:'The Wells Awaken',description:'The two wells pulse shields every third round. Control both.',type:'spring',first:3,cadence:3},
+  v3:{name:'Thornbound Path',description:'Briar roots periodically bind anyone occupying the contested center.',type:'roots',first:3,cadence:3,tiles:['2,3','3,3','4,3','3,4']},
+  f1:{name:'Whiteout Front',description:'Advancing cold lanes shift across the battlefield every third round.',type:'weather',first:3,cadence:3,patterns:[['1,3','2,4','3,4'],['3,2','4,3','5,4'],['1,4','3,3','5,3']]},
+  f2:{name:'Frozen Wellheart',description:'Each spring pulses protective magic for whoever holds it.',type:'spring',first:3,cadence:3},
+  f3:{name:'Seer’s Reflection',description:'The wounded Seer periodically summons a crystal ward.',type:'ward',first:4,cadence:3},
+  e1:{name:'Magma Breaks',description:'New lava lanes activate on a repeating cycle. Move before they ignite.',type:'weather',first:3,cadence:3,patterns:[['1,3','3,3','5,4'],['1,4','3,4','5,3'],['0,3','3,2','6,4']]},
+  e2:{name:'Crucible Siege',description:'Foundry raiders arrive from the side approaches at regular intervals.',type:'wave',first:3,cadence:3,pool:['v','k','c']},
+  e3:{name:'Heart of the Furnace',description:'The Colossus awakens moving volcanic fault lines.',type:'weather',first:3,cadence:3,patterns:[['1,3','3,3','5,4'],['2,4','3,4','4,3'],['0,3','3,4','6,4']]},
+  r1:{name:'Ghost Procession',description:'Spectral guards march from the old portals every four rounds.',type:'wave',first:4,cadence:4,pool:['o','v','d']},
+  r2:{name:'Oathkeeper’s Gift',description:'Both contested springs ward their controlling armies every three rounds.',type:'spring',first:3,cadence:3},
+  r3:{name:'The Crown Stirs',description:'The Leviathan’s ancient shield returns during prolonged battle.',type:'ward',first:4,cadence:4},
+  t1:{name:'Hollow King’s Hunt',description:'Relentless shadow skirmishers reinforce the King on the flanks.',type:'wave',first:3,cadence:3,pool:['s','A','v']},
+  t2:{name:'Mirror Court',description:'Crystal warding reflects into the champion and a nearby retainer.',type:'mirror',first:3,cadence:3},
+  t3:{name:'Sovereign’s Rupture',description:'The final Titan rotates searing fault lines as the fight escalates.',type:'weather',first:2,cadence:2,patterns:[['1,3','3,3','5,4'],['2,4','3,4','4,3'],['0,3','3,5','6,4']]}
+ };
+ for(const m of [...missions,...trials])m.encounter=signatures[m.id];
  const all=[...missions,...trials];
  window.AetherConquest={regions,missions,trials,all};
 })();

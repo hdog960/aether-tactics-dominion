@@ -29,7 +29,7 @@ const modal=document.createElement('div');modal.id='atlas-dialog';modal.classNam
  <div class="atlas-dialog-panel"><button type="button" class="atlas-dialog-close" data-close aria-label="Close mission details">✕</button>
  <div class="atlas-dialog-mark" id="atlas-dialog-mark"></div><div class="atlas-dialog-kicker" id="atlas-dialog-kicker"></div>
  <h2 id="atlas-dialog-title"></h2><p class="atlas-dialog-story" id="atlas-dialog-story"></p>
- <div class="atlas-dialog-objective" id="atlas-dialog-objective"></div><div class="atlas-dialog-reward" id="atlas-dialog-reward"></div>
+ <div class="atlas-dialog-objective" id="atlas-dialog-objective"></div><div class="atlas-dialog-twist" id="atlas-dialog-twist"></div><div class="atlas-dialog-reward" id="atlas-dialog-reward"></div>
  <div class="atlas-dialog-actions"><button type="button" data-close>BACK TO ATLAS</button><button type="button" id="atlas-launch">START MISSION</button></div></div>`;
 game.appendChild(modal);
 function close(){modal.classList.add('hidden');current=null;lastFocus?.focus?.()}
@@ -46,6 +46,9 @@ function openMission(id,button){
  $('atlas-dialog-title').textContent=m.name;
  $('atlas-dialog-story').textContent=m.story;
  $('atlas-dialog-objective').textContent=types[m.objective]||'⚔ Tactical encounter';
+ $('atlas-dialog-twist').textContent=m.encounter?'✦ BATTLEFIELD TWIST · '+m.encounter.name.toUpperCase()+
+  ' — '+m.encounter.description:'';
+ $('atlas-dialog-twist').classList.toggle('hidden',!m.encounter);
  $('atlas-dialog-reward').textContent='REWARDS  ✧ '+m.bonusXP+' XP   ◆ '+m.bonusGold+' GOLD'+(done?'   ★ '+(info.stars?.[id]||1)+'/3':'');
  const launch=$('atlas-launch');
  launch.disabled=!available;
