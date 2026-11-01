@@ -952,10 +952,22 @@ function aiTurn(){
    let spot=null;
    const enemies=S.units.filter(u=>u.team===0);
    const friends=S.units.filter(u=>u.team===1);
-   if(['ignite','frost','bolt','silence'].includes(q.spell)){
+   if(['ignite','frost','bolt','silence','undertow'].includes(q.spell)){
     const opportunities=enemies.filter(u=>validSpellSpot(q,1,u.x,u.y))
      .sort((a,b)=>(a.hp-b.hp)||((b.k==='r'?1:0)-(a.k==='r'?1:0)));
     spot=opportunities.find(u=>q.spell==='frost'?!u.rooted:q.spell==='ignite'?!u.burning:true);
+   }else if(q.spell==='diagonal'){
+    const options=[];
+    for(let cy=0;cy<8;cy++)for(let cx=0;cx<7;cx++){
+     if(!validSpellSpot(q,1,cx,cy))continue;
+     const affected=enemies.filter(v=>Math.abs(v.x-cx)===1&&Math.abs(v.y-cy)===1);
+     const coreHit=Math.abs(core(0).x-cx)===1&&Math.abs(core(0).y-cy)===1;
+     const strength=affected.reduce((v,u)=>v+Math.min(powerFor(q,1),u.hp+u.shield),0)+
+      (coreHit?powerFor(q,1)*1.3:0);
+     if(affected.length>=2||coreHit)options.push({x:cx,y:cy,strength});
+    }
+    options.sort((a,b)=>b.strength-a.strength||a.y-b.y||a.x-b.x);
+    spot=options[0]||null;
    }else if(q.spell==='cross'){
     // Target valid *empty* blast centres too. Previously only an occupied
     // enemy tile could be the centre, missing some two-unit formations.
@@ -975,6 +987,12 @@ function aiTurn(){
     spot=blasts[0]||null;
    }else if(q.spell==='heal'){
     spot=friends.filter(u=>u.hp<=u.max-2).sort((a,b)=>(a.hp/a.max)-(b.hp/b.max))[0];
+   }else if(q.spell==='reprisal'){
+    spot=friends.filter(u=>!u.reprisal&&u.shield<5)
+     .sort((a,b)=>(a.hp/a.max)-(b.hp/b.max))[0];
+   }else if(q.spell==='edict'){
+    spot=friends.filter(u=>!u.edict&&!u.attacked)
+     .sort((a,b)=>b.atk-a.atk||a.id-b.id)[0];
    }else if(q.spell==='shield'){
     spot=friends.filter(u=>u.shield<2).sort((a,b)=>b.atk-a.atk)[0];
    }else if(q.spell==='cleanse'){
@@ -1893,6 +1911,12 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     Math.min(power,unit.hp+unit.shield)*1.65+
      (power>=unit.hp+unit.shield?5:0)+(unit.id===S.championId?7:0):
     coreHit?power*1.6+(mission.objective==='assault'?10:0):-Infinity;
+  }else if(type==='diagonal'){
+   value=foes.filter(v=>Math.abs(v.x-x)===1&&Math.abs(v.y-y)===1)
+    .reduce((sum,v)=>sum+Math.min(power,v.hp+v.shield)*1.5+
+     (v.id===S.championId?4:0),0);
+   if(Math.abs(core(1).x-x)===1&&Math.abs(core(1).y-y)===1)
+    value+=power*(mission.objective==='assault'?2:1);
   }else if(type==='cross'){
    value=nearby.reduce((sum,v)=>sum+Math.min(power,v.hp+v.shield)*1.4+
     (v.id===S.championId?6:0),0);
@@ -1906,6 +1930,18 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   }else if(type==='silence'){
    value=unit&&unit.team===1?Math.min(3,unit.shield||0)*1.5+
     (unit.rallied?2:0)+(unit.id===S.championId?3:0):0;
+  }else if(type==='undertow'){
+   value=unit&&unit.team===1&&undertowLanding(unit,0)?
+    Math.min(power,unit.hp+unit.shield)*1.5+
+    (unit.range>=2?3:1)+(high.has(K(unit.x,unit.y))?1.5:0):0;
+  }else if(type==='reprisal'){
+   value=unit&&unit.team===0&&!unit.reprisal?
+    Math.min(2,MAX_SHIELD-(unit.shield||0))*1.5+
+    (foes.some(v=>d(v,unit)<=v.range+1)?3:0):0;
+  }else if(type==='edict'){
+   value=unit&&unit.team===0&&!unit.attacked&&!unit.edict?
+    (unit.atk||0)*.9+
+    (foes.some(v=>d(v,unit)<=unit.range+unit.move)?3:0):0;
   }else if(type==='heal'){
    const gap=unit?Math.max(0,unit.max-unit.hp):0;
    value=Math.min(3,gap)*2.1+(unit?.attacked?1.2:0)+
