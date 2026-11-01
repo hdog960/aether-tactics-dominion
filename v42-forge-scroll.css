@@ -1,0 +1,72 @@
+/* Dominion v4.2 — iPhone Forge scrolling correction.
+   Prior styles clipped .profile-body and made only the tiny upgrade sublist
+   scrollable. The whole Forge body now scrolls as one intentional surface.
+   The illustrated heading, Back to Game footer and main tabs remain fixed. */
+#game[data-tab="forge"] > #player-profile{
+  min-height:0!important;
+  overflow:hidden!important;
+  touch-action:pan-y!important;
+}
+#game[data-tab="forge"] > #player-profile .profile-panel{
+  min-height:0!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+#game[data-tab="forge"] > #player-profile .profile-head{
+  flex:0 0 auto!important;
+}
+#game[data-tab="forge"] > #player-profile .profile-body{
+  display:block!important;
+  flex:1 1 auto!important;
+  min-height:0!important;
+  height:0!important;
+  max-height:none!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y!important;
+  scrollbar-width:thin;
+  scrollbar-color:#e6b777 #211930;
+}
+#game[data-tab="forge"] > #player-profile .profile-upgrade-heading{
+  position:relative!important;
+  padding-bottom:12px!important;
+}
+#game[data-tab="forge"] > #player-profile .profile-upgrade-heading::after{
+  content:"SCROLL FOR MORE UPGRADES  ↓";
+  display:block;
+  padding-top:7px;
+  color:#d8b887;
+  font:800 9px/1.2 system-ui;
+  letter-spacing:1px;
+}
+#game[data-tab="forge"] > #player-profile .profile-upgrade-list{
+  display:flex!important;
+  flex-direction:column!important;
+  flex:0 0 auto!important;
+  min-height:auto!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  overscroll-behavior:auto!important;
+  touch-action:pan-y!important;
+  gap:9px!important;
+  padding-bottom:calc(26px + env(safe-area-inset-bottom,0px))!important;
+}
+#game[data-tab="forge"] > #player-profile .profile-card-row{
+  flex:0 0 auto!important;
+  min-height:97px!important;
+}
+#game[data-tab="forge"] > #player-profile .profile-footer{
+  flex:0 0 auto!important;
+}
+/* Respect the notch and home gesture area without letting the page itself
+   scroll behind the fixed tab bar. */
+@media(max-width:720px){
+  #game[data-tab="forge"] > #player-profile .profile-body{
+    overscroll-behavior-y:contain;
+  }
+}
