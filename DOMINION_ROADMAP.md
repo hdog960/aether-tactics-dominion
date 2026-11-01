@@ -11,6 +11,9 @@ This roadmap is incremental. Future versions below are plans, not completed work
 ### v4.4 — Campaign Depth
 Expand existing 12 missions with distinct encounter scripts (reinforcement warnings, objective pressure, region hazards) and authored story beats, without rewriting the world map or unlocking content accidentally. Balance the 3 Crown Trials so each phase feels unique.
 
+### v4.4.6 — Objective Clarity & Focused QA (shipped)
+Battle HUD now reports live mission victory conditions in a mobile-readable layout. QA-only objective behavior was corrected and 48 focused battle sessions were run on difficult missions. More human-level Hollow King review remains necessary; no premature champion nerfs. See `V446_OBJECTIVE_QA.md`.
+
 ### v4.5 — The Great Card Expansion
 Grow to ~60 carefully balanced cards, designed across distinct viable archetypes (sacrifice, flying, terrain control, spells, counterspells, frontline). Create bespoke card/battlefield matching art and descriptions before shipping each batch. Regression test existing 24-card deck construction and local progression.
 
