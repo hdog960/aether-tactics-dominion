@@ -102,22 +102,36 @@ try{
     spriteDimensions:art.s.spriteDimensions,frameDimensions:art.s.frameDimensions,
     uniqueCards:art.uniqueCards,uniqueSprites:art.uniqueSprites},results,errors};
 
-  // Staging intentionally retains 40 public cards until artwork is signed off.
+  // Test the actual future public entrypoint with 44 visible card records.
   const main=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   main.on('pageerror',e=>errors.push('Main: '+e.message));
   await main.goto('http://127.0.0.1:8000/index.html',{waitUntil:'load',timeout:45000});
-  await main.waitForFunction(()=>window.AetherGame&&window.AetherArt?.v453ArtStatus?.()?.complete,null,{timeout:30000});
+  await main.waitForFunction(()=>window.AetherGame&&
+    window.AetherArt?.v454ArtStatus?.()?.complete&&
+    window.AetherScene?.v454ArtInfo?.()?.framesReady,null,{timeout:30000});
   await main.locator('button[data-page="cards"]').click();
   await main.locator('#codex-tabs button[data-tab="deck"]').click();
-  const collection=await main.evaluate(()=>({
-    count:Number(document.querySelector('#codex-deck-count')?.textContent),
-    names:[...document.querySelectorAll('#codex-list button[data-inspect] strong')].map(x=>x.textContent),
-    deck:window.AetherGame.deckInfo()
-  }));
-  if(collection.count!==40||collection.names.includes('Tideglass Oracle')||
-     collection.deck.cards!==24)
-    fail('Unreleased new cards escaped staging gate: '+JSON.stringify(collection));
-  report.production={collection:collection.count,stillArtGated:true};
+  const collection=await main.evaluate(()=>{
+    const names=[...document.querySelectorAll('#codex-list button[data-inspect] strong')]
+      .map(x=>x.textContent);
+    const keys=['Q','R','S','T'];
+    const art=keys.map(k=>window.AetherArt.get(k).startsWith('data:image/png'));
+    return{
+      count:Number(document.querySelector('#codex-deck-count')?.textContent),
+      names,art,
+      cardCount:window.AetherGame.deckInfo().cards,
+      vaultSlots:window.AetherGame.loadouts().slots.length,
+      frameReady:window.AetherScene.v454ArtInfo().framesReady
+    };
+  });
+  const expected=['Tideglass Oracle','Ashen Harrier','Gravebloom Warden','Stormvault Artificer'];
+  if(collection.count!==44||expected.some(name=>!collection.names.includes(name))||
+     collection.art.some(ok=>!ok)||!collection.frameReady||
+     collection.cardCount!==24||collection.vaultSlots!==3)
+    fail('Normal 44-card release entrypoint incomplete: '+JSON.stringify(collection));
+  await main.screenshot({path:'art/v454-production-cards-390px.png',fullPage:false});
+  report.production={collection:collection.count,newUnits:expected,
+    deckSize:collection.cardCount,slots:collection.vaultSlots,paintingsReady:true};
   console.log(JSON.stringify(report,null,2));
   if(errors.length)fail('Browser JS errors: '+errors.join('; '));
 }finally{
