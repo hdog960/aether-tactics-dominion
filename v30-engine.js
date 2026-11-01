@@ -1575,6 +1575,10 @@ window.addEventListener('aether-card-art-ready',()=>{
  render();
 });
 window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
+ deckInfo:()=>({cards:chosenDeck.length,units:chosenDeck.filter(k=>!D[k].spell).length,
+  spells:chosenDeck.filter(k=>!!D[k].spell).length,
+  mythics:chosenDeck.filter(k=>!!D[k].tribute).length,
+  averageLevel:+(chosenDeck.reduce((total,k)=>total+cardLevel(k),0)/Math.max(1,chosenDeck.length)).toFixed(1)}),
  ...(window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html')?{
  // v4.4.4: deterministic, self-contained tactical playtest, restricted to
  // save-isolated QA. Both choices for a mission use the SAME seeded RNG and
