@@ -34,4 +34,5 @@ jobs:
           path: |
             art/v454-staging-browser-390px.png
             art/v454-creatures-on-battlefield-390px.png
+            art/v454-art-identity-review-390px.png
           if-no-files-found: ignore
