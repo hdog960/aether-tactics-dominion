@@ -29,7 +29,7 @@ function showTab(page,opts={}){
  }else if(!$('codex').classList.contains('hidden'))$('codex-close').click();
  if(page==='forge')$('profile-open').click();
  else if(!$('player-profile').classList.contains('hidden'))$('profile-close').click();
- if(page==='campaign')renderCampaign();
+ if(page==='campaign'){renderCampaign();window.DominionAtlas?.render?.()}
  if(page==='duel')renderDuel();
  if(page==='home')renderHome();
 }
