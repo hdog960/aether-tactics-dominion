@@ -59,7 +59,7 @@ const report={
  creatorStop:fs.readFileSync('DOMINION_ROADMAP.md','utf8').includes('Mandatory stopping point after v4.7')
 };
 console.log(JSON.stringify(report,null,2));
-if(!report.rules.pass||report.rules.count!==13||
+if(!report.rules.pass||report.rules.count!==14||
  !report.prior.v453||report.prior.v453Count!==13||
  !report.prior.spells||report.prior.spellCount!==12||
  !report.prior.vault||report.prior.vaultCount!==8||
