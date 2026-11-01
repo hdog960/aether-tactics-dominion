@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.2 — Forge Vertical Scrolling Repair**
+**Current source release: v4.3 — Living Battlefield, first combat-quality milestone**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -78,3 +78,8 @@ The Map tab is now a fully interactive illustrated four-region fantasy world mat
 
 ## v4.2 — Forge scroll fix
 The Forge now scrolls the entire progression content as one touch-enabled panel rather than trapping vertical scrolling in a nested card list. The title, back action, and bottom tab dock stay visible. The `v42-forge-scroll.css` stylesheet is last-loaded, with a new service-worker cache. No saves or combat rules changed. Live-browser smoke testing confirmed v4.2 deploy and navigation; physical iPhone finger-swiping could not be simulated and still needs verification. See `V42_FORGE_SCROLL_FIX.md`.
+
+## v4.3 — Living Battlefield (first pass)
+New spell-specific canvas effects for 14 battle actions, smarter deterministic solo AI that evaluates springs, hazards, height, exposure, and decisive attacks, reduced redraw work outside combat, and refined combat HUD feedback. The 32-card roster and existing save format remain unchanged. This is the beginning of the v4.3 combat work—not the full animation overhaul. See `DOMINION_ROADMAP.md` and `V43_LIVING_BATTLEFIELD.md`.
+
+**Live browser QA:** [v4.3 combat run](https://agent.tinyfish.ai/runs/60355e35-d0bd-43c3-81f2-e98a1270b8f4) reported 12/12 AI-turn legality checks, 16/16 movement and attack checks for eight newer summons, fourteen spell-effect types queued and visible battlefield rendering, and zero JS errors. Physical iPhone swipe/performance testing, longer balance audits, and real multiplayer are still pending.
