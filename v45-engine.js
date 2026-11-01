@@ -546,6 +546,32 @@ function nearestAlly(u,radius=2){
  return S.units.filter(v=>v.team===u.team&&v.id!==u.id&&d(v,u)<=radius)
    .sort((a,b)=>d(a,u)-d(b,u)||a.hp/a.max-b.hp/b.max||a.id-b.id)[0]||null;
 }
+// On-summon movement assistance does not create a new attack, affect flyers
+// or ignore roots. Its round quota is shared between cards of the same team.
+function onCreatureSummoned(u){
+ if(u.k!=='M'||S.zephyrRound?.[u.team]===S.round)return;
+ const ally=S.units.filter(v=>v.team===u.team&&v.id!==u.id&&
+  !v.fly&&v.moved&&!v.rooted&&d(v,u)<=2)
+  .sort((a,b)=>d(a,u)-d(b,u)||a.id-b.id)[0];
+ if(!ally)return;
+ ally.moved=false;ally.stride=0;
+ S.zephyrRound||=[-1,-1];S.zephyrRound[u.team]=S.round;
+ abilityPulse(ally,'dash',0);
+}
+// Only spring-holding Bastions produce their shield, once at the start
+// of their own side's turn. No ongoing aura and never above shield cap.
+function springBastionPulse(team){
+ for(const keeper of S.units.filter(v=>v.team===team&&v.k==='N'&&
+  springs.includes(K(v.x,v.y)))){
+  const allies=S.units.filter(v=>v.team===team&&v.id!==keeper.id&&
+   d(v,keeper)<=2&&v.shield<MAX_SHIELD)
+   .sort((a,b)=>d(a,keeper)-d(b,keeper)||a.shield-b.shield||a.id-b.id);
+  const beneficiary=allies[0]||(keeper.shield<MAX_SHIELD?keeper:null);
+  if(!beneficiary)continue;
+  const n=grantShield(beneficiary,1);
+  if(n)abilityPulse(beneficiary,'shield',n);
+ }
+}
 function onUnitDeath(u){
  if(S?.missionId&&u.id===S.championId&&u.team===1&&S.missionGoal==='hunt')missionWin();
  if(u.k==='y'){const ally=nearestAlly(u,2);
@@ -724,6 +750,24 @@ function mitigate(target,n,physical){
  return value;
 }
 function basicStrike(attacker,target){
+ // Cragsunder Duelist: high-ground advantage *instead* of a raw power
+ // multiplier. Applies once per round, and never against a Core.
+ if(attacker.k==='O'&&!target.core&&high.has(K(attacker.x,attacker.y))&&
+    attacker.summitRound!==S.round){
+  attacker.summitRound=S.round;
+  target.shield=Math.max(0,(target.shield||0)-2);
+  abilityPulse(attacker,'edict',0);
+ }
+ // Umbral Siphon transfers actual existing shield before ordinary damage,
+ // once per round. It creates no shield if the opponent had none or the
+ // siphon was already capped, and never affects Cores.
+ if(attacker.k==='P'&&!target.core&&(target.shield||0)>0&&
+    (attacker.shield||0)<MAX_SHIELD&&attacker.siphonRound!==S.round){
+  target.shield=Math.max(0,target.shield-1);
+  const gained=grantShield(attacker,1);
+  attacker.siphonRound=S.round;
+  if(gained)abilityPulse(attacker,'shield',gained);
+ }
  // Dawn Edict is a single-use offensive effect. It removes at most three
  // existing shield points, without touching unit health or creating attacks.
  const edict=!!attacker.edict;
@@ -832,6 +876,7 @@ function startStatusTurn(team){
   fxSpell(u,1,'ignite',u.x,u.y,1-team);
   applyDamage(u,1);
  }
+ springBastionPulse(team);
 }
 // Pull only into genuinely free, legal adjacent tiles. Never relocate bosses
 // or bypass collision, even if the target has flying movement.
@@ -997,6 +1042,7 @@ function apply(t,a){
    if(S.units.filter(v=>v.team===t).length-tribute>=8||!deploy(t,x,y))return false;
    if(tribute)onSacrifice(t);
    S.units=S.units.filter(v=>!ids.includes(v.id));S.units.push(unit(k,t,x,y));
+   onCreatureSummoned(S.units[S.units.length-1]);
    if(k==='o'&&S.scribeRound?.[t]!==S.round){
     const pos=S.discards[t].findLastIndex(v=>!!D[v].spell);
     if(pos>=0){S.scribeRound||(S.scribeRound=[0,0]);S.scribeRound[t]=S.round;
@@ -1275,6 +1321,10 @@ const GUIDE={
  I:{feature:'One-hit reactive defense.',detail:'Grant an ally 2 shield up to the global five-shield cap. The first enemy basic strike against it before its next turn takes 1 retaliation damage. Does not stack.',tip:'Protect an exposed spring holder; the ward is consumed on its first incoming basic strike.'},
  J:{feature:'Controlled positional displacement.',detail:'Deal 1 damage to a non-boss enemy within 3 of your army; move it one clear tile toward its nearest allied-side challenger when possible. The target must have a valid open landing tile.',tip:'Pull ranged enemies off high ground into melee range, or disturb a fortified formation.'},
  K:{feature:'Counter-protection attack blessing.',detail:'The next basic attack from one allied creature gains 1 damage and strips up to 3 shield before the hit. Expires at the start of that creature’s next turn.',tip:'Time this immediately before striking a heavily shielded boss or frontline guardian.'},
+ M:{feature:'Flying squad mobility support.',detail:'When summoned, restore movement to the nearest grounded, unrooted ally within two tiles that already moved. Once per round for your entire army; attacks are never refreshed.',tip:'Move your frontline, then summon the Cartographer close enough to dispatch it again.'},
+ N:{feature:'Spring-based fortification.',detail:'If this defender is standing on an Aeth spring when your turn begins, grant one shield to a nearby ally within two tiles. If none qualifies, shield itself. Maximum five shield per creature.',tip:'Hold contested springs rather than using it as an ordinary slow bruiser.'},
+ O:{feature:'Elevation-based shield breaker.',detail:'Its first basic attack launched from high ground each round removes up to two enemy shield before ordinary damage. A Core cannot be pierced this way.',tip:'Use elevation to counter ward-heavy opponents without dealing more raw damage.'},
+ P:{feature:'Steal an opponent’s defenses.',detail:'The first basic attack against a shielded creature each round transfers exactly one shield from the target to this unit, provided the hunter is below the five-shield cap.',tip:'Pick protected targets to swing shield advantage, rather than finishing unshielded weaklings.'},
 
  c:{feature:'Ranged elemental pressure.',detail:'Basic attacks burn a target for 1 additional damage at the start of its next turn. Burn does not stack.',tip:'Keep enemies burning while controlling their movement.'},
  j:{feature:'Lock down enemy advances.',detail:'Basic attacks root the target for its next turn. The victim may still attack but cannot move.',tip:'Block a dangerous rush near a choke point.'},
