@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.1 — Illustrated Riftfront Living World Map**
+**Current source release: v4.2 — Forge Vertical Scrolling Repair**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -75,3 +75,6 @@ Quickstep, Frostbind, Ember Sigil, Rallying Cry, Purifying Rain, Echo Retrieval,
 The Map tab is now a fully interactive illustrated four-region fantasy world matching the approved design. Twelve correctly gated campaign mission crests open real mission briefs (name, objectives, story, XP and gold), can launch battles, resume an unfinished mission or replay cleared missions, and preserve previous progression. Four chapter progress counters and the global sigil and mission totals remain live; horizontal pan and Fit Map work on mobile. Crown Trials retain their existing gated endgame controls. A dedicated source QA report is in `V41_LIVING_WORLD_MAP.md`.
 
 **Published browser QA:** [v4.1 world map smoke test](https://agent.tinyfish.ai/runs/a2893c3e-0396-4017-ac27-6ce59394d4b6) confirmed the map asset, 12 markers, First Footsteps battle launch, locked Two Wells mission, in-progress mission return, and five tabs. iPhone hardware verification remains outstanding.
+
+## v4.2 — Forge scroll fix
+The Forge now scrolls the entire progression content as one touch-enabled panel rather than trapping vertical scrolling in a nested card list. The title, back action, and bottom tab dock stay visible. The `v42-forge-scroll.css` stylesheet is last-loaded, with a new service-worker cache. No saves or combat rules changed. Live-browser smoke testing confirmed v4.2 deploy and navigation; physical iPhone finger-swiping could not be simulated and still needs verification. See `V42_FORGE_SCROLL_FIX.md`.
