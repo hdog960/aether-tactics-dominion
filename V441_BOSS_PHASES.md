@@ -29,3 +29,14 @@ The seven hunt encounters have bespoke two-stage reactions at approximately 65% 
 
 ## Remaining work
 This is the second development pass in v4.4, not the complete campaign overhaul. Still planned: richer dialogue scenes, extended balance/performance simulations, end-to-end campaign clear runs, physical iPhone WebKit verification, and multiplayer reliability.
+
+## Live deployment and QA — November 1, 2026
+- GitHub Pages successfully deployed commit `8b8e0e21252d89d72d4fd3a11abac934745657ad` and the main public page returned title **Champion Boss Phases v4.4.1**.
+- Live test and screenshots: https://agent.tinyfish.ai/runs/50894235-a65e-4290-9a67-15e5d2cccaf4
+- **7/7 BOSS PHASES PASS**, each phase-one and phase-two event triggered once, board legal, zero reported JS errors.
+- **Mirror Court PASS**, charge consumed, one reflected point after a basic strike; spell retaliation excluded by the authoritative condition.
+- **15/15 signature encounter events PASS**, all six event mechanisms still operate.
+- **16/16 movement/attack tests PASS** for the eight newer summonable creatures.
+- AI legality test ran until the match ended: **11/11 checked turns passed**, ending before 12 because the match concluded; not reported as 12/12.
+- The browser reached the campaign map. The locked Warden of Thorns boss-briefing text was **not clearly captured** in that run, although the map source includes boss phases, threshold hints and counterplay.
+- No real user save data was touched; QA uses a memory-only storage shim. Physical iPhone WebKit input/performance and complete campaign playthroughs remain outstanding.
