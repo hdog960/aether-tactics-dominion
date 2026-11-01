@@ -5,6 +5,9 @@ on:
     paths:
       - .github/workflows/v454-browser-qa.yml
       - tools/v454_browser_qa.mjs
+      - index.html
+      - v30.html
+      - sw.js
       - art/cards-creatures-v454.webp
       - art/units-creatures-v454.png
       - art/battlefield-frames-v454.webp
@@ -35,4 +38,5 @@ jobs:
             art/v454-staging-browser-390px.png
             art/v454-creatures-on-battlefield-390px.png
             art/v454-art-identity-review-390px.png
+            art/v454-production-cards-390px.png
           if-no-files-found: ignore
