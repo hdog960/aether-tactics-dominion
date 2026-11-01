@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current release: v3.6 — Painted Battlefield Roster**
+**Current release: v3.7 — Painted Card & Battlefield Integration**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -59,3 +59,8 @@ Aether Titan, Abyssal Leviathan, Ember Adept and Thorn Warden now have painted t
 - Unit poses remain composited idle, movement, hit, attack and defeat transitions, not hand-drawn frame-by-frame animation sets. Sixteen-to-thirty-two-frame pose atlas work remains a future goal.
 - No combat rules, save keys, player collections or campaign progression changed. iPhone hardware QA is still required.
 - See `V36_PAINTED_ROSTER.md` for source mapping, limitations and tests.
+
+## v3.7 art integrity update
+Eight previously borrowed/recolored unit sprites (`p,k,d,o,y,z,A,B`) now render from eight individually illustrated character cutouts sourced from their exact card paintings. Ten previously geometric spell cards (`q,e,i,n,x,C,D,E,F,G`) have painted spell scenes in a separate self-hosted atlas. Seven classic original illustrations and seven prior premium illustrations are retained. `v37-art-unity.js` replaces v36's borrowed-card pipeline; `v30-scene.js` renders the correct eight-character atlas.
+
+Artwork is precached for iPhone. Existing save schemas, campaign, match logic, AI and multiplayer code are unmodified. On-device visual regression testing and manually drawn per-frame animation remain outstanding.

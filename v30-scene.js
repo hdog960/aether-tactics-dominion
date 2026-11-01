@@ -21,16 +21,19 @@ scenic.src='./art/rift-valley-background.jpg';groundTexture.src='./art/terrain-n
 const monsterFrames={v:0,r:1,b:2,s:3,f:4,g:5};
 const paintedAtlas=new Image();
 paintedAtlas.decoding='async';paintedAtlas.src='./art/units-painted-v35.png';
-// Eight extra matching paintings, exported from the fantasy sprite study.
-const paintedAtlas36=new Image();paintedAtlas36.decoding='async';
-paintedAtlas36.src='./art/units-painted-v36.png';
+// Eight independent character cutouts drawn from their own card paintings.
+const paintedAtlas37=new Image();paintedAtlas37.decoding='async';
+paintedAtlas37.src='./art/units-character-v37.png?v=37';
 const customFrames={t:0,l:1,c:2,j:3};
-const paintedFrames36={p:0,k:1,d:2,o:3,y:4,z:5,A:6,B:7};
+const paintedFrames37={p:0,k:1,d:2,o:3,y:4,z:5,A:6,B:7};
 const unitColors={t:'#e7c36c',l:'#64daff',c:'#fa9e57',j:'#9be776',p:'#75eedc',
  k:'#a8ccff',d:'#c8edff',o:'#dab0fa',y:'#94d9b5',z:'#a29aff',A:'#f5a0c8',B:'#ffe1a7'};
 function unitSprite(k){
- if(paintedFrames36[k]!==undefined&&paintedAtlas36.complete&&paintedAtlas36.naturalWidth)
-  return{img:paintedAtlas36,x:paintedFrames36[k]*96,sourceW:96,sourceH:120,tone:'none',boss:false};
+ if(paintedFrames37[k]!==undefined){
+  // Never fall back to a recolored classic or an unrelated silhouette.
+  if(!paintedAtlas37.complete||!paintedAtlas37.naturalWidth)return null;
+  return{img:paintedAtlas37,x:paintedFrames37[k]*96,sourceW:96,sourceH:120,tone:'none',boss:false};
+ }
  if(customFrames[k]!==undefined&&paintedAtlas.complete&&paintedAtlas.naturalWidth)
   return{img:paintedAtlas,x:customFrames[k]*64,sourceW:64,sourceH:88,
    tone:'none',boss:(k==='t'||k==='l')};
