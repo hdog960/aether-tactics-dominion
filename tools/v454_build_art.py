@@ -112,7 +112,7 @@ for i,tile in enumerate(tiles):
     if (a<12).sum()<800 or (a>80).sum()<300: raise RuntimeError('Sprite opacity failed')
     distinct={hash(frames.crop((j*96,i*120,(j+1)*96,(i+1)*120)).tobytes()) for j in range(22)}
     if len(distinct)<18: raise RuntimeError('Repeated animation poses')
-manifest={'version':'4.5.3','characters':['Q','R','S','T'],'frames_per_character':22,
+manifest={'version':'4.5.4','characters':['Q','R','S','T'],'frames_per_character':22,
  'atlases':{p.name:{'dimensions':Image.open(p).size,'bytes':p.stat().st_size}
            for p in (out/'cards-creatures-v454.webp',out/'units-creatures-v454.png',out/'battlefield-frames-v454.webp')}}
 (out/'v454-art-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
