@@ -711,6 +711,20 @@ function onFriendlySpell(t){
  for(const u of S.units.filter(v=>v.team===t&&v.k==='z'&&v.runeRound!==S.round)){
   u.runeRound=S.round;u.runeCharge=1;abilityPulse(u,'rally',0);
  }
+ // Tideglass Oracle requires an actually resolved, friendly spell.
+ // Each individual Oracle can activate once a round; it cannot shield itself
+ // or select opponents, and never pushes shield above the universal cap.
+ for(const oracle of S.units.filter(v=>v.team===t&&v.k==='Q'&&v.oracleRound!==S.round)){
+  const ally=S.units.filter(v=>v.team===t&&v.id!==oracle.id&&
+   d(v,oracle)<=2&&(v.shield||0)<MAX_SHIELD)
+   .sort((a,b)=>(a.shield||0)-(b.shield||0)||d(a,oracle)-d(b,oracle)||a.id-b.id)[0];
+  if(!ally)continue;
+  const gained=grantShield(ally,1);
+  if(gained){
+   oracle.oracleRound=S.round;
+   abilityPulse(ally,'shield',gained);
+  }
+ }
 }
 function trapImpact(u){
  const list=S.traps||[],i=list.findIndex(t=>t.team!==u.team&&t.x===u.x&&t.y===u.y);
