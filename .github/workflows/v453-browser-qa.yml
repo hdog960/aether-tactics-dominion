@@ -1,0 +1,32 @@
+name: Dominion v4.5.3 isolated browser QA
+on:
+  push:
+    branches:
+      - dev/v453-first-creatures
+    paths:
+      - .github/workflows/v453-browser-qa.yml
+permissions:
+  contents: read
+jobs:
+  chromium-sprite-and-gameplay-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev/v453-first-creatures
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - name: Launch static staging site
+        run: python3 -m http.server 8000 --bind 127.0.0.1 > /tmp/dominion-v453-http.log 2>&1 &
+      - name: Validate portraits, cutouts, frame atlas and combat
+        run: node tools/v453_browser_qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dominion-v453-mobile-browser-capture
+          path: art/v453-staging-browser-390px.png
+          if-no-files-found: ignore
