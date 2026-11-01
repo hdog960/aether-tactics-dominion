@@ -1816,6 +1816,45 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   mythics:chosenDeck.filter(k=>!!D[k].tribute).length,
   averageLevel:+(chosenDeck.reduce((total,k)=>total+cardLevel(k),0)/Math.max(1,chosenDeck.length)).toFixed(1)}),
  ...(window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html')?{
+ // v4.5.2: Execute real Armory save, preview and cancel paths against
+ // isolated in-memory storage, then restore the QA player's initial state.
+ qaDeckVault:()=>{
+  const results=[],check=(name,ok)=>results.push({name,pass:!!ok});
+  const oldDeck=chosenDeck.slice(),oldDraft=draftDeck.slice(),
+   oldSlots=JSON.stringify(deckSlots),oldSelected=selectedSlot;
+  const keys=[DECK_STORE,LOADOUT_STORE],stored=keys.map(k=>localStorage.getItem(k));
+  const gameBefore=JSON.stringify(S);
+  try{
+   const active=deckSlots.active,target=(active+1)%SLOT_COUNT;
+   check('Old selected deck migrated into Deck I–III',checkDeck(deckSlots.slots[active]?.cards)&&
+    sameDeck(deckSlots.slots[active].cards,chosenDeck));
+   selectDeckSlot(target);
+   check('Preview never equips a deck',deckSlots.active===active&&sameDeck(chosenDeck,oldDeck));
+   draftDeck=PACKS.Fortress.slice();
+   $('deck-slot-name').value='<FORTRESS&TEST>';
+   const success=saveBuilder();
+   check('Save creates and equips a separate valid slot',success&&deckSlots.active===target&&
+    checkDeck(deckSlots.slots[target]?.cards)&&sameDeck(chosenDeck,PACKS.Fortress));
+   check('Names are sanitized before rendering',deckSlots.slots[target]?.name==='FORTRESS&TEST');
+   check('Legacy v20 selected deck stays synchronized',sameDeck(
+    JSON.parse(localStorage.getItem(DECK_STORE)),chosenDeck));
+   check('Other saved slots survive switching',sameDeck(deckSlots.slots[active]?.cards,oldDeck));
+   openBuilder();selectDeckSlot(active);closeBuilder();
+   check('Cancel does not switch the equipped deck',deckSlots.active===target&&
+    sameDeck(chosenDeck,PACKS.Fortress));
+   check('An in-progress battle is never modified',gameBefore===JSON.stringify(S));
+  }catch(error){results.push({name:'Runtime error',pass:false,info:String(error)})}
+  finally{
+   chosenDeck=oldDeck;draftDeck=oldDraft;deckSlots=JSON.parse(oldSlots);
+   selectedSlot=oldSelected;
+   keys.forEach((k,i)=>{try{
+    if(stored[i]===null)localStorage.removeItem(k);
+    else localStorage.setItem(k,stored[i]);
+   }catch(e){}});
+   renderDeckSlots();deckStatus();
+  }
+  return{pass:results.length===8&&results.every(r=>r.pass),results};
+ },
  // v4.5 staging — verify four actual spell cards using legal apply()
  // actions in memory-isolated scenario states. No player profile is touched.
  qaV45Spells:()=>{
