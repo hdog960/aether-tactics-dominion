@@ -63,7 +63,16 @@ R:{name:'Ashen Harrier',cost:3,hp:4,atk:2,range:1,move:3,
 S:{name:'Gravebloom Warden',cost:4,hp:7,atk:2,range:1,move:1,
  role:'Briar Sentinel',desc:'On defeat, briefly root the closest non-boss enemy.'},
 T:{name:'Stormvault Artificer',cost:3,hp:4,atk:2,range:2,move:2,
- role:'Arcane Sapper',desc:'On summon, disarm a nearby enemy snare and gain 1 shield.'}
+ role:'Arcane Sapper',desc:'On summon, disarm a nearby enemy snare and gain 1 shield.'},
+// v4.5.5 — New spells require distinct painted card art to be publicly visible.
+U:{name:'Mirror Breach',cost:2,spell:'breach',power:1,role:'Wardbreaker',
+ desc:'Strip 2 shield from an enemy creature, then deal 1 damage.'},
+V:{name:'Gale Step',cost:2,spell:'gale',role:'Tactical Movement',
+ desc:'Shift an unrooted nearby ally to an empty adjacent tile. Preserve actions.'},
+W:{name:'Ember Covenant',cost:3,spell:'covenant',role:'Sacrifice Rite',
+ desc:'Sacrifice an ally to shield and rally up to two nearby allies.'},
+X:{name:'Crescent Refrain',cost:3,spell:'refrain',power:2,role:'Status Finisher',
+ desc:'Hit a burning or rooted enemy for 2, chaining 1 damage to another enemy.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
 const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"p":{"move":2},"o":{"hp":4,"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
@@ -97,10 +106,13 @@ const V453_UNIT_KEYS=['M','N','O','P'];
 const V453_ENABLED=V45_QA||window.DOMINION_V453_ART_RELEASE===true;
 const V454_UNIT_KEYS=['Q','R','S','T'];
 const V454_ENABLED=V45_QA||window.DOMINION_V454_ART_RELEASE===true;
+const V455_SPELL_KEYS=['U','V','W','X'];
+const V455_ENABLED=V45_QA||window.DOMINION_V455_ART_RELEASE===true;
 const CARD_KEYS=Object.keys(D).filter(k=>
  (V45_ENABLED||!V45_SPELL_KEYS.includes(k))&&
  (V453_ENABLED||!V453_UNIT_KEYS.includes(k))&&
- (V454_ENABLED||!V454_UNIT_KEYS.includes(k))),
+ (V454_ENABLED||!V454_UNIT_KEYS.includes(k))&&
+ (V455_ENABLED||!V455_SPELL_KEYS.includes(k))),
  DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
 // Two copies of each new spell leave room for 16 distinct existing creature
 // slots. The preset is invisible until artwork is explicitly available.
@@ -943,6 +955,15 @@ function undertowLanding(v,t){
    !(p.x===3&&(p.y===0||p.y===7))&&!entity(p.x,p.y))
   .sort((a,b)=>d(a,anchor)-d(b,anchor)||a.y-b.y||a.x-b.x)[0]||null;
 }
+// A Gale Step is a displacement, not an action refresh.
+function galePassenger(t,x,y){
+ const dest=P(x,y);
+ if(!bounds(x,y)||entity(x,y)||rocks.has(K(x,y))||
+    (x===3&&(y===0||y===7)))return null;
+ return S.units.filter(u=>u.team===t&&!u.rooted&&!u.boss&&
+   u.id!==S.championId&&d(u,dest)===1)
+  .sort((a,b)=>a.id-b.id)[0]||null;
+}
 function validSpellSpot(q,t,x,y){
  const target=entity(x,y),type=q.spell;
  if(['shield','heal','dash','cleanse','rally','bond','exchange','recall','reprisal','edict'].includes(type)){
@@ -960,6 +981,13 @@ function validSpellSpot(q,t,x,y){
   if(type==='exchange'&&(S.exchangeRound?.[t]===S.round||S.units.filter(v=>v.team===t).length<2||target.id===S.championId))return false;
   return true;
  }
+ if(type==='gale')return !!galePassenger(t,x,y);
+ if(type==='breach')return !!target&&!target.core&&target.team===1-t&&
+  (target.shield||0)>0&&S.units.some(u=>u.team===t&&d(u,target)<=3);
+ if(type==='covenant')return !!target&&target.team===t&&!target.boss&&
+  target.id!==S.championId&&S.units.some(v=>v.team===t&&v.id!==target.id&&d(v,target)<=2);
+ if(type==='refrain')return !!target&&target.team===1-t&&!target.core&&
+  (target.burning||target.rooted)&&S.units.some(v=>v.team===t&&d(v,target)<=3);
  if(type==='snare'){
   return !target&&!rocks.has(K(x,y))&&!(x===3&&(y===0||y===7))&&
     !S.traps?.some(v=>v.team===t)&&
@@ -980,7 +1008,38 @@ function resolveSpell(q,t,x,y){
  const target=entity(x,y),type=q.spell;
  if(!validSpellSpot(q,t,x,y))return false;
  const power=powerFor(q,t),boost=spellBonus(CARD_KEYS.find(k=>D[k]===q),t);
- if(type==='reprisal'){
+ if(type==='breach'){
+  target.shield=Math.max(0,(target.shield||0)-2);
+  const impact=mitigate(target,power,false);
+  fxSpell(target,impact,'breach',x,y,t);applyDamage(target,impact);
+ }else if(type==='gale'){
+  const mover=galePassenger(t,x,y);
+  if(!mover)return false;
+  mover.x=x;mover.y=y;
+  fxPush({type:'buff',kind:'gale',to:fxTarget(mover),amount:0});
+  trapImpact(mover);
+ }else if(type==='covenant'){
+  const targets=S.units.filter(u=>u.team===t&&u.id!==target.id&&
+   d(u,target)<=2).sort((a,b)=>d(a,target)-d(b,target)||a.id-b.id).slice(0,2);
+  if(!targets.length)return false;
+  onSacrifice(t);
+  S.units=S.units.filter(u=>u.id!==target.id);
+  fxPush({type:'spell',kind:'covenant',to:fxTarget(target),amount:0});
+  for(const ally of targets){
+   const n=grantShield(ally,2);
+   ally.rallied=1;abilityPulse(ally,'covenant',n);
+  }
+ }else if(type==='refrain'){
+  const origin=P(x,y);
+  const follow=S.units.filter(u=>u.team===1-t&&u.id!==target.id&&d(u,origin)<=2)
+   .sort((a,b)=>d(a,origin)-d(b,origin)||a.id-b.id)[0]||null;
+  const impact=mitigate(target,power,false);
+  fxSpell(target,impact,'refrain',x,y,t);applyDamage(target,impact);
+  if(follow&&S.units.some(u=>u.id===follow.id)){
+   const chain=mitigate(follow,1,false);
+   fxSpell(follow,chain,'refrain',x,y,t);applyDamage(follow,chain);
+  }
+ }else if(type==='reprisal'){
   const n=grantShield(target,2);
   target.reprisal=1;target.reprisalUntil=S.round+1;
   abilityPulse(target,'reprisal',n);
@@ -1175,10 +1234,12 @@ function aiTurn(){
    let spot=null;
    const enemies=S.units.filter(u=>u.team===0);
    const friends=S.units.filter(u=>u.team===1);
-   if(['ignite','frost','bolt','silence','undertow'].includes(q.spell)){
+   if(['ignite','frost','bolt','silence','undertow','breach','refrain'].includes(q.spell)){
     const opportunities=enemies.filter(u=>validSpellSpot(q,1,u.x,u.y))
      .sort((a,b)=>(a.hp-b.hp)||((b.k==='r'?1:0)-(a.k==='r'?1:0)));
-    spot=opportunities.find(u=>q.spell==='frost'?!u.rooted:q.spell==='ignite'?!u.burning:true);
+    spot=opportunities.find(u=>q.spell==='frost'?!u.rooted:
+    q.spell==='ignite'?!u.burning:
+    q.spell==='refrain'?!!(u.rooted||u.burning):true);
    }else if(q.spell==='diagonal'){
     const options=[];
     for(let cy=0;cy<8;cy++)for(let cx=0;cx<7;cx++){
@@ -1208,6 +1269,19 @@ function aiTurn(){
     }
     blasts.sort((a,b)=>b.value-a.value||a.y-b.y||a.x-b.x);
     spot=blasts[0]||null;
+   }else if(q.spell==='covenant'){
+    spot=friends.filter(u=>u.hp<=3&&u.id!==S.championId&&!u.boss&&
+      friends.some(v=>v.id!==u.id&&d(u,v)<=2)).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
+   }else if(q.spell==='gale'){
+    const moves=[];
+    for(let cy=0;cy<8;cy++)for(let cx=0;cx<7;cx++){
+     if(!validSpellSpot(q,1,cx,cy))continue;
+     const mover=galePassenger(1,cx,cy);
+     if(springs.includes(K(cx,cy))&&!springs.includes(K(mover.x,mover.y)))
+      moves.push({x:cx,y:cy,score:4});
+    }
+    moves.sort((a,b)=>b.score-a.score||a.y-b.y||a.x-b.x);
+    spot=moves[0];
    }else if(q.spell==='heal'){
     spot=friends.filter(u=>u.hp<=u.max-2).sort((a,b)=>(a.hp/a.max)-(b.hp/b.max))[0];
    }else if(q.spell==='reprisal'){
@@ -1373,6 +1447,10 @@ const GUIDE={
  I:{feature:'One-hit reactive defense.',detail:'Grant an ally 2 shield up to the global five-shield cap. The first enemy basic strike against it before its next turn takes 1 retaliation damage. Does not stack.',tip:'Protect an exposed spring holder; the ward is consumed on its first incoming basic strike.'},
  J:{feature:'Controlled positional displacement.',detail:'Deal 1 damage to a non-boss enemy within 3 of your army; move it one clear tile toward its nearest allied-side challenger when possible. The target must have a valid open landing tile.',tip:'Pull ranged enemies off high ground into melee range, or disturb a fortified formation.'},
  K:{feature:'Counter-protection attack blessing.',detail:'The next basic attack from one allied creature gains 1 damage and strips up to 3 shield before the hit. Expires at the start of that creature’s next turn.',tip:'Time this immediately before striking a heavily shielded boss or frontline guardian.'},
+ U:{feature:'Spell-based shield breaking.',detail:'Choose an enemy creature with at least 1 shield within 3 tiles of your army. Remove up to 2 of its shield, then resolve 1 normal spell damage. Never targets an enemy Core.',tip:'Counter defensive frontlines without wasting an expensive area spell.'},
+ V:{feature:'One-square formation shift.',detail:'Choose an empty tile adjacent to an unrooted friendly unit within army reach. Move the nearest eligible ally by one square; do not refresh attacks, movement or clear roots. Landing triggers traps normally.',tip:'Slip a guardian onto a spring or save a threatened support unit without granting extra turns.'},
+ W:{feature:'Sacrifice-powered warding.',detail:'Choose an allied non-champion creature with another ally within 2 tiles. Remove the chosen ally as a deliberate sacrifice, then give 2 shield and Rally to up to two nearest surviving allies. No defeat trigger.',tip:'Trade a low-health unit for protection and damage pressure on two important allies.'},
+ X:{feature:'Exploit roots and burning.',detail:'Deal 2 spell damage to a burning or rooted enemy creature within 3 of your army. If another enemy creature stands within 2 of that target, chain 1 spell damage to the closest one. No enemy Core targeting.',tip:'Combine Thorn Warden or Frostbind with a follow-up spell for efficient conditional damage.'},
  M:{feature:'Flying squad mobility support.',detail:'When summoned, restore movement to the nearest grounded, unrooted ally within two tiles that already moved. Once per round for your entire army; attacks are never refreshed.',tip:'Move your frontline, then summon the Cartographer close enough to dispatch it again.'},
  N:{feature:'Spring-based fortification.',detail:'If this defender is standing on an Aeth spring when your turn begins, grant one shield to a nearby ally within two tiles. If none qualifies, shield itself. Maximum five shield per creature.',tip:'Hold contested springs rather than using it as an ordinary slow bruiser.'},
  O:{feature:'Elevation-based shield breaker.',detail:'Its first basic attack launched from high ground each round removes up to two enemy shield before ordinary damage. A Core cannot be pierced this way.',tip:'Use elevation to counter ward-heavy opponents without dealing more raw damage.'},
@@ -2210,6 +2288,118 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   }catch(e){checks.push({name:'Runtime exception',pass:false,detail:String(e)})}
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
+ },
+ // v4.5.5 exact battle-law checks on real engine, isolated from public saves.
+ qaV455Spells:()=>{
+  const tests=[],check=(name,ok,info='')=>tests.push({name,pass:!!ok,info});
+  const setup=k=>{
+   if(!startMission('v1',true,'rush'))throw Error('Isolated v455 setup failed');
+   S.turn=0;S.energy[0]=10;S.hands[0]=[k];S.traps=[];
+   const [ally,wing]=S.units.filter(u=>u.team===0),
+     [enemy,guard]=S.units.filter(u=>u.team===1);
+   ally.x=2;ally.y=4;wing.x=4;wing.y=5;
+   enemy.x=3;enemy.y=2;guard.x=5;guard.y=2;
+   return{ally,wing,enemy,guard};
+  };
+  try{
+   {
+    const {enemy}=setup('U');
+    enemy.shield=3;const hp=enemy.hp,before=S.energy[0];
+    const cast=apply(0,{op:'card',idx:0,x:3,y:2,tributes:[]});
+    check('Mirror Breach strips two shields then deals one shield-first hit',
+      cast&&enemy.shield===0&&enemy.hp===hp&&S.energy[0]===before-2);
+   }
+   {
+    const {enemy}=setup('U');enemy.shield=0;
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:3,y:2,tributes:[]});
+    check('Breach rejects unshielded target without consuming card/Aeth',
+      !cast&&S.energy[0]===before&&S.hands[0][0]==='U');
+   }
+   {
+    const {ally}=setup('V');ally.moved=true;ally.attacked=true;
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
+    check('Gale Step shifts exactly one tile and preserves spent actions',
+      cast&&ally.x===3&&ally.y===4&&ally.moved&&ally.attacked&&S.energy[0]===before-2);
+   }
+   {
+    const {ally}=setup('V');ally.rooted=true;
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
+    check('Gale Step cannot bypass roots or spend energy illegally',
+      !cast&&ally.x===2&&ally.y===4&&S.energy[0]===before);
+   }
+   {
+    const {ally}=setup('V');
+    S.traps=[{team:1,x:3,y:4,damage:99,expires:S.round+3}];
+    const cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
+    check('Gale landing triggers hostile snare and true defeat',
+      cast&&!S.units.some(v=>v.id===ally.id)&&S.traps.length===0);
+   }
+   {
+    const {ally,wing}=setup('W');wing.x=3;wing.y=5;wing.shield=0;
+    const third=unit('v',0,1,4,true);third.shield=0;S.units.push(third);
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    check('Ember Covenant sacrifices one real ally and wards two survivors',
+      cast&&!S.units.some(v=>v.id===ally.id)&&wing.shield>=2&&third.shield>=2&&
+      wing.rallied===1&&third.rallied===1&&S.energy[0]===before-3);
+   }
+   {
+    const {ally,wing}=setup('W');wing.x=6;wing.y=6;
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    check('Covenant rejects isolated sacrifice without altering battlefield',
+      !cast&&S.units.some(v=>v.id===ally.id)&&S.energy[0]===before);
+   }
+   {
+    const {enemy}=setup('W');
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:enemy.x,y:enemy.y,tributes:[]});
+    check('Covenant cannot sacrifice enemy units',!cast&&S.energy[0]===before);
+   }
+   {
+    const {ally,wing,enemy}=setup('W');
+    ally.x=2;ally.y=4;wing.x=2;wing.y=5;enemy.x=3;enemy.y=4;
+    ally.k='S';ally.hp=2;enemy.rooted=false;
+    const cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    check('Voluntary Covenant sacrifice does not trigger Gravebloom defeat roots',
+      cast&&!enemy.rooted&&!S.units.some(v=>v.id===ally.id));
+   }
+   {
+    const {enemy,guard}=setup('X');enemy.rooted=true;enemy.shield=0;
+    enemy.hp=enemy.max=12;guard.shield=0;guard.hp=guard.max=12;guard.x=4;guard.y=2;
+    const energy=S.energy[0],cast=apply(0,{op:'card',idx:0,x:3,y:2,tributes:[]});
+    check('Crescent Refrain hits rooted foe and nearest secondary foe',
+      cast&&enemy.hp===10&&guard.hp===11&&S.energy[0]===energy-3);
+   }
+   {
+    const {enemy}=setup('X');enemy.rooted=false;enemy.burning=false;
+    const energy=S.energy[0],cast=apply(0,{op:'card',idx:0,x:enemy.x,y:enemy.y,tributes:[]});
+    check('Refrain requires real prior status and rejects unsupported casts',
+      !cast&&S.energy[0]===energy&&S.hands[0][0]==='X');
+   }
+   {
+    const {enemy,guard}=setup('X');enemy.burning=true;enemy.shield=0;
+    enemy.hp=enemy.max=12;guard.x=6;guard.y=5;
+    const cast=apply(0,{op:'card',idx:0,x:enemy.x,y:enemy.y,tributes:[]});
+    check('Refrain with no secondary enemy deals only primary damage',
+      cast&&enemy.hp===10&&guard.hp===guard.max);
+   }
+   {
+    const {ally,enemy}=setup('U');ally.shield=3;enemy.shield=0;
+    S.turn=1;S.hands[1]=['U'];S.energy[1]=10;enemy.x=3;enemy.y=2;
+    const cast=apply(1,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    check('Opposing team uses same shield-breaking logic',
+      cast&&ally.shield===0&&S.energy[1]===8);
+   }
+   {
+    const {ally}=setup('V');ally.moved=true;ally.attacked=true;
+    const cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
+    save();const snapshot=localStorage.getItem('aether-dominion-v04');
+    S=null;const restored=load();const copy=S?.units.find(u=>u.id===ally.id);
+    check('Version-4 saved match restores Gale relocation and action flags',
+      cast&&!!snapshot&&restored&&S.version===4&&copy?.x===3&&copy?.y===4&&
+      copy?.moved&&copy?.attacked);
+   }
+  }catch(err){tests.push({name:'Runtime exception',pass:false,info:String(err)})}
+  finally{startQuickMatch()}
+  return{pass:tests.length===14&&tests.every(t=>t.pass),tests};
  },
  qaV45Spells:()=>{
   const results=[],check=(name,pass,info='')=>results.push({name,pass:!!pass,info});
