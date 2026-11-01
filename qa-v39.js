@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -238,6 +238,47 @@ async function auditFrames(){
  '\nUnique frame fingerprints '+distinct+'\nErrors: '+failed.join('; ');
 }
 
+// v4.3.3: audit newly prerendered bitmap frames, not just the existence
+// of an input PNG. Covers every classic creature and all five pose groups.
+function auditClassicFrames(){
+ const scene=window.AetherScene;
+ const info=scene?.classicFrameInfo?.();
+ const image=scene?.classicFrameCanvas?.();
+ if(!image||!info?.ready){
+  status('CLASSIC FRAME AUDIT: art still loading');
+  $('qa-report').textContent='Original PNG or raster frame generation has not completed.';
+  window.__qaClassicResult={pass:false,pending:true};
+  return;
+ }
+ const ctx=image.getContext('2d',{willReadFrequently:true});
+ const roster=['v','r','b','s','f','g'],failures=[];
+ let visible=0,distinct=0;
+ for(let row=0;row<6;row++){
+  const fingerprints=new Set();
+  for(let frame=0;frame<22;frame++){
+   const pixels=ctx.getImageData(frame*128,row*148,128,148).data;
+   let solid=0,h=2166136261;
+   for(let i=0;i<pixels.length;i+=16){
+    if(pixels[i+3]>32)solid++;
+    h=Math.imul(h^pixels[i],16777619);
+    h=Math.imul(h^pixels[i+3],16777619);
+   }
+   if(solid>10)visible++;else failures.push(roster[row]+':'+frame+' empty');
+   fingerprints.add(h>>>0);
+  }
+  distinct+=fingerprints.size;
+  if(fingerprints.size<20)failures.push(roster[row]+' '+fingerprints.size+' distinct poses');
+ }
+ const pass=visible===132&&distinct>=126&&failures.length===0&&
+  image.width===2816&&image.height===888&&info.totalFrames===132;
+ window.__qaClassicResult={pass,visible,distinct,failures,info};
+ status('CLASSIC '+(pass?'PASS':'FAIL')+' · '+visible+'/132 visible · '+distinct+' distinct');
+ $('qa-report').textContent='Source: original painted PNG\\nAtlas '+image.width+'×'+image.height+
+  '\\nSix classic creatures: '+roster.join(', ')+
+  '\\nNonempty: '+visible+'/132\\nDistinct: '+distinct+
+  '\\nIssues: '+(failures.join(', ')||'none');
+}
+
 panel.addEventListener('click',e=>{
  const b=e.target.closest('[data-qa]');if(!b)return;
  const mode=b.dataset.qa;
@@ -250,6 +291,7 @@ panel.addEventListener('click',e=>{
  else if(mode==='motion')auditMotion();
  else if(mode==='stress')stressAI();
  else if(mode==='frames')auditFrames();
+ else if(mode==='classic')auditClassicFrames();
 });
 document.body.classList.add('qa-page');
 setTimeout(()=>{

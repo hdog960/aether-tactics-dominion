@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.3.2 — 264 Raster Animation Frames**
+**Current source release: v4.3.3 — Full 18-Creature Raster Frame Coverage**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -89,3 +89,6 @@ Seven character-role animation profiles now modify stride, hovering, hit anticip
 
 ## v4.3.2 — Real frame-sequence animations
 Twelve painted character types now use an actual 264-cell WebP sprite atlas: 4 idle frames, 6 walking frames, 4 attack frames, 3 damage frames and 5 defeat frames per creature. The combat renderer selects real bitmap frames from movement and hit events, including a brief defeat sequence. Six remaining original painted units continue with the previous safe transform system. These are digitally reconstructed key poses from existing art, not separately illustrated art frames. The v4.3.2 isolated QA page has a **264 FRAME AUDIT** control. See `V432_SPRITE_FRAMES.md` for mappings and remaining art goals. Saves, card stats, campaign and multiplayer are unchanged.
+
+## v4.3.3 — Six classic creatures gain discrete frames
+The original six painted characters (v, r, b, s, f, g) now use 22 raster animation frames per creature, completing frame coverage for all 18 playable creatures (396 frames in total). A reusable offscreen canvas builds the 132 classic bitmap cells once from the original transparent art, using segmented motion for idle, walk, attack, hurt and defeat. These frames are synthesized from original artwork, rather than individually hand-drawn. The dedicated QA page adds a **CLASSIC 132 FRAMES** check. Gameplay rules, saves and upgrades are unchanged. See `V433_CLASSIC_FRAME_ANIMATIONS.md`.

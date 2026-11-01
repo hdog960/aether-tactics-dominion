@@ -32,11 +32,91 @@ const unitColors={t:'#e7c36c',l:'#64daff',c:'#fa9e57',j:'#9be776',p:'#75eedc',
 const rasterFrames=new Image();
 rasterFrames.decoding='async';rasterFrames.src='./art/battlefield-frames-v432.webp?v=432';
 const animationRows={t:0,l:1,c:2,j:3,p:4,k:5,d:6,o:7,y:8,z:9,A:10,B:11};
+// v4.3.3 — Six original monsters receive real, cached pixel frame sequences.
+// Built once after the existing monster PNG loads, not every game frame.
+// Separately animated torso and legs, with damage and collapse poses; never
+// replace the original painterly artwork with shapes or hue-shifted stand-ins.
+const classicRows={v:0,r:1,b:2,s:3,f:4,g:5};
+const CW=128,CH=148,COL_COUNT=22;
+const classicFrameAtlas=document.createElement('canvas');
+classicFrameAtlas.width=CW*COL_COUNT;
+classicFrameAtlas.height=CH*6;
+const classicContext=classicFrameAtlas.getContext('2d',{alpha:true});
+let classicFrameReady=false;
+function makeClassicFrames(){
+ if(!classicContext||monsterAtlas.naturalWidth!==CW*6||
+    monsterAtlas.naturalHeight!==CH)return;
+ classicFrameReady=false;
+ const q=classicContext;q.clearRect(0,0,classicFrameAtlas.width,classicFrameAtlas.height);
+ q.imageSmoothingEnabled=false;
+ for(let row=0;row<6;row++){
+  for(let frame=0;frame<COL_COUNT;frame++){
+   const phase=frame<4?'idle':frame<10?'walk':frame<14?'attack':frame<17?'hurt':'defeat';
+   const f=phase==='idle'?frame:phase==='walk'?frame-4:
+    phase==='attack'?frame-10:phase==='hurt'?frame-14:frame-17;
+   const cycle=f*Math.PI/3;
+   let upperLean=0,legShift=0,bodyShift=0,bodyScale=1,collapse=0,turn=0;
+   if(phase==='idle'){
+    upperLean=[-.010,0,.014,.003][f];
+    bodyShift=[0,-1,-2,-1][f];bodyScale=1+[-.007,0,.009,.002][f];
+   }else if(phase==='walk'){
+    upperLean=Math.sin(cycle)*.058;legShift=Math.sin(cycle)*4;
+    bodyShift=-Math.abs(Math.cos(cycle))*2;bodyScale=1+.012*Math.cos(cycle);
+   }else if(phase==='attack'){
+    upperLean=[-.045,.12,.18,-.045][f];
+    legShift=[-2,1,3,0][f];bodyShift=[-1,-4,-3,0][f];
+    bodyScale=[.99,1.03,1.05,1][f];
+   }else if(phase==='hurt'){
+    upperLean=[-.12,.15,.04][f];legShift=[-2,2,0][f];
+    bodyShift=[-2,2,1][f];
+   }else{
+    collapse=[0,.15,.43,.72,.90][f];
+    turn=[-.13,-.33,-.48,-.58,-.64][f];
+    bodyShift=[0,5,13,20,29][f];bodyScale=1-collapse*.58;
+   }
+   const ox=frame*CW+CW/2,oy=row*CH+CH;
+   q.save();q.translate(ox,oy);
+   if(phase==='defeat'){
+    q.rotate(turn);q.scale(1+collapse*.08,bodyScale);
+    q.globalAlpha=1-collapse*.42;
+    q.drawImage(monsterAtlas,row*CW,0,CW,CH,-CW/2,-CH+bodyShift,CW,CH);
+   }else{
+    // Lower limbs and upper body are sampled from the SAME painted sprite.
+    // The 3 px overlap prevents a black split while the torso pivots.
+    q.save();q.translate(legShift,0);
+    q.drawImage(monsterAtlas,row*CW,91,CW,57,-CW/2,-57,CW,57);
+    q.restore();
+    q.save();q.translate(0,-57+bodyShift);
+    q.rotate(upperLean);q.scale(bodyScale,1/bodyScale);
+    q.drawImage(monsterAtlas,row*CW,0,CW,94,-CW/2,-94,CW,94);
+    q.restore();
+   }
+   if(phase==='hurt'){
+    q.globalCompositeOperation='source-atop';
+    q.globalAlpha=[.23,.36,.10][f];
+    q.fillStyle='#ffb5b0';q.fillRect(-CW/2,-CH,CW,CH);
+    q.globalCompositeOperation='source-over';
+   }
+   q.restore();
+  }
+ }
+ classicFrameReady=true;
+ window.dispatchEvent(new Event('aether-classic-frames-ready'));
+}
+monsterAtlas.addEventListener('load',()=>{
+ // Drawing the 132 frames once avoids rebuilding them every animation tick.
+ if(window.requestIdleCallback)window.requestIdleCallback(makeClassicFrames,{timeout:500});
+ else setTimeout(makeClassicFrames,0);
+});
+
 const FRAME_W=96,FRAME_H=120;
 const defeated=new Map();
 function frameForUnit(u,t,walking){
- const row=animationRows[u.k];
- if(row===undefined||!rasterFrames.complete||rasterFrames.naturalWidth!==2112)return null;
+ const classic=classicRows[u.k]!==undefined;
+ const row=classic?classicRows[u.k]:animationRows[u.k];
+ if(row===undefined)return null;
+ if(classic&&!classicFrameReady)return null;
+ if(!classic&&(!rasterFrames.complete||rasterFrames.naturalWidth!==2112))return null;
  let idx=Math.floor((t+u.id*91)/250)%4;
  if(walking)idx=4+Math.floor(t/90)%6;
  const atk=[...activeFx].reverse().find(f=>f.data.type==='strike'&&f.data.from?.id===u.id&&
@@ -47,22 +127,26 @@ function frameForUnit(u,t,walking){
  if(atk)idx=10+Math.min(3,Math.floor(fxProg(atk,t)*4));
  else if(hit)idx=14+Math.min(2,Math.floor((fxProg(hit,t)-fxImpact(hit))/
   Math.max(.01,.92-fxImpact(hit))*3));
- return{img:rasterFrames,x:idx*FRAME_W,y:row*FRAME_H,sourceW:FRAME_W,sourceH:FRAME_H,
-  tone:'none',boss:u.k==='t'||u.k==='l',frame:idx};
+ const w=classic?CW:FRAME_W,h=classic?CH:FRAME_H;
+ return{img:classic?classicFrameAtlas:rasterFrames,x:idx*w,y:row*h,
+  sourceW:w,sourceH:h,tone:'none',boss:u.k==='t'||u.k==='l',frame:idx};
 }
 function drawDefeated(t){
- if(!rasterFrames.complete||rasterFrames.naturalWidth!==2112)return;
  for(const [id,death] of defeated){
   const dt=t-death.start;
   if(dt>850){defeated.delete(id);continue}
-  const u=death.unit,row=animationRows[u.k];
-  if(row===undefined){defeated.delete(id);continue}
+  const u=death.unit,classic=classicRows[u.k]!==undefined,
+   row=classic?classicRows[u.k]:animationRows[u.k];
+  if(row===undefined||(classic?!classicFrameReady:!rasterFrames.complete)){
+   defeated.delete(id);continue;
+  }
   const view=unitVisual(u,t),large=u.k==='t'||u.k==='l'?1.14:1,
    vw=128*view.scale*large,vh=152*view.scale*large,
    idx=17+Math.min(4,Math.floor(dt/165));
   c.save();c.imageSmoothingEnabled=false;
   c.globalAlpha=dt>550?Math.max(0,1-(dt-550)/300):1;
-  c.drawImage(rasterFrames,idx*96,row*120,96,120,
+  const w=classic?CW:FRAME_W,h=classic?CH:FRAME_H;
+  c.drawImage(classic?classicFrameAtlas:rasterFrames,idx*w,row*h,w,h,
    view.z[0]-vw/2,view.z[1]-vh+4*view.scale,vw,vh);
   c.restore();
  }
@@ -861,7 +945,7 @@ window.AetherScene={sync(s,my,choice){
  }
  const lethalIds=new Set((s.fxEvents||[]).filter(e=>e.lethal&&e.to?.id).map(e=>e.to.id));
  for(const [id,prev] of lastPositions)if(!live.has(id)){
-  if(lethalIds.has(id)&&animationRows[prev.k]!==undefined)
+  if(lethalIds.has(id)&&(animationRows[prev.k]!==undefined||classicRows[prev.k]!==undefined))
    defeated.set(id,{start:now,unit:{...prev,id,hp:0,max:prev.max||1,shield:0}});
   lastPositions.delete(id);movements.delete(id);healthTweens.delete(id);
  }
@@ -888,7 +972,11 @@ window.AetherScene={sync(s,my,choice){
  frameAtlasInfo:()=>({ready:rasterFrames.complete&&rasterFrames.naturalWidth===2112&&rasterFrames.naturalHeight===1440,
   width:rasterFrames.naturalWidth,height:rasterFrames.naturalHeight,keys:Object.keys(animationRows),
   framesPerUnit:22,defeated:defeated.size}),
- frameSample:(k,t=0,walking=false)=>frameForUnit({k,id:19},t,walking)?.frame??-1};
+ frameSample:(k,t=0,walking=false)=>frameForUnit({k,id:19},t,walking)?.frame??-1,
+ classicFrameInfo:()=>({ready:classicFrameReady,rows:Object.keys(classicRows),
+  width:classicFrameAtlas.width,height:classicFrameAtlas.height,
+  framesPerUnit:COL_COUNT,totalFrames:6*COL_COUNT}),
+ classicFrameCanvas:()=>classicFrameReady?classicFrameAtlas:null};
 const initial=window.AetherGame?.get?.();if(initial)window.AetherScene.sync(initial,0,{unit:null,card:-1,tributes:[]});
 requestAnimationFrame(draw);
 })();
