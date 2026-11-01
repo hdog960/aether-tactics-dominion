@@ -2511,6 +2511,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
        enemyUnits:S.units.filter(v=>v.team===1).length,
        events:S.encounterState?.events||0,genericWaves:S.qaGenericCount||0,
        newSpellsPlayed:(S.usedCards||[[],[]]).map(hand=>hand.filter(k=>V45_SPELL_KEYS.includes(k))),
+       newCreaturesPlayed:(S.usedCards||[[],[]]).map(hand=>hand.filter(k=>V453_UNIT_KEYS.includes(k))),
        championHP:S.units.find(v=>v.id===S.championId)?.hp||0,
        remainingBossShield:S.units.find(v=>v.id===S.championId)?.shield||0,
        valid,steps:orders,
@@ -2539,6 +2540,15 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
      for(const key of Object.keys(tot))tot[key]+=r.actions?.[key]||0;
      return tot;
     },{spells:0,mythicSummons:0,normalSummons:0,moves:0,attacks:0}),
+    newCreatureUsage:reports.reduce((summary,r)=>{
+     (r.newCreaturesPlayed||[[],[]]).forEach((played,t)=>{
+      for(const k of played){
+       const holder=t===0?summary.player:summary.rival;
+       holder[k]=(holder[k]||0)+1;
+      }
+     });
+     return summary;
+    },{player:{},rival:{}}),
     newSpellUsage:reports.reduce((summary,r)=>{
      (r.newSpellsPlayed||[[],[]]).forEach((played,t)=>{
       for(const k of played){const holder=t===0?summary.player:summary.rival;
