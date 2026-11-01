@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.4.2 — Story Expeditions and Tactical Choices**
+**Current source release: v4.4.3 — Campaign Epilogues & Result Integrity**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -101,3 +101,6 @@ Seven boss fights now include distinctive behavior at 65% and 30% HP: briar snar
 
 ## v4.4.2 — Narrative campaign and tactical choices
 All 15 campaign missions have a character-led opening scene and two authored preparation strategies. Players select a plan in the illustrated world-map mission briefing and start with meaningful benefits balanced by opening energy, Core health, or enemy resources. The chosen doctrine is saved inside the version-4 current match, without altering upgrades, mission unlocks, permanent collection or PvP. The isolated QA page tests all 30 doctrine/mission combinations. See `V442_STORY_EXPEDITIONS.md`.
+
+## v4.4.3 — Post-battle stories and mission completion QA
+Every campaign mission and Crown Trial now has its own narrated victory and defeat epilogue, displayed in a mobile-scrollable match-end panel alongside the expedition doctrine, event count, stars and one-time clear status. A 45-case save-isolated mission audit exercises loss, first victory and replay for all 15 missions, checking correct objective completion, unlocks, reward idempotence, and no double-claim. See `V443_CAMPAIGN_RESULTS_QA.md`. Physical iPhone Safari and statistical balancing remain pending.

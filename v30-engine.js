@@ -1310,6 +1310,24 @@ function render(){
   '  ✦ +'+reward.xp+' XP · +'+reward.gold+' gold · '+reward.rewards.length+' card copies'+
   (reward.missionTitle?' · '+reward.missionTitle+(reward.storyClear?' FIRST CLEAR':'')+' · '+reward.stars+'★':'')+
   (reward.levelUp?' · LEVEL UP!':''):'');
+  // Authored campaign result, grounded in this actual match and settled rewards.
+  // Avoid modifying match outcomes, progression, or already-claimed rewards.
+  const epilogue=$('campaign-epilogue'),tale=mission?.epilogue;
+  if(epilogue)epilogue.classList.toggle('hidden',!tale||S.mode!=='ai');
+  if(tale&&S.mode==='ai'){
+   const cleared=S.winner===0,first=cleared&&!!reward?.storyClear;
+   $('epilogue-kicker').textContent=cleared?(first?'✦ CHAPTER CLEARED · FIRST VICTORY':
+    '✧ CAMPAIGN REPLAY COMPLETE'):'✦ THE CAMPAIGN CONTINUES';
+   $('epilogue-speaker').textContent=tale.speaker;
+   $('epilogue-narrative').textContent=cleared?tale.victory:tale.defeat;
+   const approach=S.expeditionPlan?.name||'The Commander’s original approach';
+   const effects=S.encounterState?.events||0;
+   const plan=cleared?'✦ '+(reward?.stars||1)+'★ earned':
+    'Regroup and try a different strategy';
+   $('epilogue-footnote').textContent='APPROACH · '+approach+'  ·  '+
+    'ROUND '+S.round+'  ·  '+effects+' RIFT EVENTS  ·  '+plan+
+    (cleared&&!first?'  ·  FIRST-CLEAR REWARDS ALREADY CLAIMED':'');
+  }
   if(!victoryVisible&&victoryDelay===null){
    // Let the winning blow land, damage number rise and defeated unit fade
    // before a full-screen result panel hides the battlefield.
@@ -1494,6 +1512,46 @@ window.addEventListener('aether-card-art-ready',()=>{
 });
 window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
  ...(window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html')?{
+ qaMissionOutcome:(id,variant='win')=>{
+  const m=MISSION_BY_ID[id];
+  if(!m||!startMission(id,true))return{pass:false,id,variant,reason:'mission setup'};
+  const beforeComplete=profile.campaign.completed.includes(id);
+  const beforeClaims=Object.keys(profile.claimed).length;
+  if(variant==='loss'){
+   applyDamage(core(0),Math.max(1,S.hp[0]));
+  }else if(m.objective==='assault'){
+   applyDamage(core(1),Math.max(1,S.hp[1]));
+  }else if(m.objective==='hunt'){
+   const champion=S.units.find(u=>u.id===S.championId);
+   if(!champion)return{pass:false,id,variant,reason:'missing champion'};
+   applyDamage(champion,champion.max+champion.shield+999);
+  }else if(m.objective==='defend'){
+   S.round=m.needed;missionCheck(1);
+  }else if(m.objective==='capture'){
+   const ours=S.units.filter(u=>u.team===0);
+   if(ours.length<2)return{pass:false,id,variant,reason:'missing starters'};
+   for(let i=0;i<2;i++){
+    const [x,y]=springs[i].split(',').map(Number);
+    ours[i].x=x;ours[i].y=y;
+   }
+   for(let i=0;i<m.needed&&S.phase==='playing';i++)missionCheck(0);
+  }
+  const ended=S.phase==='over',won=S.winner===0;
+  const record=awardMatch(),gold=profile.gold,xp=profile.xp,copies=JSON.stringify(profile.copies);
+  const again=awardMatch();
+  const duplicateSafe=gold===profile.gold&&xp===profile.xp&&copies===JSON.stringify(profile.copies)&&
+   again?.matchId===record?.matchId;
+  const nowComplete=profile.campaign.completed.includes(id);
+  const pass=ended&&won===(variant!=='loss')&&
+   nowComplete===(variant!=='loss'||beforeComplete)&&duplicateSafe&&
+   !!record&&record.storyClear===(variant!=='loss'&&!beforeComplete)&&
+   Object.keys(profile.claimed).length===beforeClaims+1&&!!m.epilogue?.victory&&!!m.epilogue?.defeat;
+  const result={id,objective:m.objective,variant,pass,won,ended,
+   storyClear:record?.storyClear,duplicateSafe,completed:nowComplete,
+   awardGold:record?.gold,awardXP:record?.xp,star:record?.stars,
+   epilogue:m.epilogue?.speaker};
+  startQuickMatch();return result;
+ },
  qaPlan:(id,kind)=>{
   const m=MISSION_BY_ID[id],choice=m?.storyScene?.choices?.find(x=>x.kind===kind);
   if(!choice||!startMission(id,true,kind))return{pass:false,id,kind,reason:'invalid choice'};

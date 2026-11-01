@@ -1,0 +1,44 @@
+/* Dominion v4.4.3 · Post-battle story epilogues. Preserves the painted art. */
+#game #gameover .modal{
+ max-height:min(88dvh,790px)!important;
+ overflow-y:auto!important;
+ overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;
+ touch-action:pan-y;
+ scrollbar-color:#c59c69 #1a2032;
+}
+#game .campaign-epilogue{
+ margin:12px 0 16px;
+ padding:15px 14px 13px;
+ border:1px solid #c6a06b;
+ border-radius:12px;
+ background:linear-gradient(148deg,#28374cd9,#372b42e6 52%,#162539e8);
+ box-shadow:inset 0 0 0 2px #e7b87316,0 8px 16px #05081765;
+ text-align:left;
+}
+#game .campaign-epilogue.hidden{display:none!important}
+#game .epilogue-kicker{font:900 10px/1.4 system-ui;color:#c2efd9;letter-spacing:1px}
+#game .campaign-epilogue h3{
+ margin:7px 0 9px;
+ font:700 21px/1.2 Georgia,serif;
+ color:#ffe1ab;
+}
+#game .campaign-epilogue p{
+ color:#f0e8e5;
+ font:600 13px/1.65 system-ui;
+ margin:0 0 12px;
+}
+#game .epilogue-footnote{
+ border-top:1px solid #c9a98360;
+ padding-top:9px;
+ color:#e8cfac;
+ font:750 10px/1.65 system-ui;
+}
+@media(max-width:390px){
+ #game .campaign-epilogue{padding:12px 11px}
+ #game .campaign-epilogue h3{font-size:19px}
+ #game .campaign-epilogue p{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ #game #gameover .modal{scroll-behavior:auto}
+}

@@ -108,6 +108,29 @@
     name:doctrines[kind].name,description:doctrines[kind].description,
     tradeoff:doctrines[kind].cost}))};
  }
+ // v4.4.3 — authored result scenes. They are narrative, never progression gates.
+ const outcomes={
+  v1:['Captain Ellin','The eastern spring runs clear. Villagers return to the causeway under your colors.','The captain drives your forces back. The spring remains under outlaw watch.'],
+  v2:['Wellkeeper Sera','The twin wells sing in harmony, their Aeth carrying warmth into the valley.','The two wells fall out of tune. The raiders split the valley once again.'],
+  v3:['Thorn Hermit','The Warden’s grip releases. Paths long buried under roots open toward Frostglass.','Thorns reclaim the path. The Warden waits beneath a crown of briars.'],
+  f1:['Scout Ysra','The signal fires survive the whiteout. Relief answers from the far side of the pass.','The last signal disappears under the snow. The ridge remains exposed.'],
+  f2:['Frostfarer Kael','The frozen crossings hold firm beneath your banners, and the buried springs awaken.','Cracking ice forces a retreat. The ancient crossing is not yet safe.'],
+  f3:['Crystal Chronicler','The Seer’s mirrors grow still. The reflections finally reveal the way to the Crucible.','Your army retreats in a maze of glittering reflections. The Seer keeps its secrets.'],
+  e1:['Forge-Rider Tor','Your vanguard crosses the burning span. The foundries see a path through the smoke.','The bridge belongs to the enemy. Fire and falling stone seal the road.'],
+  e2:['Crucible Marshal','The siege horns fall silent. The foundry workers keep their home and their forge.','The Crucible gates tremble under another siege. The defenders must regroup.'],
+  e3:['Ash Sage','The Colossus falls to its knees. Its furnace light dims, revealing the Crown road.','The furnace roars back to life. The Colossus remains undefeated.'],
+  r1:['Crown Archivist','The ghostly procession rests. The oldest passage opens without a single whisper.','The specters resume their march. Their forgotten oath still bars the way.'],
+  r2:['Oathkeeper Veya','Both springs shine with a shared oath. The last defenders recognize your claim.','The ritual remains divided. The springs answer to rival voices.'],
+  r3:['Keeper of the Tide','The Leviathan slips beneath quiet waters. The Crown gate swings open.','The ancient guardian drives you from the gate with a final tidal roar.'],
+  t1:['The Hollow Herald','The King’s shadow recedes. His hunters kneel before a living commander.','The Hollow King keeps his throne; his hunters stalk the halls again.'],
+  t2:['Mirror Oracle','The last mirror fractures into starlight. No reflection can bind your will.','The mirrors close around the Court. Your army leaves its echoes behind.'],
+  t3:['Rift Witness','The Sovereign’s storm breaks. A new dawn settles over the restored Riftfront.','The Rift roars across the sky. The Sovereign’s final challenge remains.']
+ };
+ for(const m of [...missions,...trials]){
+  const scene=outcomes[m.id];
+  if(scene)m.epilogue={speaker:scene[0],victory:scene[1],defeat:scene[2],
+   replay:'Your latest victory strengthens the legend, but the first-clear prize cannot be earned twice.'};
+ }
  const all=[...missions,...trials];
  window.AetherConquest={regions,missions,trials,all};
 })();
