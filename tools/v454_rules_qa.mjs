@@ -51,7 +51,7 @@ const report={
    plansPass:plans.filter(x=>x.pass).length,plansTotal:plans.length},
  battles:{
   original:{games:original.games,wins:original.wins,errors:original.errors},
-  experimental:{games:experiment.games,wins:experiment.wins,errors:experiment.errors}
+  experimental:{games:experiment.games,wins:experiment.wins,errors:experiment.errors,uses:experiment.v454CreatureUsage}
  },
  publicGate:{noQA:live.G.qaV454Creatures===undefined,
   selectedCards:live.G.deckInfo().cards===24,
