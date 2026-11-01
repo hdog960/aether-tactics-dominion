@@ -17,7 +17,13 @@ Battle HUD now reports live mission victory conditions in a mobile-readable layo
 ### v4.4.7–v4.4.8 — Crownfall Fairness & Deck Preparation (shipped)
 The Hollow King's authored reinforcement waves no longer stack with the generic campaign spawn schedule. A/B combat comparison and uniform-card-level sensitivity QA now exist. Players can inspect their actual loadout and jump to the fully functional deck builder directly from an illustrated campaign briefing. These changes preserve in-progress battles and saved upgrades. See `V448_CROWNFALL_PREPARATION.md`.
 
-### v4.5 — The Great Card Expansion
+### v4.4.9 — Deck-aware Campaign Counsel (shipped)
+The real world-map mission briefing now reads the current saved deck, the authored objective and boss counterplay, then shows preparation and upgrade suggestions. No save schema, card levels, enemy balance or artwork changed. See `V449_TACTICIAN_BRIEFINGS.md`.
+
+### v4.5 — The Great Card Expansion (experimental first batch under active development)
+The `dev/v45-first-spell-batch` branch contains four new spell mechanics, AI handling, Grimoire text, isolated rules tests and VFX. **Not publicly released**: approved original matching portraits, mobile visual QA and integrated balance testing are required before enabling these spells. See `V45_FIRST_SPELL_BATCH.md` on that branch.
+
+
 Grow to ~60 carefully balanced cards, designed across distinct viable archetypes (sacrifice, flying, terrain control, spells, counterspells, frontline). Create bespoke card/battlefield matching art and descriptions before shipping each batch. Regression test existing 24-card deck construction and local progression.
 
 ### v4.6 — Progression & Replayability
