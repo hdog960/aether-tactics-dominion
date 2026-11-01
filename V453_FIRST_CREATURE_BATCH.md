@@ -51,3 +51,24 @@ Asset contract:
 
 ## Creator's roadmap stopping boundary
 Continue in order through v4.5 card expansion, v4.6 replayability and progression, then v4.7 multiplayer reliability. **Stop immediately after completing v4.7** and request the creator's revisions before contemplating v5.0 or any later milestone.
+
+## Subsequent development: strict painted-art integration and tactical QA
+
+**Implemented but still staging only**
+- New `v453-creature-art.js` attaches M/N/O/P directly to their four exact **128×96** card crops and corresponding **96×120 transparent** battlefield sprites, preserving the old artwork adapter for all earlier cards.
+- The adapter checks atlas dimensions, checks that all four card painting cells have different pixel signatures, and verifies that all four sprite cells contain both meaningful opaque foreground and transparent background pixels. A missing, duplicated, or solid-background asset never passes `v453ArtStatus().complete`.
+- `v45-scene.js` and the identical `v45-qa-scene.js` now map M/N/O/P to four new 22-frame rows in the expected **2112×480** frame atlas. They never map to another monster's existing animation frames. If animated frames have not loaded, only the same creature's verified transparent static cutout is eligible as fallback.
+- Staging `index.html`, `v30.html`, and the isolated `qa-v39.html` have the versioned adapter/engine/renderer wired in. The service worker precaches only the **staged scripts**, deliberately NOT the absent image files (precaching a missing file would break offline installation).
+- The QA page now has `4 CREATURE ART GATE`. It will show **BLOCKED** until both real image atlases and all 88 animation frames are available and valid. This is a real release gate, not a decorative green check.
+- JavaScript syntax validation passed for all staged engine, scene, art and QA files; production and QA engines were synchronized; production and QA renderers were synchronized.
+- Synthetic asset-validator unit tests proved that missing images produce a transparent card result and an incomplete status; exact-size unique portraits with genuinely transparent nonempty sprites produce a complete status under mock pixels. These tests **do not** constitute real generated character artwork.
+
+**Improved 60-match tactical deck exercise**
+The heuristic test agent initially undervalued Zephyr because it always summoned before moving. It now can legally move a grounded creature first, then summon the Cartographer within two tiles, using the existing authoritative action rules. The simulated character-ability synergy is therefore meaningfully exercised without changing actual player card stats.
+- Existing Balanced deck: **60 simulated battles, 38 agent wins, 0 invalid states**.
+- 24-card mixed deck containing M/N/O/P: **60 simulated battles, 36 wins, 0 invalid states**.
+- Recorded player summons across mixed-deck test: **M 40, N 40, O 46, P 40**. These are **card uses, not human win-rate estimates**.
+- Targeted new creature rule tests: **13/13 pass**; existing v4.5 spell rules **12/12 pass** and Armory vault regression **8/8 pass**.
+- Tests use the actual Javascript rules running in mocked-DOM, save-isolated memory; they do not establish physical iPhone quality or online room reliability.
+
+**Explicit unmet blocker:** The required `art/cards-creatures-v453.webp`, `art/units-creatures-v453.png` and `art/battlefield-frames-v453.webp` have **not yet been created or uploaded**. The attempted image generators returned a false promotional dashboard or were not configured; neither is suitable as a production asset. No art has been silently replaced with an old character. Until all three files are completed and visually inspected, keep v4.5.3 unmerged and the public release at **v4.5.2 / 36 cards**.
