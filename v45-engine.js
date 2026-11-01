@@ -2007,7 +2007,8 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     enemy.shield=3;const before=enemy.hp;
     basicStrike(duelist,enemy);
     check('Cragsunder cannot pierce a second time in the same round',
-      enemy.shield===1&&enemy.hp===before);
+      enemy.shield===1&&enemy.hp===before,
+      'shield='+enemy.shield+' hp='+enemy.hp+' before='+before);
    }
    {
     setup();
@@ -2016,10 +2017,12 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     hunter.shield=0;enemy.shield=4;S.units=[hunter,enemy];
     basicStrike(hunter,enemy);
     check('Umbral siphon transfers real opponent shield once',
-      hunter.shield===1&&enemy.shield===1&&hunter.siphonRound===S.round);
+      hunter.shield===1&&enemy.shield===1&&hunter.siphonRound===S.round,
+      'hunter='+hunter.shield+' foe='+enemy.shield+' round='+hunter.siphonRound);
     enemy.shield=4;basicStrike(hunter,enemy);
     check('Umbral siphon cannot trigger again in same round',
-      hunter.shield===1&&enemy.shield===2);
+      hunter.shield===1&&enemy.shield===2,
+      'hunter='+hunter.shield+' foe='+enemy.shield);
    }
    {
     setup();
@@ -2028,11 +2031,12 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     hunter.shield=5;enemy.shield=4;S.units=[hunter,enemy];
     basicStrike(hunter,enemy);
     check('Umbral siphon cannot create shield above cap',
-      hunter.shield===5&&enemy.shield===2&&!hunter.siphonRound);
+      hunter.shield===5&&enemy.shield===2&&!hunter.siphonRound,
+      'hunter='+hunter.shield+' foe='+enemy.shield+' siphon='+hunter.siphonRound);
    }
   }catch(e){checks.push({name:'Runtime exception',pass:false,detail:String(e)})}
   finally{startQuickMatch()}
-  return{pass:checks.length===12&&checks.every(q=>q.pass),checks};
+  return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
  },
  qaV45Spells:()=>{
   const results=[],check=(name,pass,info='')=>results.push({name,pass:!!pass,info});
