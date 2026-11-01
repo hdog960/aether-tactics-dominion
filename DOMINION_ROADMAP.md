@@ -29,8 +29,11 @@ Players can save and name three complete 24-card decks in the existing Armory, p
 ### v4.5.3 — Four New Painted Creature Cards (shipped)
 Expanded the collection **36 → 40** with Zephyr Cartographer, Verdant Bastion, Cragsunder Duelist and Umbral Siphon. Each has unique actual combat mechanics, its own original painting, corresponding transparent battlefield cutout, and 22 motion frames. Isolated Chromium QA at 390px verified four distinct images, asset sizes, all new creature rules, original spell/boss/campaign regressions, 60 legal-action battles, and the normal 40-card collection. All previous saves, presets and three Armory decks remain compatible. See `V453_RELEASE_AND_QA.md`. Physical iPhone and two-device duel QA remain open.
 
-### v4.5.4–v4.5.8 — 20 more cards to reach 60 (planned)
-Grow the current **40-card** library toward **60** in small polished batches of distinctive units and spells across sacrifice, flying, terrain control, counterplay and frontline archetypes. Every creature requires a matching painted portrait, full-body cutout, animation frames, genuine ability, and battle/balance evidence before release; never ship generic stand-ins or only a mockup. Continue protecting the 24-card deck restrictions, achievements, matchmaking compatibility and saved progression.
+### v4.5.4 — Four Additional Painted Creature Cards (shipped)
+Expanded the collection **40 → 44** with Tideglass Oracle (spell-shield synergy), Ashen Harrier (post-flank movement), Gravebloom Warden (defeat-root control), and Stormvault Artificer (trap disarming). Each has a genuine original painted card image, identity-matched transparent battlefield sprite, 22-frame motion row, authoritative bounded mechanics and mobile-sized Chromium QA. Release candidate passed 14/14 new rule checks, previous spell/boss/story/deck checks and 120 total campaign simulations without invalid states. The normal Codex showed 44 cards and the existing three deck slots remain available. See `V454_RELEASE_AND_QA.md`.
+
+### v4.5.5–v4.5.8 — 16 more cards to reach 60 (planned)
+Grow the current **44-card** library to **60** in four small batches of creatures and spells emphasizing advanced combinations, sacrifice, flyers, terrain, support and counterplay. Preserve matching painted portraits, transparent playable units and animated frames, strategic utility and balance evidence. Keep progression keys, all three deck slots, online-match schema and existing user-owned cards intact.
 
 ### v4.6 — Progression & Replayability
 Rift Gauntlet, milestone rewards, mastery challenges, progression pacing and long-run variety. Include challenge reset safeguards and migration tests.
