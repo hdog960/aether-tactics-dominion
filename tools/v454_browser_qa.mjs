@@ -55,6 +55,30 @@ try{
   // The real browser's canvas has exactly four painted characters in two
   // distinct sheets. Screen capture remains available for visual review.
   await page.screenshot({path:'art/v454-staging-browser-390px.png',fullPage:false});
+  // QA-only contact sheet drawn from the REAL image adapter, not promo art.
+  await page.evaluate(()=>{
+    const cover=document.createElement('div');
+    cover.id='v454-art-review';
+    cover.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#101a2e;padding:18px;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;color:#f6dfad;font:700 12px system-ui';
+    for(const [i,k] of ['Q','R','S','T'].entries()){
+      const cell=document.createElement('div');
+      cell.style.cssText='padding:8px;background:#21324b;border:1px solid #bba17a;border-radius:9px;text-align:center';
+      const name=document.createElement('div');
+      name.textContent=['Tideglass Oracle','Ashen Harrier','Gravebloom Warden','Stormvault Artificer'][i];
+      name.style.cssText='min-height:36px;line-height:1.35';
+      const portrait=document.createElement('img');
+      portrait.src=window.AetherArt.get(k);
+      portrait.style.cssText='display:block;width:100%;height:115px;object-fit:cover;border-radius:4px';
+      const sprite=document.createElement('img');
+      sprite.src=window.AetherArt.sprite(k);
+      sprite.style.cssText='display:block;width:110px;height:140px;object-fit:contain;margin:0 auto';
+      cell.append(name,portrait,sprite);cover.append(cell);
+    }
+    document.body.append(cover);
+  });
+  await page.waitForTimeout(180);
+  await page.screenshot({path:'art/v454-art-identity-review-390px.png',fullPage:false});
+  await page.evaluate(()=>document.querySelector('#v454-art-review')?.remove());
   // Visual acceptance capture through the actual tactical renderer.
   await page.evaluate(()=>{
     const s=window.AetherGame.get();
