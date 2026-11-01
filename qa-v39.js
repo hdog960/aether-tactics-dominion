@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button><button data-qa="story">30 STORY CHOICES</button><button data-qa="outcomes">45 RESULTS QA</button><button data-qa="winScene">VICTORY SCENE</button><button data-qa="lossScene">DEFEAT SCENE</button><button data-qa="balance">60 TACTICAL BATTLES</button><button data-qa="focus">48 HARD-ENCOUNTER BATTLES</button><button data-qa="kingAB">HOLLOW KING WAVE A/B · 32 BATTLES</button><button data-qa="kingRanks">KING CARD LEVELS · 96 BATTLES</button><button data-qa="v45">V4.5 FOUR-SPELL RULES</button><button data-qa="probe">SPELL & MYTHIC QA</button><button data-qa="warnings">22 EARLY WARNINGS</button><button data-qa="weatherPreview">WEATHER WARNING</button><button data-qa="bossPreview">BOSS WARNING</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button><button data-qa="story">30 STORY CHOICES</button><button data-qa="outcomes">45 RESULTS QA</button><button data-qa="winScene">VICTORY SCENE</button><button data-qa="lossScene">DEFEAT SCENE</button><button data-qa="balance">60 TACTICAL BATTLES</button><button data-qa="focus">48 HARD-ENCOUNTER BATTLES</button><button data-qa="kingAB">HOLLOW KING WAVE A/B · 32 BATTLES</button><button data-qa="kingRanks">KING CARD LEVELS · 96 BATTLES</button><button data-qa="v45">V4.5 FOUR-SPELL RULES</button><button data-qa="v45art">4 PAINTED V4.5 SPELLS</button><button data-qa="probe">SPELL & MYTHIC QA</button><button data-qa="warnings">22 EARLY WARNINGS</button><button data-qa="weatherPreview">WEATHER WARNING</button><button data-qa="bossPreview">BOSS WARNING</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -454,6 +454,23 @@ function auditV45Spells(){
   (x.pass?'✓ ':'✗ ')+x.name+(x.info?' · '+x.info:'')).join('\n');
  N.showTab('battle');
 }
+function auditV45Art(){
+ const source=A.v45SpellPainting?.();
+ const ids=['H','I','J','K'],frames=ids.map(k=>A.get(k));
+ const distinct=new Set(frames).size===4;
+ const painted=frames.every(v=>typeof v==='string'&&
+  v.startsWith('data:image/png;base64,')&&v.length>700);
+ const pass=source?.loaded===true&&source.width===512&&source.height===96&&
+  !source.error&&distinct&&painted;
+ status('V4.5 PAINTED ART '+(pass?'PASS':'FAIL')+' · '+(painted?'4/4':'missing crops'));
+ $('qa-report').textContent='Asset: '+(source?.source||'not loaded')+
+  '\\nAtlas: '+(source?.width||0)+'×'+(source?.height||0)+
+  '\\nFour independent art crops: '+distinct+
+  '\\nPNG card surfaces: '+painted+
+  '\\nError: '+(source?.error||'none');
+ window.__qaV45Art={pass,source,distinct,painted};
+ N.showTab('battle');
+}
 function auditWarnings(){
  const result=G.qaWarnings?.()||{pass:false,results:[],checked:0,noQuick:false};
  window.__qaWarnings=result;
@@ -486,6 +503,7 @@ panel.addEventListener('click',e=>{
  else if(mode==='kingAB')auditKingWaves();
  else if(mode==='kingRanks')auditKingCardLevels();
  else if(mode==='v45')auditV45Spells();
+ else if(mode==='v45art')auditV45Art();
  else if(mode==='probe')auditTacticalProbe();
  else if(mode==='warnings')auditWarnings();
  else if(mode==='weatherPreview'||mode==='bossPreview'){
