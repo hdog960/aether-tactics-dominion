@@ -77,6 +77,27 @@ try{
     complete:art.status.complete,cardDimensions:art.status.cardDimensions,
     spriteDimensions:art.s.spriteDimensions,frameDimensions:art.s.frameDimensions,
     uniqueCards:art.uniqueCards,uniqueSprites:art.uniqueSprites},results,errors};
+  // Finally test the actual release entry point, with normal (non-QA)
+  // card visibility and all existing browser storage handling.
+  const main=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  main.on('pageerror',e=>errors.push('Main: '+e.message));
+  await main.goto('http://127.0.0.1:8000/index.html',{waitUntil:'load',timeout:45000});
+  await main.waitForFunction(()=>window.AetherGame&&window.AetherArt?.v453ArtStatus?.()?.complete,null,{timeout:30000});
+  await main.locator('button[data-page="cards"]').click();
+  await main.locator('#codex-tabs button[data-tab="deck"]').click();
+  const collection=await main.evaluate(()=>{
+    const count=Number(document.querySelector('#codex-deck-count')?.textContent);
+    const names=[...document.querySelectorAll('#codex-list button[data-inspect] strong')].map(x=>x.textContent);
+    const art=['M','N','O','P'].map(k=>window.AetherArt.get(k).startsWith('data:image/png'));
+    return{count,names,art,deck:window.AetherGame.deckInfo(),savesOnly:[...Object.keys(localStorage)]};
+  });
+  const expected=['Zephyr Cartographer','Verdant Bastion','Cragsunder Duelist','Umbral Siphon'];
+  if(collection.count!==40||expected.some(n=>!collection.names.includes(n))||
+      collection.art.some(x=>!x)||collection.deck.cards!==24)
+    fail('Normal 40-card release display mismatch: '+JSON.stringify(collection));
+  await main.screenshot({path:'art/v453-production-cards-390px.png',fullPage:false});
+  report.production={collection:collection.count,newUnits:expected,deckSize:collection.deck.cards,
+    artworkLoaded:collection.art.every(Boolean)};
   console.log(JSON.stringify(report,null,2));
   if(errors.length)fail('Browser JS errors: '+errors.join('; '));
 }finally{
