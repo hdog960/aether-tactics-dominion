@@ -19,3 +19,14 @@
 
 ## Pending
 Live browser verification and any fixes it reveals. After passing, review harder campaign scenarios and begin carefully scoped v4.5 card-expansion batches with original art, source checks and gameplay simulations.
+
+## Live deployment & tactical QA — November 1, 2026
+- GitHub Pages published game commit `2ea290d3f04b3925458c8ac3854e13902624ab41` successfully.
+- Actual save-isolated browser testing and battlefield screenshots: https://agent.tinyfish.ai/runs/55d4e78f-67a0-4bac-9b64-197e1c475945
+- **Targeted action probe: 4/4 PASS.** Rift Barrage spent energy and damaged a rival; the real Aether Titan was summoned with one paid tribute and 7 Aeth, consuming the ally; Purifying Rain removed root/burn without exceeding five shield; the enemy AI centered Planar Meteor on an empty legal tile and struck two units.
+- **60 tactical games completed, 36 test-bot wins, 0 invalid states.** Actions counted across those simulations: **379 spells, 89 mythic summons, 637 normal summons, 578 moves and 1089 attacks.** The engine reported no simulation errors.
+- Boss phase regression **7/7 PASS**, including Mirror Court counterattack; five bottom navigation tabs and the illustrated tactical battlefield rendered in the live browser.
+- The earlier bot (which did not cast spells or tribute mythics) won 18/60 under its earlier test. The result is not a human win-rate, and the enemy AI also received a small area-targeting improvement. This is not a controlled one-variable intervention.
+- Harder scenarios still needing human-quality review: Oaths in Shadow (r2) 0/4, Hollow King (t1) 0/4, and Crown Guardian (r3) 2/4, with only two seeded games per approach. These are leads, not proof the missions are unwinnable.
+- The browser operator opened the existing 45-result control but did not report its exact count in this run. Previous 45/45 success remains historical, not newly reverified.
+- Physical iPhone Safari touch, render performance, and complete human campaign playthroughs are still outstanding.
