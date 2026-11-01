@@ -23,3 +23,13 @@
 - This work adds actual discrete raster poses but cannot substitute for bespoke artist-drawn limb articulation and weapon cycles. The six classic frames are synthesized from their original art at runtime, not stored as a separate standalone WebP file.
 - Still need prolonged iPhone Safari GPU/memory/performance measurements and real-device touch checks, especially under repeated combat FX.
 - End-to-end multiplayer QA requires two actual devices.
+
+## Live deployment and browser QA — November 1, 2026
+- Pages deployment for game commit `66456a5398d93937f40d7f778d616d2d0b10d98a` succeeded.
+- Actual browser QA recording and screenshots: https://agent.tinyfish.ai/runs/16d67d10-4905-44fd-9d7d-e01d80b52d00
+- **CLASSIC FRAME AUDIT PASS:** 132/132 nonempty, 132 distinct raster-frame fingerprints; 2816×888 canvas; all six original monster types present.
+- **PREMIUM FRAME AUDIT PASS:** 264/264 nonempty, 264 distinct raster-frame fingerprints; 2112×1440 WebP.
+- **COMBAT PASS:** 16/16 movement and basic attack checks for the eight newer summons.
+- **SOLO AI PASS:** 12/12 legal turn checks.
+- Browser inspector observed the classic/combined unit rosters on the real board with no blank art, obvious frame seams, missing units, cut-off sprites or JavaScript errors.
+- **Scope limit:** This is browser-based simulated QA. These are synthesized bitmap frames, not separately hand-painted animation cels. Native iPhone Safari GPU/memory measurements and manual review of all attack/death timing remain future work.
