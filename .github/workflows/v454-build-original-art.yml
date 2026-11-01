@@ -1,0 +1,39 @@
+name: Dominion v4.5.4 one-time original art build
+on:
+  push:
+    branches: [dev/v454-second-creatures]
+    paths: [.github/workflows/v454-build-original-art.yml]
+permissions:
+  contents: write
+jobs:
+  build-original-paintings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev/v454-second-creatures
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install safe raster processing libraries
+        run: python -m pip install --disable-pip-version-check numpy==1.26.4 opencv-python-headless==4.10.0.84 pillow==11.3.0
+      - name: Fetch original four-figure source sheet into the repository
+        env:
+          SOURCE_URL: "https://dnznrvs05pmza.cloudfront.net/gemini/gemini-3-pro-image/images/d097a3a8-9532-4a3b-9813-d4189b9256cf/a851e388-e7df-4e58-8337-0d7d14ade3ea/ONE_SQUARE_2_by_2_character_turnaround_contact_sheet_used_as.png?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMmVkNTgzODRkZWY2YjQwZSIsImJ1Y2tldCI6InJ1bndheS10YXNrLWFydGlmYWN0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc5MzY4NzE3Mn0.b_wrxh6ob4A6ou7T7qaMrXevZc7xyyFYb35cFAzj5Jo"
+        run: |
+          mkdir -p art/sources
+          curl --fail --location --silent --show-error --retry 2 "$SOURCE_URL" -o art/sources/v454-original-characters.png
+          test "$(stat -c%s art/sources/v454-original-characters.png)" -gt 100000
+          file art/sources/v454-original-characters.png
+      - name: Create card portraits, transparent sprites and 88 painted motion poses
+        run: python tools/v454_build_art.py
+      - name: Commit validated ORIGINAL art only to development branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add art/sources/v454-original-characters.png art/cards-creatures-v454.webp art/units-creatures-v454.png art/battlefield-frames-v454.webp art/v454-art-manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Build four original Q–T characters and 88 matching animation frames"
+            git push origin HEAD:dev/v454-second-creatures
+          fi
