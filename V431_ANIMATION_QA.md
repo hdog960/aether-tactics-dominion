@@ -20,5 +20,14 @@ Continues the approved v4.3 Living Battlefield roadmap. This update improves the
 ## Artistic limitations and next steps
 These are **role-specific animation transforms and canvas effects of still pixel-art creatures**, not individually repainted spritesheet frames or skeletal rigs. They add readability now without compromising the cards' art standard. Frame-authored walking/attack/hurt/death animations and real Safari iPhone touch/performance measurements remain future milestones.
 
-## Release QA
-Fill with current deploy status and live browser result. Verify production and the independent QA route before marking complete.
+## Verified release — November 1, 2026
+- GitHub Pages deployment completed for the game commit `4a80c225811edbfa9dcf350f885b3c24700df6ac`.
+- The public production URL returned title **Creature Animation & Combat QA v4.3.1**, confirming new version deployment.
+- Browser automation used the isolated QA scene and confirmed the exact test title. See https://agent.tinyfish.ai/runs/d5641631-5452-4017-93b3-2d4c5a98cf6e
+- **ANIMATION AUDIT: 18/18 PASS**, 7 movement roles, no nonfinite or out-of-bounds transforms.
+- **AI STRESS: PASS**, 138 legal turns across 12 initialized games; 80 turns included core damage, 72 included summons, 3 matches ended early; zero failed state checks.
+- **COMBAT ENGINE TEST: 16/16 PASS**, new eight roster units each successfully executed movement and basic attack orders.
+- **SPELL FX:** 14 spell kinds queued, nonblank scene and no observed clipping or JavaScript errors. This is smoke coverage, not validated per-frame film-quality animation.
+- Save, campaign and card progression were not mutated by tests because the dedicated QA page shadows localStorage in memory.
+- Remaining: physical iPhone performance/scroll gestures, full end-to-end campaign, two-device network battles and statistically meaningful balance testing. Distinct motion **transforms** are not painted character animation frames.
+
