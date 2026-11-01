@@ -149,6 +149,82 @@ function newFx(data,now,sequenceIndex=0){
   duration:data.type==='strike'?510:data.type==='spell'?640:490});
  if(activeFx.length>24)activeFx.splice(0,activeFx.length-24);
 }
+// v4.3.1 — silhouette-preserving character motion. These are animation
+// transforms of each actual illustrated sprite (not fake extra artwork).
+const battleRole={
+ b:'guardian',g:'guardian',j:'guardian',B:'guardian',y:'guardian',
+ t:'colossus',l:'colossus',
+ s:'skirmisher',A:'skirmisher',k:'skirmisher',
+ f:'flyer',d:'flyer',
+ r:'ranger',c:'caster',o:'caster',p:'caster',z:'caster',
+ v:'warrior'
+};
+function animatedCharacterPose(u,t,walking,stepPhase){
+ const role=battleRole[u.k]||'warrior';
+ const still=(t/1000+u.id*.47);
+ const floaty=role==='flyer'||!!u.fly;
+ const idle=(role==='guardian'?.009:role==='colossus'?.005:.018)*Math.sin(still*(role==='colossus'?1.4:2.1));
+ let sx=1+idle,sy=1-idle*.7,lean=0,lift=0;
+ if(walking){
+  const gait=Math.sin(stepPhase);
+  const amplitude=role==='colossus'?.035:role==='guardian'?.055:role==='skirmisher'?.105:.075;
+  const pump=Math.abs(gait)*amplitude;
+  sx+=pump;sy-=pump*.75;
+  lean=gait*(role==='skirmisher'?.074:role==='colossus'?.014:.036);
+  if(floaty)lift=Math.sin(still*3+u.id)*2;
+ }else if(floaty)lift=2.5*Math.sin(still*2.2);
+ for(const fx of activeFx){
+  const e=fx.data;
+  if(e.type!=='strike'||e.from?.id!==u.id||t<fx.born)continue;
+  const p=fxProg(fx,t);if(p>=1)continue;
+  const wind=Math.sin(Math.PI*Math.min(1,p/.34));
+  const contact=p<.38?0:Math.sin(Math.PI*Math.min(1,(p-.38)/.46));
+  const force=role==='colossus'?.18:role==='guardian'?.095:role==='skirmisher'?.10:.075;
+  sx+=force*wind-force*.55*contact;
+  sy-=force*.65*wind;lean+=force*(role==='skirmisher'?-1.45:.38)*contact;
+  lift+=role==='skirmisher'?3*wind:role==='colossus'?-2*contact:0;
+ }
+ // Never invert, hide, or distort character art to an unrecognizable degree.
+ return{sx:Math.max(.80,Math.min(1.18,sx)),
+   sy:Math.max(.82,Math.min(1.13,sy)),
+   lean:Math.max(-.15,Math.min(.15,lean)),
+   lift:Math.max(-4,Math.min(5,lift)),
+   role};
+}
+function drawCharacterTrail(e,p,to,from){
+ if(e.type!=='strike'||p<.24||p>.77)return;
+ const key=e.from?.k,role=battleRole[key]||'warrior';
+ const color=unitColors[key]||'#ffd49b';
+ const x=to[0],y=to[1]-49,life=Math.sin(Math.PI*(p-.24)/.53);
+ c.save();c.globalAlpha=Math.max(0,life)*.73;c.shadowColor=color;c.shadowBlur=11;
+ c.lineCap='round';c.lineWidth=role==='colossus'?7:role==='skirmisher'?3:4;
+ c.strokeStyle=color;
+ if(e.kind==='melee'){
+  const count=role==='skirmisher'?2:role==='colossus'?3:1;
+  for(let i=0;i<count;i++){
+   const rad=(role==='colossus'?30:24)+i*9;
+   c.beginPath();
+   c.arc(x,y+(i-1)*4,rad,-2.35+p*1.7+i*.16,-.25+p*1.7+i*.16);c.stroke();
+  }
+  if(role==='colossus'&&p>.39){
+   c.beginPath();c.ellipse(x,to[1]+4,25+p*28,9+p*9,0,0,Math.PI*2);c.stroke();
+  }
+ }else{
+  const px=from[0]+(x-from[0])*p,py=from[1]-37+(y-from[1]+37)*p;
+  if(role==='ranger'){
+   c.beginPath();c.moveTo(px-11,py-4);c.lineTo(px+13,py+4);
+   c.lineTo(px+4,py-4);c.moveTo(px+13,py+4);c.lineTo(px+2,py+10);c.stroke();
+  }else if(role==='caster'){
+   for(let i=0;i<3;i++){
+    let a=i*Math.PI*2/3+p*7;
+    c.beginPath();c.arc(px+Math.cos(a)*10,py+Math.sin(a)*9,3,0,Math.PI*2);c.stroke();
+   }
+  }else if(role==='flyer'){
+   c.beginPath();c.moveTo(px-12,py-4);c.quadraticCurveTo(px,py-19,px+13,py);c.stroke();
+  }
+ }
+ c.restore();
+}
 function unitPose(u,t){
  let dx=0,dy=0,flash=0,rotate=0;
  for(const fx of activeFx){
@@ -278,6 +354,7 @@ function renderBattleFX(t){
     ellipse(px,py,4,4,'#e4ffff');ellipse(px,py,8,3,'#72dbe5ad');c.restore();
    }
   }
+  drawCharacterTrail(e,p,to,from);
   if(e.type==='strike'&&e.kind==='melee'&&p>.31&&p<.7){
    const v=clamp01((p-.31)/.39);
    c.save();c.globalAlpha=(1-v)*.9;c.shadowColor='#ffe4a1';c.shadowBlur=12;
@@ -595,7 +672,7 @@ function drawUnit(view,t){
  const {u,x,y,z,scale,walking,stepPhase}=view;
  const front=u.team===seat;
  // Summons only render transparent painted sprites. No legacy geometric fallback.
- const pose=unitPose(u,t);
+ const pose=unitPose(u,t),motionPose=animatedCharacterPose(u,t,walking,stepPhase);
   // A ground-contact shadow sits UNDER the painted boots; a second small halo
   // fixes the illusion of the character hovering above or ending in mid-air.
   const isFlying=!!u.fly||u.k==='d';
@@ -613,15 +690,19 @@ function drawUnit(view,t){
    const large=sprite.boss?1.14:1;
    const vw=128*scale*large,vh=152*scale*large;
    const footY=z[1]+4*scale,sway=walking?Math.sin(stepPhase)*2*scale:0;
-   const idleBob=isFlying?Math.sin(t/620+u.id)*2.3:walking?-stepLift:Math.sin(t/780+u.id)*.25;
+   const idleBob=motionPose.lift+(isFlying?Math.sin(t/620+u.id)*2.3:walking?-stepLift:Math.sin(t/780+u.id)*.25);
    const dx=z[0]-vw/2+sway+pose.dx,dy=footY-vh+3*scale+idleBob+pose.dy;
    const tint=unitColors[u.k]||(front?'#69f7da':'#fc839e');
    c.save();c.imageSmoothingEnabled=false;c.shadowColor=tint;c.shadowBlur=9*scale;
    // Enemy ownership is shown by red ground halos and health bars;
    // never recolor the actual character identity from its card illustration.
    if(sprite.tone!=='none')c.filter=sprite.tone;
-   if(pose.rotate){c.translate(z[0]+pose.dx,footY+pose.dy);c.rotate(pose.rotate);
-    c.translate(-z[0]-pose.dx,-footY-pose.dy)}
+   // Pivot at grounded feet. Transform the actual card-matched painted unit,
+   // keeping shields, weapons, projectiles and team markers recognizable.
+   c.translate(z[0]+pose.dx,footY+pose.dy);
+   c.rotate(pose.rotate+motionPose.lean);
+   c.scale(motionPose.sx,motionPose.sy);
+   c.translate(-z[0]-pose.dx,-footY-pose.dy);
    c.drawImage(sprite.img,sprite.x,0,sprite.sourceW,sprite.sourceH,dx,dy,vw,vh);
    if(pose.flash>.03){
     c.save();c.globalAlpha=Math.min(.78,pose.flash*.8);
@@ -755,7 +836,8 @@ window.AetherScene={sync(s,my,choice){
   healthTweens.set(h.unit.id,{from:h.from,to:h.unit.hp,start,duration:290});
  }
  game=s;seat=my;selected=choice?.unit;selectedCard=choice?.card;focusedTile=choice?.focus||null;tributes=choice?.tributes||[];
-},activeWalks:()=>movements.size,activeCombat:()=>activeFx.length,pickTile:resolveTileAt};
+},activeWalks:()=>movements.size,activeCombat:()=>activeFx.length,pickTile:resolveTileAt,
+ motionSample:(k,walking=false,stepPhase=0)=>animatedCharacterPose({id:19,k,fly:k==='f'||k==='d'||k==='l'},performance.now(),walking,stepPhase)};
 const initial=window.AetherGame?.get?.();if(initial)window.AetherScene.sync(initial,0,{unit:null,card:-1,tributes:[]});
 requestAnimationFrame(draw);
 })();

@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -153,6 +153,55 @@ function runSpellFXChecks(){
  window.__qaFXKinds=kinds;
 }
 
+function auditMotion(){
+ const keysToTest=['v','b','r','s','f','g','t','l','c','j','p','k','d','o','y','z','A','B'];
+ const results=keysToTest.map(k=>{
+  const idle=window.AetherScene?.motionSample?.(k,false,0);
+  const walking=window.AetherScene?.motionSample?.(k,true,Math.PI/2);
+  const valid=!!idle&&!!walking&&
+   [idle.sx,idle.sy,idle.lean,idle.lift,walking.sx,walking.sy,walking.lean,walking.lift]
+    .every(Number.isFinite)&&
+   walking.sx>=.8&&walking.sx<=1.18&&walking.sy>=.82&&walking.sy<=1.13&&
+   Math.abs(walking.lean)<=.15;
+  return{k,pass:valid,role:walking?.role||'MISSING'};
+ });
+ const roles=new Set(results.map(r=>r.role));
+ const good=results.filter(r=>r.pass).length;
+ window.__qaMotionResults=results;
+ status('ANIMATION '+good+'/'+results.length+' valid · '+roles.size+' movement profiles');
+ $('qa-report').textContent=results.map(r=>(r.pass?'✓ ':'✗ ')+r.k+' '+r.role).join('\n');
+}
+function stressAI(){
+ const results=[];let turnCount=0,endings=0,damageTurns=0,summonTurns=0;
+ N.showTab('battle');
+ for(let match=0;match<12;match++){
+  G.startQuickMatch();
+  for(let step=0;step<12;step++){
+   const before=G.get();if(before.phase!=='playing'){endings++;break}
+   if(before.turn!==0){results.push({match,step,pass:false,reason:'human turn inaccessible'});break}
+   const hp0=before.hp[0],count0=before.units.filter(u=>u.team===1).length,round=before.round;
+   $('end').click();
+   const s=G.get(),ids=new Set(s.units.map(u=>u.x+','+u.y));
+   const valid=s.units.every(u=>u.hp>0&&u.max>0&&u.x>=0&&u.x<7&&u.y>=0&&u.y<8&&
+      u.shield>=0&&u.shield<=5)&&
+    ids.size===s.units.length&&s.energy.every(e=>e>=0&&e<=10)&&s.hp.every(h=>h>=0&&h<=24)&&
+    s.units.filter(u=>u.team===0).length<=8&&s.units.filter(u=>u.team===1).length<=8&&
+    (s.phase!=='playing'||s.turn===0&&s.round===round+1);
+   turnCount++;if(s.hp[0]<hp0)damageTurns++;
+   if(s.units.filter(u=>u.team===1).length>count0)summonTurns++;
+   if(!valid){results.push({match,step,pass:false,reason:'illegal board/resources or turn'});break}
+  }
+  if(results.some(x=>!x.pass))break;
+ }
+ const ok=!results.some(x=>!x.pass);
+ window.__qaStressResult={pass:ok,matches:12,turns:turnCount,damageTurns,summonTurns,endings,failures:results};
+ status('AI STRESS '+(ok?'PASS':'FAIL')+' · '+turnCount+' simulated turns / 12 games');
+ $('qa-report').textContent='Damage turns '+damageTurns+'\nSummon turns '+summonTurns+
+  '\nEarly finishes '+endings+'\nFailures '+results.length+
+  (results.length?'\n'+results.map(x=>JSON.stringify(x)).join('\n'):'');
+ G.startQuickMatch();N.showTab('battle');
+}
+
 panel.addEventListener('click',e=>{
  const b=e.target.closest('[data-qa]');if(!b)return;
  const mode=b.dataset.qa;
@@ -162,6 +211,8 @@ panel.addEventListener('click',e=>{
  else if(mode==='combat')runCombatChecks();
  else if(mode==='aitest')runAITurnChecks();
  else if(mode==='spellfx')runSpellFXChecks();
+ else if(mode==='motion')auditMotion();
+ else if(mode==='stress')stressAI();
 });
 document.body.classList.add('qa-page');
 setTimeout(()=>{
