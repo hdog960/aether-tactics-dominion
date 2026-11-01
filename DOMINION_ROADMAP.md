@@ -23,7 +23,10 @@ The real world-map mission briefing now reads the current saved deck, the author
 ### v4.5.1 — The Great Card Expansion, first batch (shipped)
 Four new illustrated spell cards have been added: **Starfall Lattice, Ashen Reprisal, Undertow and Dawn Edict**. A new art-gated **ASTRAL** playstyle provides the eighth valid premade 24-card deck, with original 32 cards and legacy deck/progression keys intact. Card art is loaded from four distinct 128×96 painted fantasy surfaces, with corresponding battlefield spell effects. Live browser QA passed all 12 spell rules, all four art crops, and 60/60 initial tactical simulations without invalid states. See `V451_RELEASE_AND_QA.md` for verified results and limitations.
 
-### v4.5.2 onward — 24 more cards to reach 60 (planned)
+### v4.5.2 — Three Saved Deck Loadouts (shipped)
+Players can save and name three complete 24-card decks in the existing Armory, preview them safely, then equip one for the next match. Existing current deck and progress save keys remain authoritative and unchanged. All 36 cards, eight preset strategies, upgrade paths and in-progress battles are preserved. Source QA passed 8/8 vault state checks, 60-game campaign regression, and 12/12 spell checks. See `V452_ARMORY_LOADOUT_VAULT.md`.
+
+### v4.5.3 onward — 24 more cards to reach 60 (planned)
 Grow the current **36-card** library toward **60** in small polished batches of distinctive units and spells across sacrifice, flying, terrain control, counterplay and frontline archetypes. A creature is not ready to ship until the illustration, transparent battlefield cutout, animation frames, card reference, true behavior and balance tests all match. Continue protecting the 24-card deck restrictions, existing achievements and save progression. First planned batch includes truly different units and matching battlefield art; do not ship flat shape icons, recolors, or concept-only mockups as real assets.
 
 ### v4.6 — Progression & Replayability
