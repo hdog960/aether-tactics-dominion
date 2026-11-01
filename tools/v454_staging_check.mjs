@@ -9,16 +9,16 @@ const html=fs.readFileSync('index.html','utf8');
 const qaHtml=fs.readFileSync('qa-v39.html','utf8');
 const sw=fs.readFileSync('sw.js','utf8');
 const artwork=fs.readFileSync('v454-creature-art.js','utf8');
-const manifestPresent=fs.existsSync('art/cards-creatures-v454.webp')||
- fs.existsSync('art/units-creatures-v454.png')||
- fs.existsSync('art/battlefield-frames-v454.webp');
+const assets=['art/cards-creatures-v454.webp','art/units-creatures-v454.png',
+ 'art/battlefield-frames-v454.webp'];
+const manifest=JSON.parse(fs.readFileSync('art/v454-art-manifest.json','utf8'));
 const checks={
  jsSyntax:true,
  qaEngineMatches:engine===qaEngine,
  qaSceneMatches:scene===qaScene,
  artworkGatePresent:engine.includes("const V454_UNIT_KEYS=['Q','R','S','T']")&&
   engine.includes('V454_ENABLED||!V454_UNIT_KEYS.includes(k)'),
- noPublicArtFlag:!html.includes('DOMINION_V454_ART_RELEASE=true'),
+ releasedArtworkFlag:html.includes('DOMINION_V454_ART_RELEASE=true'),
  stagingCardsScript:html.includes('./v454-creature-art.js?v=454'),
  stagingSceneScript:html.includes('./v45-scene.js?v=454'),
  isolatedQAIncludesTests:qaHtml.includes('./v45-qa.js?v=454')&&
@@ -28,9 +28,11 @@ const checks={
   scene.includes('latest?v454Frames'),
  artLoaderRejectsMissing:artwork.includes("const transparent='data:image/gif")&&
   artwork.includes('checks.transparentCutouts')&&artwork.includes('checks.distinctPaintings'),
- noMissingArtPrecache:!sw.includes("'./art/cards-creatures-v454.webp'")&&
-  !sw.includes("'./art/battlefield-frames-v454.webp'"),
- noPrematureArtAssets:!manifestPresent,
+ actualArtInRepository:assets.every(a=>fs.existsSync(a)&&fs.statSync(a).size>8000),
+ manifestAndFrames:manifest.version==='4.5.4'&&
+  JSON.stringify(manifest.characters)===JSON.stringify(['Q','R','S','T'])&&
+  manifest.frames_per_character===22,
+ offlineCacheIncludesActualArtwork:assets.every(a=>sw.includes(a+'?v=454')),
  roadmapStop:fs.readFileSync('DOMINION_ROADMAP.md','utf8').includes('Mandatory stopping point after v4.7')
 };
 console.log(JSON.stringify(checks,null,2));
