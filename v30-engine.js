@@ -1667,6 +1667,80 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   mythics:chosenDeck.filter(k=>!!D[k].tribute).length,
   averageLevel:+(chosenDeck.reduce((total,k)=>total+cardLevel(k),0)/Math.max(1,chosenDeck.length)).toFixed(1)}),
  ...(window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html')?{
+ // v4.5 staging — verify four actual spell cards using legal apply()
+ // actions in memory-isolated scenario states. No player profile is touched.
+ qaV45Spells:()=>{
+  const results=[],check=(name,pass,info='')=>results.push({name,pass:!!pass,info});
+  const setup=(card)=>{
+   if(!startMission('v1',true,'rush'))throw Error('QA mission setup failed');
+   S.hands[0]=[card];S.energy[0]=10;S.turn=0;
+   const [ally,wing]=S.units.filter(u=>u.team===0);
+   const [enemy,guard]=S.units.filter(u=>u.team===1);
+   ally.x=2;ally.y=4;wing.x=4;wing.y=5;
+   enemy.x=3;enemy.y=2;guard.x=5;guard.y=2;
+   return{ally,wing,enemy,guard};
+  };
+  try{
+   {
+    const {ally,enemy,guard}=setup('H');
+    enemy.x=1;enemy.y=3;guard.x=3;guard.y=3;
+    const hp=[enemy.hp,guard.hp,ally.hp],start=S.energy[0];
+    const cast=apply(0,{op:'card',idx:0,x:2,y:2,tributes:[]});
+    check('Starfall Lattice damages two diagonal enemies, not the ally',
+     cast&&enemy.hp===hp[0]-2&&guard.hp===hp[1]-2&&ally.hp===hp[2]&&S.energy[0]===start-4);
+   }
+   {
+    const {ally,enemy}=setup('I');
+    enemy.x=3;enemy.y=4;enemy.moved=false;enemy.attacked=false;
+    const start=S.energy[0],oldHp=enemy.hp;
+    const cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    S.turn=1;
+    const attack=apply(1,{op:'attack',id:enemy.id,x:2,y:4});
+    check('Ashen Reprisal shields and responds exactly once to a legal basic strike',
+     cast&&attack&&ally.reprisal===0&&enemy.hp===oldHp-1&&S.energy[0]===start-2);
+   }
+   {
+    const {ally,enemy}=setup('J');
+    ally.x=3;ally.y=4;enemy.x=3;enemy.y=2;
+    const oldHp=enemy.hp,start=S.energy[0];
+    const cast=apply(0,{op:'card',idx:0,x:3,y:2,tributes:[]});
+    check('Undertow deals damage and moves target only to a legal open tile',
+     cast&&enemy.x===3&&enemy.y===3&&enemy.hp===oldHp-1&&S.energy[0]===start-3);
+   }
+   {
+    const {ally,enemy}=setup('J');
+    ally.x=2;ally.y=4;enemy.x=2;enemy.y=2;
+    const initial=S.energy[0],before={x:enemy.x,y:enemy.y,hp:enemy.hp};
+    const cast=apply(0,{op:'card',idx:0,x:2,y:2,tributes:[]});
+    check('Undertow refuses to cross a rock and spends no energy',!cast&&
+      enemy.x===before.x&&enemy.y===before.y&&enemy.hp===before.hp&&S.energy[0]===initial);
+   }
+   {
+    const {ally,enemy}=setup('K');
+    enemy.x=3;enemy.y=4;enemy.shield=4;
+    const hp=enemy.hp,energy=S.energy[0];
+    const cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    const hit=apply(0,{op:'attack',id:ally.id,x:3,y:4});
+    check('Dawn Edict buffs one attack, strips at most three shield and consumes charge',
+      cast&&hit&&enemy.shield===0&&enemy.hp===hp-2&&!ally.edict&&S.energy[0]===energy-3);
+   }
+   {
+    const {ally,enemy}=setup('I');
+    const before=S.energy[0];
+    const illegal=apply(0,{op:'card',idx:0,x:enemy.x,y:enemy.y,tributes:[]});
+    check('Team ownership enforced; invalid defensive target never pays Aeth',
+      !illegal&&S.energy[0]===before&&S.hands[0][0]==='I');
+   }
+   {
+    const {ally,enemy}=setup('I');
+    ally.shield=5;
+    const cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    check('Ashen Reprisal respects the five-shield cap',cast&&ally.shield===5);
+   }
+  }catch(err){results.push({name:'Runtime error',pass:false,info:String(err)})}
+  finally{startQuickMatch()}
+  return{pass:results.length===7&&results.every(r=>r.pass),results};
+ },
  // v4.4.4: deterministic, self-contained tactical playtest, restricted to
  // save-isolated QA. Both choices for a mission use the SAME seeded RNG and
  // actual apply()/aiTurn() pipeline. This is a heuristic bot, not a human.
