@@ -29,7 +29,10 @@ const modal=document.createElement('div');modal.id='atlas-dialog';modal.classNam
  <div class="atlas-dialog-panel"><button type="button" class="atlas-dialog-close" data-close aria-label="Close mission details">✕</button>
  <div class="atlas-dialog-mark" id="atlas-dialog-mark"></div><div class="atlas-dialog-kicker" id="atlas-dialog-kicker"></div>
  <h2 id="atlas-dialog-title"></h2><p class="atlas-dialog-story" id="atlas-dialog-story"></p>
- <div class="atlas-dialog-objective" id="atlas-dialog-objective"></div><div class="atlas-dialog-twist" id="atlas-dialog-twist"></div><div class="atlas-dialog-story-scene" id="atlas-dialog-story-scene"></div><div class="atlas-dialog-plans" id="atlas-dialog-plans" role="group" aria-label="Choose expedition approach"></div><div class="atlas-dialog-loadout" id="atlas-dialog-loadout">
+ <div class="atlas-dialog-objective" id="atlas-dialog-objective"></div><div class="atlas-dialog-twist" id="atlas-dialog-twist"></div><div class="atlas-dialog-story-scene" id="atlas-dialog-story-scene"></div><div class="atlas-dialog-plans" id="atlas-dialog-plans" role="group" aria-label="Choose expedition approach"></div><section class="atlas-dialog-counsel" id="atlas-dialog-counsel" aria-label="Tactician's preparation note">
+  <div class="atlas-counsel-title">✦ TACTICIAN'S NOTE <small>BASED ON YOUR SAVED DECK</small></div>
+  <div id="atlas-dialog-counsel-items" class="atlas-counsel-items"></div>
+ </section><div class="atlas-dialog-loadout" id="atlas-dialog-loadout">
   <div class="atlas-loadout-copy"><span>YOUR BATTLE DECK</span><strong id="atlas-dialog-deck-stats">24 CARDS</strong></div>
   <button type="button" data-deck-prep>EDIT DECK</button>
   <p id="atlas-dialog-deck-note">Changes to your deck apply when starting a new battle.</p>
@@ -74,6 +77,15 @@ function openMission(id,button){
    '</span><span class="atlas-plan-cost">'+safe(plan.tradeoff)+
    '</span><span class="atlas-plan-desc">'+safe(plan.description)+
    '</span></button>').join(''):'';
+ const counsel=G.campaignCounsel?.(id);
+ const notes=$('atlas-dialog-counsel-items');
+ if(counsel&&notes){
+  const paragraphs=counsel.tips.map(t=>{
+   const p=document.createElement('p');p.textContent=t;return p;
+  });
+  notes.replaceChildren(...paragraphs);
+ }
+ $('atlas-dialog-counsel').classList.toggle('hidden',!counsel);
  const deck=G.deckInfo?.();
  if(deck){
   $('atlas-dialog-deck-stats').textContent=deck.cards+' CARDS · '+deck.units+
