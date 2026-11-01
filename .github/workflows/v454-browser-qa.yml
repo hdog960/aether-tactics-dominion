@@ -1,0 +1,37 @@
+name: Dominion v4.5.4 isolated mobile browser QA
+on:
+  push:
+    branches: [dev/v454-second-creatures]
+    paths:
+      - .github/workflows/v454-browser-qa.yml
+      - tools/v454_browser_qa.mjs
+      - art/cards-creatures-v454.webp
+      - art/units-creatures-v454.png
+      - art/battlefield-frames-v454.webp
+permissions:
+  contents: read
+jobs:
+  chromium-v454-render-and-gameplay-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev/v454-second-creatures
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - name: Launch staged static site
+        run: python3 -m http.server 8000 --bind 127.0.0.1 > /tmp/dominion-v454-http.log 2>&1 &
+      - name: Validate Q–T artwork, animation, combat and 40-card release gate
+        run: node tools/v454_browser_qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dominion-v454-real-mobile-battlefield
+          path: |
+            art/v454-staging-browser-390px.png
+            art/v454-creatures-on-battlefield-390px.png
+          if-no-files-found: ignore
