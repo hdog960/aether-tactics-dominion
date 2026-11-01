@@ -21,3 +21,13 @@ Visual-only state changes; underlying positions and HP values remain authoritati
 - Browser QA isolated page includes **264 FRAME AUDIT** that checks deployed image dimensions and each frame’s alpha/hash, alongside movement/attack and AI stress tests.
 - Frames are generated algorithmically from painted artwork to retain identity; future artist-authored frames would create more expressive motion with articulated weapons and limbs.
 - Physical iPhone WebKit testing, in-game gesture validation, multiplayer and real device performance remain separate.
+
+## Published live QA — November 1, 2026
+- v4.3.2 GitHub Pages build for commit `87ab678234a534c52c235ae72b4be2f6fd4dd357` completed successfully.
+- Actual isolated browser test: https://agent.tinyfish.ai/runs/49fe4230-b573-40b8-95ae-fca2d6094a52
+- **FRAME ATLAS PASS:** 2,112×1,440 actual deployed image, 264/264 nonempty frame cells, 264 distinct frame fingerprints, 12 animated creature types, 0 missing images.
+- **COMBAT PASS:** 16/16 newer-unit movement/attack checks.
+- **ANIMATION PASS:** 18/18 role motion checks (includes six legacy units).
+- **AI PASS:** 12/12 turn legality checks.
+- Visual inspection: 8 newer units visible in the real battlefield, mixed teams, no observed clipping or blank sprites, bottom controls present, no JavaScript errors reported.
+- Caveat: Automated QA validates source data and live rendering; it does not verify every animation aesthetically frame-by-frame in native iPhone Safari. Defeat animation triggers, physical touchscreen performance and sixth classic unit frame sheets still require dedicated follow-up.
