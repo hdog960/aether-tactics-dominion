@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -114,6 +114,45 @@ function runCombatChecks(){
  status('COMBAT '+passed+'/'+results.length+' checks passed; original 8-unit scene restored');
 }
 
+function runAITurnChecks(){
+ const results=[];G.startQuickMatch();N.showTab('battle');
+ for(let i=0;i<12;i++){
+  const before=G.get();
+  if(before.phase!=='playing'){results.push({round:i,pass:true,reason:'Match ended'});break}
+  if(before.turn!==0){results.push({round:i,pass:false,reason:'AI left the human unable to act'});break}
+  const oldRound=before.round;
+  $('end').click();const s=G.get();
+  const tiles=new Set(s.units.map(u=>u.x+','+u.y));
+  const legal=s.units.every(u=>u.x>=0&&u.x<7&&u.y>=0&&u.y<8&&u.hp>0);
+  const valid=tiles.size===s.units.length&&legal&&s.units.filter(u=>u.team===0).length<=8&&
+   s.units.filter(u=>u.team===1).length<=8&&
+   s.energy.every(e=>e>=0&&e<=10)&&s.hp.every(h=>h>=0&&h<=24)&&
+   (s.phase!=='playing'||s.turn===0&&s.round===oldRound+1);
+  results.push({round:oldRound,pass:valid,reason:valid?'legal AI turn':'illegal position/resource/turn'});
+  if(!valid){errors.push('AI turn failed on '+oldRound);break}
+ }
+ const passed=results.filter(x=>x.pass).length;
+ const failures=results.filter(x=>!x.pass);
+ window.__qaAIResults=results;
+ status('AI '+passed+'/'+results.length+' legality checks; '+failures.length+' failures');
+ $('qa-report').textContent=results.map(x=>(x.pass?'✓':'✗')+' turn '+x.round+' '+x.reason).join('\n');
+}
+function runSpellFXChecks(){
+ showUnits('new');const s=G.get();
+ const target=s.units[0],from=s.units[1];
+ const kinds=['bolt','cross','frost','ignite','silence','exchange','heal','shield','cleanse','dash','rally','bond','snare','recall'];
+ s.fxEvents=[];s.fxSeq=0;
+ for(const kind of kinds){
+  s.fxEvents.push({id:++s.fxSeq,type:['bolt','cross','frost','ignite','silence','exchange'].includes(kind)?'spell':'buff',
+   kind,from:{id:from.id,k:from.k,x:from.x,y:from.y,team:from.team},
+   to:{id:target.id,k:target.k,x:target.x,y:target.y,team:target.team},amount:kind==='heal'?3:1,blocked:0,lethal:false});
+ }
+ window.AetherScene?.sync?.(s,0,{unit:null,card:-1,tributes:[]});
+ status('14 signature effects queued on real battlefield renderer');
+ $('qa-report').textContent='Effects: '+kinds.join(', ')+'\nErrors: '+errors.length;
+ window.__qaFXKinds=kinds;
+}
+
 panel.addEventListener('click',e=>{
  const b=e.target.closest('[data-qa]');if(!b)return;
  const mode=b.dataset.qa;
@@ -121,6 +160,8 @@ panel.addEventListener('click',e=>{
  else if(mode==='cards')showCards();
  else if(mode==='report')assetReport();
  else if(mode==='combat')runCombatChecks();
+ else if(mode==='aitest')runAITurnChecks();
+ else if(mode==='spellfx')runSpellFXChecks();
 });
 document.body.classList.add('qa-page');
 setTimeout(()=>{

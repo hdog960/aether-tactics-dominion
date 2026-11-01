@@ -521,14 +521,14 @@ function resolveSpell(q,t,x,y){
  else if(type==='heal'){const heal=Math.min(3+boost,target.max-target.hp);target.hp+=heal;
   target.moved=false;target.attacked=false;target.renewedRound=S.round;abilityPulse(target,'heal',heal)}
  else if(type==='dash'){target.moved=false;target.stride=0;target.dashRound=S.round;if(boost)grantShield(target,boost);abilityPulse(target,'dash',0)}
- else if(type==='cleanse'){target.rooted=false;target.burning=false;target.shield+=2+boost;abilityPulse(target,'shield',2+boost)}
+ else if(type==='cleanse'){target.rooted=false;target.burning=false;target.shield+=2+boost;abilityPulse(target,'cleanse',2+boost)}
  else if(type==='rally'){
   for(const ally of S.units.filter(v=>v.team===t&&d(v,target)<=1)){
    ally.rallied=1;if(boost)grantShield(ally,boost);abilityPulse(ally,'rally',0)
   }
  }else if(type==='bond'){
   for(const ally of S.units.filter(v=>v.team===t&&d(v,target)<=1).slice(0,3)){
-   const amt=grantShield(ally,1+boost);ally.rallied=1;abilityPulse(ally,'shield',amt)
+   const amt=grantShield(ally,1+boost);ally.rallied=1;abilityPulse(ally,'bond',amt)
   }
  }else if(type==='recall'){
   S.echoRound||(S.echoRound=[0,0]);
@@ -536,11 +536,11 @@ function resolveSpell(q,t,x,y){
   if(i<0)return false;
   const card=S.discards[t].splice(i,1)[0];
   S.hands[t].push(card);S.echoRound[t]=S.round;S.energy[t]=Math.min(10,S.energy[t]+Math.min(1,boost));
-  fxPush({type:'buff',kind:'rally',to:{x,y,team:t},amount:0});
+  fxPush({type:'buff',kind:'recall',to:{x,y,team:t},amount:0});
  }else if(type==='snare'){
   S.traps||(S.traps=[]);
   S.traps.push({team:t,x,y,expires:S.round+4,damage:3+boost});
-  fxPush({type:'buff',kind:'rally',to:{x,y,team:t},amount:0});
+  fxPush({type:'buff',kind:'snare',to:{x,y,team:t},amount:0});
  }else if(type==='exchange'){
   S.exchangeRound||(S.exchangeRound=[0,0]);S.exchangeRound[t]=S.round;
   onSacrifice(t);
@@ -633,6 +633,44 @@ function intent(a){if(!S||S.phase!=='playing'||S.turn!==localSeat){message('<b>N
  if(mode==='online'){publish()}else if(S.phase==='playing'&&S.turn===1){aiTurn()}
  save();render();
 }
+// v4.3: bounded deterministic tactical evaluations. These score only legal
+// moves and existing stats; they do not change any player-facing rules.
+function aiPositionScore(u,pos,foes){
+ const k=K(pos.x,pos.y);
+ const distance=foes.length?Math.min(...foes.map(v=>d(pos,v))):7;
+ const fromCore=d(pos,core(0));
+ const spring=springs.includes(k)?4.1:0;
+ const elevation=high.has(k)?(u.range>1?1.8:.7):0;
+ const hazards=(S.hazards||[]).includes(k)?(u.hp<=3?6:3.8):0;
+ const enemyUnits=S.units.filter(v=>v.team===0);
+ let threatened=0;
+ for(const enemy of enemyUnits){
+  // A threat evaluates line of sight from the candidate position, without
+  // mutating unit state or assuming the enemy can move and attack twice.
+  if(!enemy.attacked&&d(pos,enemy)<=enemy.range&&los(pos,enemy))
+   threatened+=Math.min(4,enemy.atk)*(.45+(u.hp<=enemy.atk?1.1:0));
+ }
+ const readyShot=enemyUnits.some(enemy=>d(pos,enemy)<=u.range&&los(pos,enemy))?2.5:0;
+ // If a mission asks the player to defend a spring, the rival should
+ // contest it rather than blindly charge the core.
+ const contest=S.missionGoal==='capture'&&spring?1.8:0;
+ return -distance*1.65-fromCore*.11+spring+contest+elevation+readyShot
+   -hazards-threatened*.65;
+}
+function aiAttackScore(attacker,target){
+ const coreTarget=!!target.core;
+ const raw=attacker.atk+(high.has(K(attacker.x,attacker.y))&&!high.has(K(target.x,target.y))?1:0);
+ const shield=coreTarget?0:(target.shield||0);
+ const remaining=coreTarget?S.hp[0]:target.hp;
+ const lethal=remaining>0&&raw-shield>=remaining;
+ let score=Math.min(9,raw-shield)+ (lethal?17:0);
+ if(coreTarget)return score+(lethal?90:1.5);
+ score+=(target.atk||0)*1.45+(target.range||1)*.55;
+ if(springs.includes(K(target.x,target.y)))score+=3;
+ if(target.id===S.championId)score+=3;
+ if(target.k==='r'||target.k==='c')score+=1.2;
+ return score-Math.max(0,remaining-(raw-shield))*.24;
+}
 function aiTurn(){
  if(S.phase!=='playing'||S.turn!==1)return;
  // AI plays its actual deck rather than conjuring arbitrary units for free.
@@ -694,8 +732,17 @@ function aiTurn(){
       .sort((a,b)=>a.hp-b.hp||a.atk-b.atk);
    if(sacrificial.length<tribute||S.units.filter(u=>u.team===1).length-tribute>=8)continue;
    const ids=sacrificial.slice(0,tribute).map(u=>u.id);
-   positions.sort((a,b)=>Math.min(...S.units.filter(v=>v.team===0).map(v=>d(a,v)))-
-                          Math.min(...S.units.filter(v=>v.team===0).map(v=>d(b,v))));
+   const enemyUnits=S.units.filter(v=>v.team===0);
+   // Prefer contested springs, high ground for ranged summons, and squares
+   // outside hazards. Preserve deterministic ties to avoid AI jitter.
+   const score=z=>{
+    const nearest=enemyUnits.length?Math.min(...enemyUnits.map(v=>d(z,v))):5;
+    return (springs.includes(K(z.x,z.y))?3.2:0)+
+      (high.has(K(z.x,z.y))?(o.q.range>1?2:1):0)-
+      ((S.hazards||[]).includes(K(z.x,z.y))?5:0)-
+      Math.abs(nearest-(o.q.range>1?3:2))*.9+z.y*.16;
+   };
+   positions.sort((a,b)=>score(b)-score(a)||a.y-b.y||a.x-b.x);
    if(apply(1,{op:'card',idx:o.idx,x:positions[0].x,y:positions[0].y,tributes:ids}))break;
   }
  }
@@ -704,17 +751,21 @@ function aiTurn(){
   const goals=()=>[...S.units.filter(v=>v.team===0),core(0)];
   let eligible=goals().filter(v=>canAttack(u,v));
   if(!eligible.length&&!u.moved&&!u.rooted){
-   const paths=movement(u),score=z=>-Math.min(...goals().map(v=>d(z,v)))+
-     (springs.includes(K(z.x,z.y))?2.5:0);
-   paths.sort((a,b)=>score(b)-score(a));
-   if(paths.length&&score(paths[0])>score(u)-.2){
-    const path=paths[0];u.x=path.x;u.y=path.y;u.moved=true;u.stride=path.n;afterMove(u);
+   const foes=goals(),paths=movement(u);
+   paths.sort((a,b)=>aiPositionScore(u,b,foes)-aiPositionScore(u,a,foes)||
+      a.n-b.n||a.y-b.y||a.x-b.x);
+   if(paths.length&&aiPositionScore(u,paths[0],foes)>aiPositionScore(u,u,foes)+.15){
+    const path=paths[0];
+    // Use the same authoritative validation as a player's move.
+    apply(1,{op:'move',id:u.id,x:path.x,y:path.y});
    }
    if(!S.units.some(v=>v.id===u.id))continue;
    eligible=goals().filter(v=>canAttack(u,v));
   }
-  if(eligible.length){eligible.sort((a,b)=>(a.core?4:0)-(b.core?4:0)||((a.hp||99)-(b.hp||99)));
-   basicStrike(u,eligible[0]);u.attacked=true;
+  if(eligible.length){
+   eligible.sort((a,b)=>aiAttackScore(u,b)-aiAttackScore(u,a)||
+     (a.id||0)-(b.id||0));
+   basicStrike(u,eligible[0]);u.attacked=true;u.stride=0;
   }
  }
  if(S.phase==='playing')next(1);

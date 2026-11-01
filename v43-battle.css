@@ -1,0 +1,40 @@
+/* DOMINION v4.3 · The Living Battlefield — readability & tactile feedback
+   No hitbox changes; canvas remains tile-authoritative. */
+#game[data-tab="battle"]>.vista{
+ border:1px solid #d1b187!important;
+ box-shadow:0 0 0 2px #15182a,0 9px 24px #050913aa,0 0 19px #e6ba7845!important;
+}
+#game[data-tab="battle"]>.vista .vista-top{
+ background:linear-gradient(90deg,#30243f,#17334a 78%)!important;
+ border-bottom:1px solid #ecc98f!important;
+}
+#game[data-tab="battle"] #arena-details{
+ color:#c9ecdf!important;
+ font:750 9px/1.25 system-ui!important;
+ letter-spacing:.5px;
+}
+#game[data-tab="battle"]>.hud .core .meter i{
+ transition:width .32s ease-out!important;
+}
+#game[data-tab="battle"]>.command-dock .actions #end:not(:disabled){
+ border:1px solid #ffe1a7!important;
+ background:linear-gradient(145deg,#ffebc5,#d5a362)!important;
+ box-shadow:0 0 17px #ffd68d35,inset 0 1px #fff6dc!important;
+}
+#game[data-tab="battle"]>.command-dock .actions #end:active:not(:disabled){
+ transform:translateY(2px) scale(.98);
+}
+#game[data-tab="battle"] .tile:focus-visible{
+ outline:2px solid #ffdf9c!important;
+ outline-offset:2px!important;
+}
+#game[data-tab="battle"] .tile.selected,
+#game[data-tab="battle"] .tile.focused{
+ filter:drop-shadow(0 0 5px #ffe5a4)!important;
+}
+#game[data-tab="battle"] .command-dock .hint{
+ border-left:3px solid #f9c77c!important;
+}
+@media(prefers-reduced-motion:reduce){
+ #game[data-tab="battle"] *{transition:none!important;animation:none!important}
+}
