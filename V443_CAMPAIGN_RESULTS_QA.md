@@ -33,3 +33,10 @@ Compare longer campaign challenge results and the six preparation plans before b
 - Live map and First Footsteps launch worked, with the selected Daring Vanguard plan giving 5 starting Aeth and 22 player Core HP. Card illustrations and bottom navigation rendered without blank artwork.
 - **HUD follow-up:** corrected temporary Aeth capacity and variable Core max labels, plus added save-isolated VICTORY SCENE and DEFEAT SCENE preview controls. Source QA passed 15/15. Follow-up physical iPhone animation and scrolling checks remain pending.
 - Important distinction: the 45 cases are *controlled victory-gate and reward-state tests*, not 45 complete human-played tactical battles. The live browser QA confirmed mission launch and the result audit; the animated post-battle panel's full appearance was not independently rated in a native phone browser.
+
+## Live epilogue visual test — November 1, 2026
+- Browser screenshots: https://agent.tinyfish.ai/runs/5fe02f79-2dad-4285-af58-8b79fa010384
+- Live save-isolated QA route loaded revised v4.4.3. VICTORY SCENE displayed **Dominion Achieved**, Captain Ellin's authored victory text, +143 XP, +123 gold, 3 stars, first-clear indicator and Daring Vanguard, with all result buttons visible and unclipped.
+- DEFEAT SCENE displayed **Core Shattered**, Captain Ellin's distinct setback text, +48 XP, +43 gold (ordinary defeat rewards), and no unlock claim. The result buttons remained usable.
+- No JavaScript errors or blank battlefield artwork were reported. The modal did not require scrolling at the browser's tested viewport; scrolling under genuinely overflowing content on a physical iPhone is not independently proven.
+- The QA previews deliberately complete controlled battle outcomes using a memory-only player profile. No real user mission completion was altered.
