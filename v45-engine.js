@@ -1928,6 +1928,112 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
  },
  // v4.5 staging — verify four actual spell cards using legal apply()
  // actions in memory-isolated scenario states. No player profile is touched.
+ // v4.5.3 authored creature-mechanic QA. Runs against the *actual* combat
+ // helpers in a memory-isolated build. Never touches normal player saves.
+ qaV453Creatures:()=>{
+  const checks=[],check=(name,ok,detail='')=>
+   checks.push({name,pass:!!ok,detail});
+  const setup=()=>{
+   if(!startMission('v1',true,'rush'))throw Error('Could not start isolated mission');
+   S.energy[0]=10;S.turn=0;S.hands[0]=[];
+   return{ally:S.units.find(u=>u.team===0),
+    other:S.units.filter(u=>u.team===0)[1],enemy:S.units.find(u=>u.team===1)};
+  };
+  try{
+   {
+    const{ally,other}=setup();
+    ally.moved=true;ally.attacked=true;other.moved=false;
+    S.hands[0]=['M'];const cost=S.energy[0];
+    const ok=apply(0,{op:'card',idx:0,x:3,y:5,tributes:[]});
+    check('Zephyr summon refreshes movement, not attacks',ok&&
+      !ally.moved&&ally.attacked&&S.energy[0]===cost-3&&
+      S.units.some(v=>v.k==='M'&&v.team===0));
+    ally.moved=true;S.hands[0]=['M'];S.energy[0]=10;
+    const second=apply(0,{op:'card',idx:0,x:1,y:5,tributes:[]});
+    check('Zephyr same-team bonus cannot trigger twice per round',
+      second&&ally.moved&&S.zephyrRound[0]===S.round);
+   }
+   {
+    const {ally}=setup();
+    ally.moved=true;ally.rooted=true;
+    onCreatureSummoned({k:'M',team:0,x:3,y:5,id:-100});
+    check('Zephyr cannot remove roots or refresh rooted movement',ally.moved&&ally.rooted);
+   }
+   {
+    const {ally}=setup();
+    ally.moved=true;S.hands[0]=['M'];
+    S.traps=[{team:1,x:3,y:5,damage:9,expires:S.round+2}];
+    const used=apply(0,{op:'card',idx:0,x:3,y:5,tributes:[]});
+    check('A destroyed Zephyr cannot grant movement',used&&ally.moved&&
+      !S.units.some(u=>u.k==='M')&&S.traps.length===0);
+   }
+   {
+    setup();
+    const [x,y]=springs[0].split(',').map(Number);
+    const keeper=unit('N',0,x,y,true);
+    const ally=unit('v',0,x+1,y,true);ally.shield=0;
+    S.units=[keeper,ally];S.traps=[];startStatusTurn(0);
+    check('Bastion gives nearest ally one shield while on spring',
+      ally.shield===1&&keeper.shield===1);
+    startStatusTurn(0);
+    check('Bastion grants at most one shield per turn start',
+      ally.shield===2); // second call emulates a new turn, not a passive aura
+   }
+   {
+    setup();
+    const keeper=unit('N',0,0,5,true);
+    const ally=unit('v',0,1,5,true);
+    S.units=[keeper,ally];const initial=ally.shield;
+    springBastionPulse(0);
+    check('Bastion off spring cannot shield',ally.shield===initial);
+   }
+   {
+    setup();
+    const [x,y]=springs[0].split(',').map(Number);
+    const keeper=unit('N',0,x,y,true);keeper.shield=5;
+    S.units=[keeper];springBastionPulse(0);
+    check('Bastion never breaks five-shield cap',keeper.shield===5);
+   }
+   {
+    setup();
+    const [x,y]=[...high][0].split(',').map(Number);
+    const duelist=unit('O',0,x,y,true);
+    const enemy=unit('b',1,x+1,y,true);
+    enemy.shield=3;enemy.hp=enemy.max=8;
+    S.units=[duelist,enemy];
+    basicStrike(duelist,enemy);
+    check('Cragsunder first elevated strike pierces two shield',
+      duelist.summitRound===S.round&&enemy.shield===0);
+    enemy.shield=3;const before=enemy.hp;
+    basicStrike(duelist,enemy);
+    check('Cragsunder cannot pierce a second time in the same round',
+      enemy.shield===1&&enemy.hp===before);
+   }
+   {
+    setup();
+    const hunter=unit('P',0,2,5,true);
+    const enemy=unit('b',1,3,5,true);
+    hunter.shield=0;enemy.shield=4;S.units=[hunter,enemy];
+    basicStrike(hunter,enemy);
+    check('Umbral siphon transfers real opponent shield once',
+      hunter.shield===1&&enemy.shield===1&&hunter.siphonRound===S.round);
+    enemy.shield=4;basicStrike(hunter,enemy);
+    check('Umbral siphon cannot trigger again in same round',
+      hunter.shield===1&&enemy.shield===2);
+   }
+   {
+    setup();
+    const hunter=unit('P',0,2,5,true);
+    const enemy=unit('b',1,3,5,true);
+    hunter.shield=5;enemy.shield=4;S.units=[hunter,enemy];
+    basicStrike(hunter,enemy);
+    check('Umbral siphon cannot create shield above cap',
+      hunter.shield===5&&enemy.shield===2&&!hunter.siphonRound);
+   }
+  }catch(e){checks.push({name:'Runtime exception',pass:false,detail:String(e)})}
+  finally{startQuickMatch()}
+  return{pass:checks.length===12&&checks.every(q=>q.pass),checks};
+ },
  qaV45Spells:()=>{
   const results=[],check=(name,pass,info='')=>results.push({name,pass:!!pass,info});
   const setup=(card)=>{
