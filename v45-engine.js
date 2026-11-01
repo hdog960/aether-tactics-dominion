@@ -84,6 +84,63 @@ function loadDeck(){try{const d=JSON.parse(localStorage.getItem(DECK_STORE));if(
 let chosenDeck=loadDeck(),draftDeck=chosenDeck.slice();
 function persistDeck(){try{localStorage.setItem(DECK_STORE,JSON.stringify(chosenDeck))}catch(e){}}
 
+// v4.5.2 Armory loadout vault: additive storage only, no schema migration of
+// existing match, commander, or canonical selected-deck keys.
+const LOADOUT_STORE='aether-dominion-loadouts-v452',SLOT_COUNT=3;
+const safeSlotName=v=>String(v||'').replace(/[<>\\\u0000-\u001f]/g,'').trim().slice(0,24);
+const sameDeck=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&
+ a.length===b.length&&a.every((k,i)=>k===b[i]);
+function loadDeckSlots(){
+ let saved=null;
+ try{saved=JSON.parse(localStorage.getItem(LOADOUT_STORE))}catch(e){}
+ const slots=Array.from({length:SLOT_COUNT},(_,i)=>{
+  const item=saved?.version===1&&saved?.slots?.[i];
+  return item&&checkDeck(item.cards)?
+   {name:safeSlotName(item.name)||'DECK '+(i+1),cards:item.cards.slice()}:null;
+ });
+ const active=Number.isInteger(saved?.active)&&saved.active>=0&&saved.active<SLOT_COUNT?
+  saved.active:0;
+ // The v20 canonical selected-deck value remains authoritative if older code
+ // or a prior version changed it. Existing saved secondary slots survive.
+ if(!slots[active]||!sameDeck(slots[active].cards,chosenDeck))
+  slots[active]={name:slots[active]?.name||'PRIMARY',cards:chosenDeck.slice()};
+ return{version:1,active,slots};
+}
+let deckSlots=loadDeckSlots(),selectedSlot=deckSlots.active;
+function persistDeckSlots(){
+ try{localStorage.setItem(LOADOUT_STORE,JSON.stringify(deckSlots));return true}
+ catch(e){return false}
+}
+function renderDeckSlots(){
+ const mount=$('deck-slots');if(!mount)return;
+ mount.innerHTML=deckSlots.slots.map((entry,i)=>{
+  const selected=i===selectedSlot,active=i===deckSlots.active;
+  const name=entry?.name||'EMPTY SLOT';
+  // Use text-only display values. Slot names are user-controlled input.
+  const safe=name.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+   .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return '<button type="button" data-slot="'+i+'" class="'+(selected?'selected ':'')+
+   (active?'equipped':'')+'" aria-pressed="'+selected+'" aria-label="Deck slot '+(i+1)+
+   ', '+safe+', '+(active?'equipped':entry?'saved':'empty')+'">'+
+   '<span class="vault-ordinal">DECK '+['I','II','III'][i]+'</span>'+
+   '<strong>'+safe+'</strong><small>'+(active?'EQUIPPED':entry?'SAVED':'EMPTY')+
+   '</small></button>';
+ }).join('');
+ const title=$('deck-slot-name');
+ if(title)title.value=deckSlots.slots[selectedSlot]?.name||
+  (selectedSlot===0?'PRIMARY':'CUSTOM '+(selectedSlot+1));
+}
+function selectDeckSlot(i){
+ if(!Number.isInteger(i)||i<0||i>=SLOT_COUNT)return false;
+ selectedSlot=i;
+ draftDeck=(deckSlots.slots[i]?.cards||chosenDeck).slice();
+ renderDeckSlots();deckStatus();
+ $('deck-status').textContent=deckSlots.slots[i]?
+  'Loaded saved deck '+(i+1)+' into the editor. SAVE FOR NEXT MATCH to equip it.':
+  'Empty slot '+(i+1)+'. Edit this copy and SAVE FOR NEXT MATCH to create it.';
+ return true;
+}
+
 // Independent persistent progression. Match snapshots remain v4-compatible.
 // Local-only profile; server-backed authentication and anti-cheat are future work.
 const PROFILE_STORE='aether-dominion-profile-v21',MAX_CARD_LEVEL=8;
@@ -1343,6 +1400,7 @@ function deckStatus(){
  }).join('');
 }
 function openBuilder(){
+ selectedSlot=deckSlots.active;
  if(V45_ENABLED&&!$('deck-presets').querySelector('[data-preset="Astral"]')){
   const button=document.createElement('button');
   button.type='button';button.dataset.preset='Astral';
@@ -1350,16 +1408,26 @@ function openBuilder(){
   $('deck-presets').appendChild(button);
  }
  closeGuide();draftDeck=chosenDeck.slice();$('deck-builder').classList.remove('hidden');
- $('deck-status').textContent='Your saved deck will be used for your next match. This battle stays unchanged.';
- deckStatus();
+ $('deck-status').textContent='Choose a deck slot, edit it, then save for your NEXT match. Your battle is untouched.';
+ renderDeckSlots();deckStatus();
 }
-function closeBuilder(){draftDeck=chosenDeck.slice();$('deck-builder').classList.add('hidden')}
+function closeBuilder(){
+ selectedSlot=deckSlots.active;draftDeck=chosenDeck.slice();
+ $('deck-builder').classList.add('hidden')
+}
 function saveBuilder(){
- if(!checkDeck(draftDeck))return;
- chosenDeck=draftDeck.slice();persistDeck();
- $('deck-status').textContent='Saved! Your new deck starts on your next NEW MATCH.';
+ if(!checkDeck(draftDeck))return false;
+ chosenDeck=draftDeck.slice();
+ const i=selectedSlot;
+ deckSlots.slots[i]={name:safeSlotName($('deck-slot-name')?.value)||
+  (deckSlots.slots[i]?.name||'DECK '+(i+1)),cards:chosenDeck.slice()};
+ deckSlots.active=i;
+ persistDeck();persistDeckSlots();
+ $('deck-status').textContent='Saved deck '+(i+1)+' for your next NEW MATCH.';
  closeBuilder();
- message('<b>Deck saved for your next match.</b>','Your current battle and cards are unchanged.');
+ message('<b>Deck slot '+(i+1)+' equipped for your next match.</b>',
+  'The current battle and other saved decks remain unchanged.');
+ return true;
 }
 function presetBuilder(name){
  const cards=PACKS[name];if(!cards||!checkDeck(cards))return;
@@ -1680,6 +1748,10 @@ $('deck-builder').addEventListener('click',e=>{if(e.target===$('deck-builder'))c
 $('deck-presets').addEventListener('click',e=>{
  const btn=e.target.closest('button[data-preset]');if(btn)presetBuilder(btn.dataset.preset)
 });
+$('deck-slots')?.addEventListener('click',e=>{
+ const btn=e.target.closest('button[data-slot]');
+ if(btn)selectDeckSlot(Number(btn.dataset.slot));
+});
 $('deck-cards').addEventListener('click',e=>{
  const add=e.target.closest('button[data-add]'),rem=e.target.closest('button[data-remove]');
  if(!add&&!rem)return;
@@ -1735,6 +1807,10 @@ window.addEventListener('aether-card-art-ready',()=>{
 });
 window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
  campaignCounsel,
+ loadouts:()=>({active:deckSlots.active,selected:selectedSlot,
+  slots:deckSlots.slots.map(slot=>slot?
+   {name:slot.name,cards:slot.cards.slice()}:null),
+  currentDeck:chosenDeck.slice()}),
  deckInfo:()=>({cards:chosenDeck.length,units:chosenDeck.filter(k=>!D[k].spell).length,
   spells:chosenDeck.filter(k=>!!D[k].spell).length,
   mythics:chosenDeck.filter(k=>!!D[k].tribute).length,
