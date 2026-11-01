@@ -24,3 +24,9 @@
 - This first pass does **not** implement 60 cards, Gauntlet, new quests, ranked matchmaking, or full skeletal/spritesheet animation. Those are future roadmap phases.
 - The AI heuristic adjustments still require multi-battle win-rate and decision quality audits, not just legality checks.
 - iPhone WebKit touch/gesture and two-device multiplayer remain separate physical-device verification tasks.
+
+## Live QA results — November 1, 2026
+- GitHub Pages deployment for commit `06687d40538a9d0e8179ef8214b7fe7330290e89` completed successfully.
+- Live isolated QA page confirmed v4.3, then reported **AI: 12/12 legal turns**, **new summon actions: 16/16 pass**, and **14 signature FX kinds queued** without errors. The actual battlefield rendered and returning to Hall succeeded.
+- Browser session and screenshots: https://agent.tinyfish.ai/runs/60355e35-d0bd-43c3-81f2-e98a1270b8f4
+- Important caveat: QA confirms movement/attack legality and absence of immediate crashes, **not** long-run balance, full campaign completion, damage math of every spell, performance on a physical iPhone, bespoke character animation, or multiplayer connectivity.
