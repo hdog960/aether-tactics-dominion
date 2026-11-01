@@ -1233,6 +1233,39 @@ function openProfile(k=null){
 }
 function closeProfile(){$('player-profile').classList.add('hidden')}
 
+// v4.4.4: advance notice for scripted events and boss thresholds.
+// Pure read-only briefing. It does not reveal hidden hands, change the
+// battle state, consume a turn, or run in competitive PvP.
+function battleWarning(){
+ if(!S||S.phase!=='playing'||S.mode!=='ai'||!S.missionId||S.turn!==0)
+  return null;
+ const mission=MISSION_BY_ID[S.missionId];if(!mission)return null;
+ const boss=S.units.find(u=>u.id===S.championId&&u.team===1);
+ if(boss&&mission.bossKit){
+  const phase=boss.bossPhase||0,ratio=boss.hp/Math.max(1,boss.max);
+  const phaseTwo=phase===1&&ratio>.3&&ratio<=.43;
+  const phaseOne=phase<1&&ratio>.65&&ratio<=.8;
+  if(phaseOne||phaseTwo){
+   const next=phaseTwo?2:1;
+   return{kind:'boss',title:'CHAMPION PREPARES · PHASE '+next,
+    text:next===1?mission.bossKit.phase1:mission.bossKit.phase2};
+  }
+ }
+ const e=mission.encounter,progress=S.encounterState;
+ if(!e||!progress||progress.nextRound-S.round!==1)return null;
+ let text=e.description;
+ if(e.type==='weather'&&e.patterns?.length){
+  const next=e.patterns[(progress.events||0)%e.patterns.length];
+  const spots=next.map(k=>{const [x,y]=k.split(',').map(Number);
+   return String.fromCharCode(65+x)+(y+1)}).join(' · ');
+  text='NEXT HAZARD LANES: '+spots+'. Reposition before the terrain shifts.';
+ }else if(e.type==='wave')text='Enemy troops will enter from the side lanes next round.';
+ else if(e.type==='spring')text='Occupied Aeth springs will grant 1 shield next round.';
+ else if(e.type==='roots')text='Briar roots will bind creatures on the central path next round.';
+ else if(e.type==='ward'||e.type==='mirror')
+  text='The champion’s protective magic will strengthen next round.';
+ return{kind:e.type,title:'NEXT ROUND · '+e.name.toUpperCase(),text};
+}
 function renderLabels(){
  $('instruction').innerHTML=msg||'<b>Welcome, Commander.</b> Select a card or unit.';
  $('tip').textContent=(S?.bossNotice?S.bossNotice+' · ':'')+
@@ -1249,6 +1282,14 @@ function render(){
  $('rivalhp').innerHTML=S.hp[enemy]+' <small>/ '+coreMax[enemy]+'</small>';
  $('selfmeter').style.width=Math.min(100,100*S.hp[my]/coreMax[my])+'%';
  $('rivalmeter').style.width=Math.min(100,100*S.hp[enemy]/coreMax[enemy])+'%';
+ const warning=battleWarning(),warningBox=$('battle-warning');
+ if(warningBox){
+  warningBox.classList.toggle('hidden',!warning);
+  warningBox.dataset.kind=warning?.kind||'';
+  const title=warning?.title||'',detail=warning?.text||'';
+  if($('battle-warning-title').textContent!==title)$('battle-warning-title').textContent=title;
+  if($('battle-warning-text').textContent!==detail)$('battle-warning-text').textContent=detail;
+ }
  const mission=MISSION_BY_ID[S.missionId];
  if($('arena-label'))$('arena-label').textContent=mission?'✦ '+mission.name.toUpperCase():'✦ RIFTFRONT';
  if($('arena-details'))$('arena-details').textContent=mission?
@@ -1519,6 +1560,42 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
  // v4.4.4: deterministic, self-contained tactical playtest, restricted to
  // save-isolated QA. Both choices for a mission use the SAME seeded RNG and
  // actual apply()/aiTurn() pipeline. This is a heuristic bot, not a human.
+ qaPreviewWarning:(id='f1',kind='event')=>{
+  const m=MISSION_BY_ID[id];
+  if(!m||!startMission(id,true))return{pass:false,reason:'mission setup'};
+  S.turn=0;
+  if(kind==='boss'&&m.bossKit){
+   const boss=S.units.find(u=>u.id===S.championId);
+   if(!boss)return{pass:false,reason:'boss missing'};
+   boss.hp=Math.floor(boss.max*.75);
+  }else S.round=m.encounter.first-1;
+  const warning=battleWarning();
+  render();
+  return{pass:!!warning,id,kind,warning};
+ },
+ qaWarnings:()=>{
+  const result=[];
+  for(const m of CONQUEST.all){
+   if(!startMission(m.id,true))continue;
+   S.round=m.encounter.first-1;S.turn=0;
+   const w=battleWarning();
+   result.push({id:m.id,kind:m.encounter.type,pass:!!w&&
+    w.title.includes(m.encounter.name.toUpperCase())&&!!w.text,
+    title:w?.title});
+  }
+  for(const m of CONQUEST.all.filter(z=>z.bossKit)){
+   if(!startMission(m.id,true))continue;
+   S.turn=0;const boss=S.units.find(u=>u.id===S.championId);
+   boss.hp=Math.floor(boss.max*.76);
+   const w=battleWarning();
+   result.push({id:m.id,kind:'boss',pass:!!w&&w.kind==='boss'&&
+    w.title.includes('PHASE 1'),title:w?.title});
+  }
+  startQuickMatch();
+  const noQuick=!battleWarning();
+  return{pass:result.length===22&&result.every(z=>z.pass)&&noQuick,
+   checked:result.length,results:result,noQuick};
+ },
  qaBalance:(samples=2)=>{
   const originalRandom=Math.random;
   const reports=[],errors=[];

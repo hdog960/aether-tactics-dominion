@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button><button data-qa="story">30 STORY CHOICES</button><button data-qa="outcomes">45 RESULTS QA</button><button data-qa="winScene">VICTORY SCENE</button><button data-qa="lossScene">DEFEAT SCENE</button><button data-qa="balance">60 BATTLE BALANCE</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button><button data-qa="story">30 STORY CHOICES</button><button data-qa="outcomes">45 RESULTS QA</button><button data-qa="winScene">VICTORY SCENE</button><button data-qa="lossScene">DEFEAT SCENE</button><button data-qa="balance">60 BATTLE BALANCE</button><button data-qa="warnings">22 EARLY WARNINGS</button><button data-qa="weatherPreview">WEATHER WARNING</button><button data-qa="bossPreview">BOSS WARNING</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -380,6 +380,16 @@ function auditBattleBalance(){
   N.showTab('battle');
  },35);
 }
+function auditWarnings(){
+ const result=G.qaWarnings?.()||{pass:false,results:[],checked:0,noQuick:false};
+ window.__qaWarnings=result;
+ status('EARLY WARNINGS '+(result.pass?'PASS':'FAIL')+' · '+
+  result.checked+'/22 · no quick-battle leaks '+result.noQuick);
+ $('qa-report').textContent=(result.results||[]).map(x=>
+  (x.pass?'✓ ':'✗ ')+x.id+' '+x.kind+' '+(x.title||'MISSING')).join('\\n');
+ N.showTab('battle');
+}
+
 panel.addEventListener('click',e=>{
  const b=e.target.closest('[data-qa]');if(!b)return;
  const mode=b.dataset.qa;
@@ -398,6 +408,15 @@ panel.addEventListener('click',e=>{
  else if(mode==='story')auditStoryPlans();
  else if(mode==='outcomes')auditAllResults();
  else if(mode==='balance')auditBattleBalance();
+ else if(mode==='warnings')auditWarnings();
+ else if(mode==='weatherPreview'||mode==='bossPreview'){
+  const boss=mode==='bossPreview';
+  const r=G.qaPreviewWarning?.(boss?'t2':'f1',boss?'boss':'event');
+  window.__qaWarningPreview=r;
+  N.showTab('battle');
+  status('WARNING PREVIEW '+(r?.pass?'PASS':'FAIL')+' · '+(r?.warning?.title||'MISSING'));
+  $('qa-report').textContent=(r?.warning?.text||'No warning returned');
+ }
  else if(mode==='winScene'||mode==='lossScene'){
   const result=G.qaPreviewResult?.('v1',mode==='lossScene');
   window.__qaEpiloguePreview=result;

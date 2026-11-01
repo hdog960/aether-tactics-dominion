@@ -1,0 +1,45 @@
+/* Dominion v4.4.4 · player-visible tactical event warnings.
+   Read-only in single-player. No map hitboxes or painted sprites changed. */
+#game .vista{position:relative}
+#game #battle-warning{
+ position:absolute;top:44px;left:10px;right:10px;z-index:18;
+ display:grid;gap:3px;
+ box-sizing:border-box;
+ max-width:620px;
+ margin-inline:auto;
+ padding:9px 12px;
+ border:1px solid #ebc581;
+ border-left:4px solid #ffcf7b;
+ border-radius:11px;
+ background:linear-gradient(120deg,#322439ee,#173849ef);
+ box-shadow:0 4px 18px #070b21a3,inset 0 1px #ffe4a235;
+ backdrop-filter:blur(9px);
+ color:#f7eada;
+ text-align:left;
+ pointer-events:none;
+ user-select:none;
+}
+#game #battle-warning.hidden{display:none!important}
+#game #battle-warning strong{
+ color:#ffdca1;
+ font:900 10px/1.25 system-ui;
+ text-shadow:0 1px 2px #0009;
+ letter-spacing:.9px;
+}
+#game #battle-warning span{
+ color:#e9f8f3;
+ font:750 11px/1.4 system-ui;
+}
+#game #battle-warning[data-kind="boss"]{
+ border-color:#f5a7a1;
+ border-left-color:#e88780;
+ background:linear-gradient(120deg,#51263beF,#29293def);
+}
+@media(max-width:420px){
+ #game #battle-warning{top:42px;left:5px;right:5px;padding:7px 10px;gap:2px}
+ #game #battle-warning strong{font-size:9px}
+ #game #battle-warning span{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ #game #battle-warning{backdrop-filter:none}
+}

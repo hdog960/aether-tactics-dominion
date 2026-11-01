@@ -107,3 +107,6 @@ Every campaign mission and Crown Trial now has its own narrated victory and defe
 
 ## v4.4.4 — Strategy retry and tactical balance diagnostics
 Restarting a mission now keeps the chosen preparation doctrine instead of reverting to the default. A dedicated, save-isolated QA control runs 60 actual-engine simulated campaign battles, matching two seeds across both available plans for all 15 missions. It checks battle legality and compares results by choice, mission and Core preservation. This is a basic bot benchmark rather than human win-rate data; no unvalidated card nerfs or boss buffs are introduced. See `V444_BALANCE_AUDIT.md`.
+
+## v4.4.4 battlefield telegraphs
+Campaign battles now show clear, read-only advance warnings before scripted spring pulses, reinforcements, thorn snares, changing frost/lava tiles, and champion ward effects. Weather telegraphs identify the next affected grid squares. Boss warnings announce approaching health-threshold phases; they are informational and never change battle mechanics. The warning banner is styled for mobile and ignores pointer input, preserving battlefield tile touch targets. An isolated QA control checks 15 encounter warnings and seven boss warnings, with optional live weather/boss previews. See `V444_BALANCE_AUDIT.md`.
