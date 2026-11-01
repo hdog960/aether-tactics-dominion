@@ -1,15 +1,15 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.4.9 — Deck-aware Expedition Briefings**
+**Current source release: v4.5.1 — Painted Four-Spell Expansion**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
-A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of seven different 24-card deck strategies from 32 original cards, upgrade your commander and collection, or test experimental private duels.
+A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight different 24-card deck strategies from 36 cards, upgrade your commander and collection, or test experimental private duels.
 
 ## Start here
 - **Play**: Commander's Hall — select Quick Battle, Story Campaign or Private Duel; continue a previously saved solo battle.
 - **Map**: Riftfront Conquest — four illustrated regions with 12 sequential missions and 3 endgame Crown Trials.
-- **Cards**: the Grimoire — browse the 32-card collection or build a custom deck.
+- **Cards**: the Grimoire — browse the 36-card collection or build a custom deck.
 - **Forge**: level, gold, XP, card upgrades and six earnable milestone medallions.
 - **Duel**: experimental peer-to-peer private match invitations.
 
@@ -26,10 +26,10 @@ The Duel Chamber uses experimental peer-to-peer WebRTC and public signaling rela
 
 ## Technical structure
 - `index.html` production entrypoint and `v30.html` alternate entry
-- `v30-engine.js` rules, AI, progression, campaign execution, profile, and persistence
+- `v45-engine.js` live v4.5.1 rules, AI, new spells, progression, campaign execution, profile, and persistence (`v30-engine.js` is retained for historical builds)
 - `v30-campaign-data.js` campaign and region definitions
 - `v30-shell.js` bottom-tab navigation and campaign selector
-- `v30-scene.js` game canvas, `v30-net.js` private duel networking
+- `v45-scene.js` live battlefield canvas with new effects, `v45-spell-art.js` WebP art adapter, and `v30-net.js` private duel networking
 - `v32-celestial.css` illustrated v3.2 theme and layout
 - `v34-art.js` earlier original art generator (now superseded for 7 cards by the premium v3.5 painted atlas)
 - `v35-battle-art.js` premium card-art portraits plus matching transparent painted battlefield units and character-aware render routing
@@ -131,3 +131,10 @@ The isolated QA page adds **KING CARD LEVELS · 96 BATTLES**, a deterministic te
 The illustrated campaign briefing now reads your real selected 24-card deck and offers objective-aware preparation advice for capture, defend, hunt and assault, including authored boss counterplay and card-upgrade guidance for difficult trials. The panel sits directly before the real EDIT DECK action. It does not modify match saves, campaign progress or card upgrades. See `V449_TACTICIAN_BRIEFINGS.md`.
 
 **v4.5 is being developed separately**, in `dev/v45-first-spell-batch`, with four experimental spells, tested mechanics and VFX. They are *not released* until their painted portraits and iPhone integration are finished. No existing card art has been replaced by procedural fallback.
+
+## v4.5.1 — Four original spell additions (live)
+The **first batch of the Great Card Expansion is shipped**: Starfall Lattice, Ashen Reprisal, Undertow and Dawn Edict add diagonal area attacks, one-use retaliation, positional displacement and shield-piercing attack setups. Each uses its own painted fantasy card art and battlefield effect. The total library now has **36 cards**, with a new eighth preset **ASTRAL — Position & Counterplay** (a legal 24-card deck with 16 summons and 8 spells).
+
+**Testing:** Published isolated-browser QA passed all 12 targeted spell cases and 4/4 painted-image checks; 60 original-deck and 60 Astral-deck simulated battles had zero invalid states. A separate normal-game browser verified all 36 cards, the Astral preset, functional deck saving, and a progressing solo battle. Live physical iPhone touch/performance and two-device WebRTC still require verification.
+
+Your original deck, upgrades, campaign clears and in-progress matches are preserved by the same local save keys; saving a different deck applies to your **next NEW match**, not a resumed battle. The long-term 60-card target has **24 additional cards still planned**. See `V451_RELEASE_AND_QA.md` for mechanics, limitations, and test evidence.
