@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button><button data-qa="story">30 STORY CHOICES</button><button data-qa="outcomes">45 RESULTS QA</button><button data-qa="winScene">VICTORY SCENE</button><button data-qa="lossScene">DEFEAT SCENE</button><button data-qa="balance">60 TACTICAL BATTLES</button><button data-qa="focus">48 HARD-ENCOUNTER BATTLES</button><button data-qa="kingAB">HOLLOW KING WAVE A/B · 32 BATTLES</button><button data-qa="probe">SPELL & MYTHIC QA</button><button data-qa="warnings">22 EARLY WARNINGS</button><button data-qa="weatherPreview">WEATHER WARNING</button><button data-qa="bossPreview">BOSS WARNING</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button><button data-qa="story">30 STORY CHOICES</button><button data-qa="outcomes">45 RESULTS QA</button><button data-qa="winScene">VICTORY SCENE</button><button data-qa="lossScene">DEFEAT SCENE</button><button data-qa="balance">60 TACTICAL BATTLES</button><button data-qa="focus">48 HARD-ENCOUNTER BATTLES</button><button data-qa="kingAB">HOLLOW KING WAVE A/B · 32 BATTLES</button><button data-qa="kingRanks">KING CARD LEVELS · 96 BATTLES</button><button data-qa="probe">SPELL & MYTHIC QA</button><button data-qa="warnings">22 EARLY WARNINGS</button><button data-qa="weatherPreview">WEATHER WARNING</button><button data-qa="bossPreview">BOSS WARNING</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -422,6 +422,28 @@ function auditKingWaves(){
   N.showTab('battle');
  },35);
 }
+function auditKingCardLevels(){
+ status('CROWN TRIAL · evaluating four equal-level card collections...');
+ setTimeout(()=>{
+  const ranks=[1,2,4,5],runs=[];
+  for(const rank of ranks){
+   let result;
+   try{result=G.qaBalance?.(12,['t1'],{testRank:rank})}
+   catch(e){status('CARD RANK ERROR · '+String(e));return}
+   runs.push({rank,result});
+  }
+  window.__qaKingCardLevels=runs;
+  const pass=runs.every(x=>x.result?.pass);
+  status('KING CARD LEVELS '+(pass?'PASS':'FAIL')+' · 96 battles · '+
+   runs.reduce((sum,x)=>sum+(x.result.errors?.length||0),0)+' invalid states');
+  $('qa-report').textContent=runs.map(x=>
+   'FULL DECK AT CARD LV '+x.rank+': '+x.result.wins+'/'+x.result.games+
+   ' bot victories · '+(x.result.grouped?.[0]?.plans||[]).map(p=>p.kind+
+    ' '+p.wins+'/'+p.games).join(' vs ')).join('\\n')+
+   '\\nEvery card is set to the same test level. Actual collections vary. This is NOT a human win-rate estimate.';
+  N.showTab('battle');
+ },35);
+}
 function auditWarnings(){
  const result=G.qaWarnings?.()||{pass:false,results:[],checked:0,noQuick:false};
  window.__qaWarnings=result;
@@ -452,6 +474,7 @@ panel.addEventListener('click',e=>{
  else if(mode==='balance')auditBattleBalance();
  else if(mode==='focus')auditBattleBalance(true);
  else if(mode==='kingAB')auditKingWaves();
+ else if(mode==='kingRanks')auditKingCardLevels();
  else if(mode==='probe')auditTacticalProbe();
  else if(mode==='warnings')auditWarnings();
  else if(mode==='weatherPreview'||mode==='bossPreview'){
