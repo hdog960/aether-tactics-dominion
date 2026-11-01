@@ -1,0 +1,37 @@
+name: Dominion v4.5.5 one-time painted spell art
+on:
+  push:
+    branches: [dev/v455-four-tactical-spells]
+    paths: [.github/workflows/v455-build-art.yml]
+permissions:
+  contents: write
+jobs:
+  create-original-spell-paintings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev/v455-four-tactical-spells
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pillow==11.3.0
+      - name: Archive four painted original scenes
+        env:
+          SOURCE_URL: "https://dnznrvs05pmza.cloudfront.net/gemini/gemini-3-pro-image/images/20660903-be85-42ba-9905-ac4deb6d05a1/7a464eb9-acc0-4076-8ab0-f6623e0b3a1d/One_square_2_2_painted_fantasy_illustration_contact_sheet_fo.png?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZTdmNWY2NzRjNWM0Y2RlMiIsImJ1Y2tldCI6InJ1bndheS10YXNrLWFydGlmYWN0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc5MzY5MTUwOH0.CR5IMUrTFnB-wW5N4wApbIOsSaONUAnOUQbNSOD_ceo"
+        run: |
+          mkdir -p art/sources
+          curl --fail --location --silent --show-error --retry 2 "$SOURCE_URL" -o art/sources/v455-original-spells.png
+          test "$(stat -c%s art/sources/v455-original-spells.png)" -gt 100000
+      - name: Paint four 128 by 96 card crops and verify scene uniqueness
+        run: python tools/v455_build_spell_art.py
+      - name: Commit validated paintings to development branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add art/sources/v455-original-spells.png art/cards-spells-v455.webp art/v455-spell-manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Create original U–X spell paintings and verified 4-card atlas"
+            git push origin HEAD:dev/v455-four-tactical-spells
+          fi
