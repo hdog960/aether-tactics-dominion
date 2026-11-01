@@ -1,0 +1,21 @@
+{
+  "version": "4.5.5",
+  "keys": [
+    "U",
+    "V",
+    "W",
+    "X"
+  ],
+  "names": [
+    "Mirror Breach",
+    "Gale Step",
+    "Ember Covenant",
+    "Crescent Refrain"
+  ],
+  "width": 512,
+  "height": 96,
+  "cell_width": 128,
+  "cell_height": 96,
+  "source": "art/sources/v455-original-spells.png",
+  "unique_paintings": 4
+}
