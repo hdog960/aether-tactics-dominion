@@ -26,8 +26,11 @@ Four new illustrated spell cards have been added: **Starfall Lattice, Ashen Repr
 ### v4.5.2 — Three Saved Deck Loadouts (shipped)
 Players can save and name three complete 24-card decks in the existing Armory, preview them safely, then equip one for the next match. Existing current deck and progress save keys remain authoritative and unchanged. All 36 cards, eight preset strategies, upgrade paths and in-progress battles are preserved. Source QA passed 8/8 vault state checks, 60-game campaign regression, and 12/12 spell checks. See `V452_ARMORY_LOADOUT_VAULT.md`.
 
-### v4.5.3 onward — 24 more cards to reach 60 (planned)
-Grow the current **36-card** library toward **60** in small polished batches of distinctive units and spells across sacrifice, flying, terrain control, counterplay and frontline archetypes. A creature is not ready to ship until the illustration, transparent battlefield cutout, animation frames, card reference, true behavior and balance tests all match. Continue protecting the 24-card deck restrictions, existing achievements and save progression. First planned batch includes truly different units and matching battlefield art; do not ship flat shape icons, recolors, or concept-only mockups as real assets.
+### v4.5.3 — Four New Painted Creature Cards (shipped)
+Expanded the collection **36 → 40** with Zephyr Cartographer, Verdant Bastion, Cragsunder Duelist and Umbral Siphon. Each has unique actual combat mechanics, its own original painting, corresponding transparent battlefield cutout, and 22 motion frames. Isolated Chromium QA at 390px verified four distinct images, asset sizes, all new creature rules, original spell/boss/campaign regressions, 60 legal-action battles, and the normal 40-card collection. All previous saves, presets and three Armory decks remain compatible. See `V453_RELEASE_AND_QA.md`. Physical iPhone and two-device duel QA remain open.
+
+### v4.5.4–v4.5.8 — 20 more cards to reach 60 (planned)
+Grow the current **40-card** library toward **60** in small polished batches of distinctive units and spells across sacrifice, flying, terrain control, counterplay and frontline archetypes. Every creature requires a matching painted portrait, full-body cutout, animation frames, genuine ability, and battle/balance evidence before release; never ship generic stand-ins or only a mockup. Continue protecting the 24-card deck restrictions, achievements, matchmaking compatibility and saved progression.
 
 ### v4.6 — Progression & Replayability
 Rift Gauntlet, milestone rewards, mastery challenges, progression pacing and long-run variety. Include challenge reset safeguards and migration tests.
