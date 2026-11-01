@@ -955,6 +955,15 @@ function undertowLanding(v,t){
    !(p.x===3&&(p.y===0||p.y===7))&&!entity(p.x,p.y))
   .sort((a,b)=>d(a,anchor)-d(b,anchor)||a.y-b.y||a.x-b.x)[0]||null;
 }
+// A Gale Step is a displacement, not an action refresh.
+function galePassenger(t,x,y){
+ const dest=P(x,y);
+ if(!bounds(x,y)||entity(x,y)||rocks.has(K(x,y))||
+    (x===3&&(y===0||y===7)))return null;
+ return S.units.filter(u=>u.team===t&&!u.rooted&&!u.boss&&
+   u.id!==S.championId&&d(u,dest)===1)
+  .sort((a,b)=>a.id-b.id)[0]||null;
+}
 function validSpellSpot(q,t,x,y){
  const target=entity(x,y),type=q.spell;
  if(['shield','heal','dash','cleanse','rally','bond','exchange','recall','reprisal','edict'].includes(type)){
@@ -972,6 +981,13 @@ function validSpellSpot(q,t,x,y){
   if(type==='exchange'&&(S.exchangeRound?.[t]===S.round||S.units.filter(v=>v.team===t).length<2||target.id===S.championId))return false;
   return true;
  }
+ if(type==='gale')return !!galePassenger(t,x,y);
+ if(type==='breach')return !!target&&!target.core&&target.team===1-t&&
+  (target.shield||0)>0&&S.units.some(u=>u.team===t&&d(u,target)<=3);
+ if(type==='covenant')return !!target&&target.team===t&&!target.boss&&
+  target.id!==S.championId&&S.units.some(v=>v.team===t&&v.id!==target.id&&d(v,target)<=2);
+ if(type==='refrain')return !!target&&target.team===1-t&&!target.core&&
+  (target.burning||target.rooted)&&S.units.some(v=>v.team===t&&d(v,target)<=3);
  if(type==='snare'){
   return !target&&!rocks.has(K(x,y))&&!(x===3&&(y===0||y===7))&&
     !S.traps?.some(v=>v.team===t)&&
@@ -992,7 +1008,38 @@ function resolveSpell(q,t,x,y){
  const target=entity(x,y),type=q.spell;
  if(!validSpellSpot(q,t,x,y))return false;
  const power=powerFor(q,t),boost=spellBonus(CARD_KEYS.find(k=>D[k]===q),t);
- if(type==='reprisal'){
+ if(type==='breach'){
+  target.shield=Math.max(0,(target.shield||0)-2);
+  const impact=mitigate(target,power,false);
+  fxSpell(target,impact,'breach',x,y,t);applyDamage(target,impact);
+ }else if(type==='gale'){
+  const mover=galePassenger(t,x,y);
+  if(!mover)return false;
+  mover.x=x;mover.y=y;
+  fxPush({type:'buff',kind:'gale',to:fxTarget(mover),amount:0});
+  trapImpact(mover);
+ }else if(type==='covenant'){
+  const targets=S.units.filter(u=>u.team===t&&u.id!==target.id&&
+   d(u,target)<=2).sort((a,b)=>d(a,target)-d(b,target)||a.id-b.id).slice(0,2);
+  if(!targets.length)return false;
+  onSacrifice(t);
+  S.units=S.units.filter(u=>u.id!==target.id);
+  fxPush({type:'spell',kind:'covenant',to:fxTarget(target),amount:0});
+  for(const ally of targets){
+   const n=grantShield(ally,2);
+   ally.rallied=1;abilityPulse(ally,'covenant',n);
+  }
+ }else if(type==='refrain'){
+  const origin=P(x,y);
+  const follow=S.units.filter(u=>u.team===1-t&&u.id!==target.id&&d(u,origin)<=2)
+   .sort((a,b)=>d(a,origin)-d(b,origin)||a.id-b.id)[0]||null;
+  const impact=mitigate(target,power,false);
+  fxSpell(target,impact,'refrain',x,y,t);applyDamage(target,impact);
+  if(follow&&S.units.some(u=>u.id===follow.id)){
+   const chain=mitigate(follow,1,false);
+   fxSpell(follow,chain,'refrain',x,y,t);applyDamage(follow,chain);
+  }
+ }else if(type==='reprisal'){
   const n=grantShield(target,2);
   target.reprisal=1;target.reprisalUntil=S.round+1;
   abilityPulse(target,'reprisal',n);
@@ -1187,10 +1234,12 @@ function aiTurn(){
    let spot=null;
    const enemies=S.units.filter(u=>u.team===0);
    const friends=S.units.filter(u=>u.team===1);
-   if(['ignite','frost','bolt','silence','undertow'].includes(q.spell)){
+   if(['ignite','frost','bolt','silence','undertow','breach','refrain'].includes(q.spell)){
     const opportunities=enemies.filter(u=>validSpellSpot(q,1,u.x,u.y))
      .sort((a,b)=>(a.hp-b.hp)||((b.k==='r'?1:0)-(a.k==='r'?1:0)));
-    spot=opportunities.find(u=>q.spell==='frost'?!u.rooted:q.spell==='ignite'?!u.burning:true);
+    spot=opportunities.find(u=>q.spell==='frost'?!u.rooted:
+    q.spell==='ignite'?!u.burning:
+    q.spell==='refrain'?!!(u.rooted||u.burning):true);
    }else if(q.spell==='diagonal'){
     const options=[];
     for(let cy=0;cy<8;cy++)for(let cx=0;cx<7;cx++){
@@ -1220,6 +1269,19 @@ function aiTurn(){
     }
     blasts.sort((a,b)=>b.value-a.value||a.y-b.y||a.x-b.x);
     spot=blasts[0]||null;
+   }else if(q.spell==='covenant'){
+    spot=friends.filter(u=>u.hp<=3&&u.id!==S.championId&&!u.boss&&
+      friends.some(v=>v.id!==u.id&&d(u,v)<=2)).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
+   }else if(q.spell==='gale'){
+    const moves=[];
+    for(let cy=0;cy<8;cy++)for(let cx=0;cx<7;cx++){
+     if(!validSpellSpot(q,1,cx,cy))continue;
+     const mover=galePassenger(1,cx,cy);
+     if(springs.includes(K(cx,cy))&&!springs.includes(K(mover.x,mover.y)))
+      moves.push({x:cx,y:cy,score:4});
+    }
+    moves.sort((a,b)=>b.score-a.score||a.y-b.y||a.x-b.x);
+    spot=moves[0];
    }else if(q.spell==='heal'){
     spot=friends.filter(u=>u.hp<=u.max-2).sort((a,b)=>(a.hp/a.max)-(b.hp/b.max))[0];
    }else if(q.spell==='reprisal'){
