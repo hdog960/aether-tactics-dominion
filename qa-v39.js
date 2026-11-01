@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button><button data-qa="story">30 STORY CHOICES</button><button data-qa="outcomes">45 RESULTS QA</button><button data-qa="winScene">VICTORY SCENE</button><button data-qa="lossScene">DEFEAT SCENE</button><button data-qa="balance">60 TACTICAL BATTLES</button><button data-qa="focus">48 HARD-ENCOUNTER BATTLES</button><button data-qa="probe">SPELL & MYTHIC QA</button><button data-qa="warnings">22 EARLY WARNINGS</button><button data-qa="weatherPreview">WEATHER WARNING</button><button data-qa="bossPreview">BOSS WARNING</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button><button data-qa="classic">CLASSIC 132 FRAMES</button><button data-qa="campaign">15 ENCOUNTERS</button><button data-qa="boss">7 BOSS PHASES</button><button data-qa="story">30 STORY CHOICES</button><button data-qa="outcomes">45 RESULTS QA</button><button data-qa="winScene">VICTORY SCENE</button><button data-qa="lossScene">DEFEAT SCENE</button><button data-qa="balance">60 TACTICAL BATTLES</button><button data-qa="focus">48 HARD-ENCOUNTER BATTLES</button><button data-qa="kingAB">HOLLOW KING WAVE A/B · 32 BATTLES</button><button data-qa="probe">SPELL & MYTHIC QA</button><button data-qa="warnings">22 EARLY WARNINGS</button><button data-qa="weatherPreview">WEATHER WARNING</button><button data-qa="bossPreview">BOSS WARNING</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -395,6 +395,33 @@ function auditBattleBalance(focus=false){
   N.showTab('battle');
  },35);
 }
+function auditKingWaves(){
+ status('HOLLOW KING · comparing overlapping vs signature-only waves...');
+ setTimeout(()=>{
+  let legacy,corrected;
+  try{
+   legacy=G.qaBalance?.(8,['t1'],{legacyWaves:true});
+   corrected=G.qaBalance?.(8,['t1'],{legacyWaves:false});
+  }catch(e){status('KING A/B ERROR · '+String(e));return}
+  window.__qaKingAB={legacy,corrected};
+  const desc=(r,label)=>{
+   const avg=(xs,key)=>xs.length?
+    +(xs.reduce((a,x)=>a+(x[key]||0),0)/xs.length).toFixed(1):0;
+   return label+' · '+r.wins+'/'+r.games+' victories · '+
+    (r.errors?.length||0)+' errors · '+avg(r.reports||[],'genericWaves')+
+    ' generic reinforcements/match · '+avg(r.reports||[],'championHP')+
+    ' ending champion HP · '+avg(r.reports||[],'rounds')+' avg rounds'+
+    '\\n'+(r.grouped?.[0]?.plans||[]).map(p=>p.kind+' '+p.wins+'/'+p.games).join(' vs ');
+  };
+  const pass=legacy?.pass&&corrected?.pass;
+  status('HOLLOW KING A/B '+(pass?'PASS':'FAIL')+' · 32 seeded battles · '+
+   (corrected?.wins||0)+' revised wins');
+  $('qa-report').textContent=desc(legacy,'LEGACY: GENERIC + SIGNATURE WAVES')+
+   '\\n\\n'+desc(corrected,'REVISED: SIGNATURE WAVES ONLY')+
+   '\\n\\nNOT human win rates; same seeds and tactics, isolated saves.';
+  N.showTab('battle');
+ },35);
+}
 function auditWarnings(){
  const result=G.qaWarnings?.()||{pass:false,results:[],checked:0,noQuick:false};
  window.__qaWarnings=result;
@@ -424,6 +451,7 @@ panel.addEventListener('click',e=>{
  else if(mode==='outcomes')auditAllResults();
  else if(mode==='balance')auditBattleBalance();
  else if(mode==='focus')auditBattleBalance(true);
+ else if(mode==='kingAB')auditKingWaves();
  else if(mode==='probe')auditTacticalProbe();
  else if(mode==='warnings')auditWarnings();
  else if(mode==='weatherPreview'||mode==='bossPreview'){
