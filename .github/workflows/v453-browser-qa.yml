@@ -5,6 +5,7 @@ on:
       - dev/v453-first-creatures
     paths:
       - .github/workflows/v453-browser-qa.yml
+      - tools/v453_browser_qa.mjs
 permissions:
   contents: read
 jobs:
@@ -28,5 +29,7 @@ jobs:
         if: always()
         with:
           name: dominion-v453-mobile-browser-capture
-          path: art/v453-staging-browser-390px.png
+          path: |
+            art/v453-staging-browser-390px.png
+            art/v453-creatures-on-battlefield-390px.png
           if-no-files-found: ignore
