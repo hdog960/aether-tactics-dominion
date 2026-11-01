@@ -54,7 +54,16 @@ N:{name:'Verdant Bastion',cost:4,hp:8,atk:1,range:1,move:1,shield:1,
 O:{name:'Cragsunder Duelist',cost:3,hp:5,atk:2,range:1,move:2,
  role:'Highland Duelist',desc:'First high-ground strike each round pierces 2 shield.'},
 P:{name:'Umbral Siphon',cost:4,hp:5,atk:2,range:2,move:2,
- role:'Hex Hunter',desc:'First attack on a shielded enemy steals 1 shield.'}
+ role:'Hex Hunter',desc:'First attack on a shielded enemy steals 1 shield.'},
+// v4.5.4: Source-only unit candidates. No portraits = no public cards.
+Q:{name:'Tideglass Oracle',cost:3,hp:4,atk:1,range:2,move:2,
+ role:'Tidal Seer',desc:'Once per round, a friendly spell lets this seer shield a nearby ally.'},
+R:{name:'Ashen Harrier',cost:3,hp:4,atk:2,range:1,move:3,
+ role:'Flank Duelist',desc:'After its first flanking attack, refresh its movement.'},
+S:{name:'Gravebloom Warden',cost:4,hp:7,atk:2,range:1,move:1,
+ role:'Briar Sentinel',desc:'On defeat, briefly root the closest non-boss enemy.'},
+T:{name:'Stormvault Artificer',cost:3,hp:4,atk:2,range:2,move:2,
+ role:'Arcane Sapper',desc:'On summon, disarm a nearby enemy snare and gain 1 shield.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
 const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"p":{"move":2},"o":{"hp":4,"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
@@ -86,9 +95,12 @@ const V45_ENABLED=V45_QA||window.DOMINION_V45_ART_RELEASE===true;
 // in memory without introducing missing sprites to the released collection.
 const V453_UNIT_KEYS=['M','N','O','P'];
 const V453_ENABLED=V45_QA||window.DOMINION_V453_ART_RELEASE===true;
+const V454_UNIT_KEYS=['Q','R','S','T'];
+const V454_ENABLED=V45_QA||window.DOMINION_V454_ART_RELEASE===true;
 const CARD_KEYS=Object.keys(D).filter(k=>
  (V45_ENABLED||!V45_SPELL_KEYS.includes(k))&&
- (V453_ENABLED||!V453_UNIT_KEYS.includes(k))),
+ (V453_ENABLED||!V453_UNIT_KEYS.includes(k))&&
+ (V454_ENABLED||!V454_UNIT_KEYS.includes(k))),
  DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
 // Two copies of each new spell leave room for 16 distinct existing creature
 // slots. The preset is invisible until artwork is explicitly available.
@@ -549,6 +561,17 @@ function nearestAlly(u,radius=2){
 // On-summon movement assistance does not create a new attack, affect flyers
 // or ignore roots. Its round quota is shared between cards of the same team.
 function onCreatureSummoned(u){
+ if(u.k==='T'){
+  const traps=S.traps||[];
+  const idx=traps.map((trap,i)=>({...trap,index:i}))
+   .filter(t=>t.team!==u.team&&d(t,u)<=2)
+   .sort((a,b)=>d(a,u)-d(b,u)||a.y-b.y||a.x-b.x)[0]?.index;
+  if(idx!==undefined){
+   traps.splice(idx,1);
+   const shield=grantShield(u,1);
+   if(shield)abilityPulse(u,'shield',shield);
+  }
+ }
  if(u.k!=='M'||S.zephyrRound?.[u.team]===S.round)return;
  const ally=S.units.filter(v=>v.team===u.team&&v.id!==u.id&&
   !v.fly&&v.moved&&!v.rooted&&d(v,u)<=2)
@@ -573,6 +596,11 @@ function springBastionPulse(team){
  }
 }
 function onUnitDeath(u){
+ if(u.k==='S'){
+  const target=S.units.filter(v=>v.team!==u.team&&!v.boss&&v.hp>0&&d(v,u)<=2)
+   .sort((a,b)=>d(a,u)-d(b,u)||a.id-b.id)[0];
+  if(target){target.rooted=true;abilityPulse(target,'frost',0)}
+ }
  if(S?.missionId&&u.id===S.championId&&u.team===1&&S.missionGoal==='hunt')missionWin();
  if(u.k==='y'){const ally=nearestAlly(u,2);
   if(ally){const amt=grantShield(ally,2);abilityPulse(ally,'shield',amt)}
@@ -750,6 +778,11 @@ function mitigate(target,n,physical){
  return value;
 }
 function basicStrike(attacker,target){
+ // Harrier: moving after a successful flank is a single tactical action.
+ // An attack is never refreshed, and core strikes cannot trigger the bonus.
+ const harrierFlank=attacker.k==='R'&&!target.core&&
+  attacker.harrierRound!==S.round&&S.units.some(v=>
+   v.team===attacker.team&&v.id!==attacker.id&&d(v,target)===1);
  // Cragsunder Duelist: high-ground advantage *instead* of a raw power
  // multiplier. Applies once per round, and never against a Core.
  if(attacker.k==='O'&&!target.core&&high.has(K(attacker.x,attacker.y))&&
@@ -781,6 +814,10 @@ function basicStrike(attacker,target){
  fxStrike(attacker,target,actual);
  const wasUnit=!target.core&&S.units.some(v=>v.id===target.id);
  applyDamage(target,actual);
+ if(harrierFlank&&S.units.some(v=>v.id===attacker.id)){
+  attacker.harrierRound=S.round;attacker.moved=false;attacker.stride=0;
+  abilityPulse(attacker,'dash',0);
+ }
  // Ashen Reprisal triggers only once against a genuine physical strike.
  // It never recurses: its 1-damage return is a spell impact, not a strike.
  if(wasUnit&&S.units.some(v=>v.id===target.id)&&target.reprisal&&S.units.some(v=>v.id===attacker.id)){
@@ -1326,6 +1363,10 @@ const GUIDE={
  N:{feature:'Spring-based fortification.',detail:'If this defender is standing on an Aeth spring when your turn begins, grant one shield to a nearby ally within two tiles. If none qualifies, shield itself. Maximum five shield per creature.',tip:'Hold contested springs rather than using it as an ordinary slow bruiser.'},
  O:{feature:'Elevation-based shield breaker.',detail:'Its first basic attack launched from high ground each round removes up to two enemy shield before ordinary damage. A Core cannot be pierced this way.',tip:'Use elevation to counter ward-heavy opponents without dealing more raw damage.'},
  P:{feature:'Steal an opponent’s defenses.',detail:'The first basic attack against a shielded creature each round transfers exactly one shield from the target to this unit, provided the hunter is below the five-shield cap.',tip:'Pick protected targets to swing shield advantage, rather than finishing unshielded weaklings.'},
+ Q:{feature:'Spell-linked tidecraft.',detail:'After the first friendly spell each round, the Oracle shields one other ally within 2 tiles by 1. Does not trigger on enemy spells or a failed cast. No shield above 5.',tip:'Cast a low-cost spell with another ally near the Oracle to shore up your front line.'},
+ R:{feature:'Attack then escape.',detail:'After this Harrier first strikes an opposing creature that also has an allied creature adjacent to it, refresh the Harrier’s movement once per round. It never refreshes an attack.',tip:'Land a flank alongside your frontline, then leave the danger zone.'},
+ S:{feature:'Roots after defeat.',detail:'When defeated, root the closest opposing non-boss creature within 2 tiles, if one is available. The enemy can still attack but cannot move during its upcoming turn.',tip:'Hold a choke point even if the Warden falls. Enemy Cores and bosses cannot be rooted.'},
+ T:{feature:'Disarm concealed ground traps.',detail:'On summon, remove the closest enemy Veil Snare within 2 tiles, if one exists, then gain 1 shield. Does not reveal or remove friendly traps. No trap means no bonus.',tip:'Deploy it near a contested spring to counter surprise snares.'},
 
  c:{feature:'Ranged elemental pressure.',detail:'Basic attacks burn a target for 1 additional damage at the start of its next turn. Burn does not stack.',tip:'Keep enemies burning while controlling their movement.'},
  j:{feature:'Lock down enemy advances.',detail:'Basic attacks root the target for its next turn. The victim may still attack but cannot move.',tip:'Block a dangerous rush near a choke point.'},
