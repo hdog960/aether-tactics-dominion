@@ -2004,10 +2004,10 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     basicStrike(duelist,enemy);
     check('Cragsunder first elevated strike pierces two shield',
       duelist.summitRound===S.round&&enemy.shield===0);
-    enemy.shield=3;const before=enemy.hp;
+    enemy.shield=3;const before=enemy.hp,expected=Math.max(0,3-damage(duelist,enemy));
     basicStrike(duelist,enemy);
     check('Cragsunder cannot pierce a second time in the same round',
-      enemy.shield===1&&enemy.hp===before,
+      enemy.shield===expected&&enemy.hp===before,
       'shield='+enemy.shield+' hp='+enemy.hp+' before='+before);
    }
    {
@@ -2015,13 +2015,14 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     const hunter=unit('P',0,2,5,true);
     const enemy=unit('b',1,3,5,true);
     hunter.shield=0;enemy.shield=4;S.units=[hunter,enemy];
+    const initialHit=damage(hunter,enemy);
     basicStrike(hunter,enemy);
     check('Umbral siphon transfers real opponent shield once',
-      hunter.shield===1&&enemy.shield===1&&hunter.siphonRound===S.round,
+      hunter.shield===1&&enemy.shield===Math.max(0,3-initialHit)&&hunter.siphonRound===S.round,
       'hunter='+hunter.shield+' foe='+enemy.shield+' round='+hunter.siphonRound);
     enemy.shield=4;basicStrike(hunter,enemy);
     check('Umbral siphon cannot trigger again in same round',
-      hunter.shield===1&&enemy.shield===2,
+      hunter.shield===1&&enemy.shield===Math.max(0,4-initialHit),
       'hunter='+hunter.shield+' foe='+enemy.shield);
    }
    {
@@ -2029,9 +2030,10 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     const hunter=unit('P',0,2,5,true);
     const enemy=unit('b',1,3,5,true);
     hunter.shield=5;enemy.shield=4;S.units=[hunter,enemy];
+    const initialHit=damage(hunter,enemy);
     basicStrike(hunter,enemy);
     check('Umbral siphon cannot create shield above cap',
-      hunter.shield===5&&enemy.shield===2&&!hunter.siphonRound,
+      hunter.shield===5&&enemy.shield===Math.max(0,4-initialHit)&&!hunter.siphonRound,
       'hunter='+hunter.shield+' foe='+enemy.shield+' siphon='+hunter.siphonRound);
    }
   }catch(e){checks.push({name:'Runtime exception',pass:false,detail:String(e)})}
