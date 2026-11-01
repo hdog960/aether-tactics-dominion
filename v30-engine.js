@@ -1665,6 +1665,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   const scenarios=Array.isArray(missionIds)&&missionIds.length?
    CONQUEST.all.filter(m=>missionIds.includes(m.id)):CONQUEST.all;
   const useLegacyWaves=options?.legacyWaves===true;
+  const testRank=Number.isInteger(options?.testRank)?Math.max(1,Math.min(8,options.testRank)):1;
   const testOnly=window.__qaIsolatedStorage===true&&location.pathname.endsWith('/qa-v39.html');
   if(!testOnly)return{pass:false,errors:['Requires memory-isolated QA page'],reports:[]};
   if(options?.testDeck!==undefined){
@@ -1871,6 +1872,19 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
       if(!startMission(m.id,true,plan.kind)){errors.push(m.id+': failed start');continue}
       S.qaAllowGenericReinforcements=useLegacyWaves;
       S.qaGenericCount=0;
+      // Bring the QA player's current deck to a reproducible upgrade level.
+      // This never edits profile.levels/copies; these are match-local stats.
+      if(testRank!==1){
+       const ranks=S.cardRanks||{};
+       const before=Object.fromEntries(Object.keys(ranks).map(k=>[k,ranks[k]]));
+       for(const k of Object.keys(ranks))ranks[k]=testRank;
+       for(const u of S.units.filter(v=>v.team===0)){
+        const old=before[u.k]||1;
+        const hpBoost=Math.floor(testRank/2)-Math.floor(old/2);
+        const atkBoost=Math.floor((testRank-1)/4)-Math.floor((old-1)/4);
+        u.hp+=hpBoost;u.max+=hpBoost;u.atk+=atkBoost;
+       }
+      }
       let steps=0,valid=true,orders=0;
       const activity={spells:0,mythicSummons:0,normalSummons:0,
        moves:0,attacks:0,startSummons:0};
@@ -1915,7 +1929,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    });
    return{id:m.id,title:m.name,region:m.region,objective:m.objective,plans};
   });
-  return{legacyWaves:useLegacyWaves,pass:!errors.length&&reports.length===scenarios.length*2*trials&&
+  return{legacyWaves:useLegacyWaves,testRank,pass:!errors.length&&reports.length===scenarios.length*2*trials&&
     reports.every(r=>r.valid&&r.ended),samples:trials,
     games:reports.length,wins:reports.filter(r=>r.win).length,
     errors,grouped,reports,
