@@ -1684,10 +1684,11 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    {
     const {ally,enemy,guard}=setup('H');
     enemy.x=1;enemy.y=3;guard.x=3;guard.y=3;
-    const hp=[enemy.hp,guard.hp,ally.hp],start=S.energy[0];
+    const hp=[enemy.hp+(enemy.shield||0),guard.hp+(guard.shield||0),ally.hp],start=S.energy[0];
     const cast=apply(0,{op:'card',idx:0,x:2,y:2,tributes:[]});
     check('Starfall Lattice damages two diagonal enemies, not the ally',
-     cast&&enemy.hp===hp[0]-2&&guard.hp===hp[1]-2&&ally.hp===hp[2]&&S.energy[0]===start-4);
+     cast&&enemy.hp+(enemy.shield||0)===hp[0]-2&&
+     guard.hp+(guard.shield||0)===hp[1]-2&&ally.hp===hp[2]&&S.energy[0]===start-4);
    }
    {
     const {ally,enemy}=setup('I');
