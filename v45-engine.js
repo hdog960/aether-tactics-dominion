@@ -2289,6 +2289,118 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
  },
+ // v4.5.5 exact battle-law checks on real engine, isolated from public saves.
+ qaV455Spells:()=>{
+  const tests=[],check=(name,ok,info='')=>tests.push({name,pass:!!ok,info});
+  const setup=k=>{
+   if(!startMission('v1',true,'rush'))throw Error('Isolated v455 setup failed');
+   S.turn=0;S.energy[0]=10;S.hands[0]=[k];S.traps=[];
+   const [ally,wing]=S.units.filter(u=>u.team===0),
+     [enemy,guard]=S.units.filter(u=>u.team===1);
+   ally.x=2;ally.y=4;wing.x=4;wing.y=5;
+   enemy.x=3;enemy.y=2;guard.x=5;guard.y=2;
+   return{ally,wing,enemy,guard};
+  };
+  try{
+   {
+    const {enemy}=setup('U');
+    enemy.shield=3;const hp=enemy.hp,before=S.energy[0];
+    const cast=apply(0,{op:'card',idx:0,x:3,y:2,tributes:[]});
+    check('Mirror Breach strips two shields then deals one shield-first hit',
+      cast&&enemy.shield===0&&enemy.hp===hp&&S.energy[0]===before-2);
+   }
+   {
+    const {enemy}=setup('U');enemy.shield=0;
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:3,y:2,tributes:[]});
+    check('Breach rejects unshielded target without consuming card/Aeth',
+      !cast&&S.energy[0]===before&&S.hands[0][0]==='U');
+   }
+   {
+    const {ally}=setup('V');ally.moved=true;ally.attacked=true;
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
+    check('Gale Step shifts exactly one tile and preserves spent actions',
+      cast&&ally.x===3&&ally.y===4&&ally.moved&&ally.attacked&&S.energy[0]===before-2);
+   }
+   {
+    const {ally}=setup('V');ally.rooted=true;
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
+    check('Gale Step cannot bypass roots or spend energy illegally',
+      !cast&&ally.x===2&&ally.y===4&&S.energy[0]===before);
+   }
+   {
+    const {ally}=setup('V');
+    S.traps=[{team:1,x:3,y:4,damage:99,expires:S.round+3}];
+    const cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
+    check('Gale landing triggers hostile snare and true defeat',
+      cast&&!S.units.some(v=>v.id===ally.id)&&S.traps.length===0);
+   }
+   {
+    const {ally,wing}=setup('W');wing.x=3;wing.y=5;wing.shield=0;
+    const third=unit('v',0,1,4,true);third.shield=0;S.units.push(third);
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    check('Ember Covenant sacrifices one real ally and wards two survivors',
+      cast&&!S.units.some(v=>v.id===ally.id)&&wing.shield>=2&&third.shield>=2&&
+      wing.rallied===1&&third.rallied===1&&S.energy[0]===before-3);
+   }
+   {
+    const {ally,wing}=setup('W');wing.x=6;wing.y=6;
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    check('Covenant rejects isolated sacrifice without altering battlefield',
+      !cast&&S.units.some(v=>v.id===ally.id)&&S.energy[0]===before);
+   }
+   {
+    const {enemy}=setup('W');
+    const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:enemy.x,y:enemy.y,tributes:[]});
+    check('Covenant cannot sacrifice enemy units',!cast&&S.energy[0]===before);
+   }
+   {
+    const {ally,wing,enemy}=setup('W');
+    ally.x=2;ally.y=4;wing.x=2;wing.y=5;enemy.x=3;enemy.y=4;
+    ally.k='S';ally.hp=2;enemy.rooted=false;
+    const cast=apply(0,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    check('Voluntary Covenant sacrifice does not trigger Gravebloom defeat roots',
+      cast&&!enemy.rooted&&!S.units.some(v=>v.id===ally.id));
+   }
+   {
+    const {enemy,guard}=setup('X');enemy.rooted=true;enemy.shield=0;
+    enemy.hp=enemy.max=12;guard.shield=0;guard.hp=guard.max=12;guard.x=4;guard.y=2;
+    const energy=S.energy[0],cast=apply(0,{op:'card',idx:0,x:3,y:2,tributes:[]});
+    check('Crescent Refrain hits rooted foe and nearest secondary foe',
+      cast&&enemy.hp===10&&guard.hp===11&&S.energy[0]===energy-3);
+   }
+   {
+    const {enemy}=setup('X');enemy.rooted=false;enemy.burning=false;
+    const energy=S.energy[0],cast=apply(0,{op:'card',idx:0,x:enemy.x,y:enemy.y,tributes:[]});
+    check('Refrain requires real prior status and rejects unsupported casts',
+      !cast&&S.energy[0]===energy&&S.hands[0][0]==='X');
+   }
+   {
+    const {enemy,guard}=setup('X');enemy.burning=true;enemy.shield=0;
+    enemy.hp=enemy.max=12;guard.x=6;guard.y=5;
+    const cast=apply(0,{op:'card',idx:0,x:enemy.x,y:enemy.y,tributes:[]});
+    check('Refrain with no secondary enemy deals only primary damage',
+      cast&&enemy.hp===10&&guard.hp===guard.max);
+   }
+   {
+    const {ally,enemy}=setup('U');ally.shield=3;enemy.shield=0;
+    S.turn=1;S.hands[1]=['U'];S.energy[1]=10;enemy.x=3;enemy.y=2;
+    const cast=apply(1,{op:'card',idx:0,x:2,y:4,tributes:[]});
+    check('Opposing team uses same shield-breaking logic',
+      cast&&ally.shield===0&&S.energy[1]===8);
+   }
+   {
+    const {ally}=setup('V');ally.moved=true;ally.attacked=true;
+    const cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
+    save();const snapshot=localStorage.getItem('aether-dominion-v04');
+    S=null;const restored=load();const copy=S?.units.find(u=>u.id===ally.id);
+    check('Version-4 saved match restores Gale relocation and action flags',
+      cast&&!!snapshot&&restored&&S.version===4&&copy?.x===3&&copy?.y===4&&
+      copy?.moved&&copy?.attacked);
+   }
+  }catch(err){tests.push({name:'Runtime exception',pass:false,info:String(err)})}
+  finally{startQuickMatch()}
+  return{pass:tests.length===14&&tests.every(t=>t.pass),tests};
+ },
  qaV45Spells:()=>{
   const results=[],check=(name,pass,info='')=>results.push({name,pass:!!pass,info});
   const setup=(card)=>{
