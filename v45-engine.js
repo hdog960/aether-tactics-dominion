@@ -1042,14 +1042,15 @@ function apply(t,a){
    if(S.units.filter(v=>v.team===t).length-tribute>=8||!deploy(t,x,y))return false;
    if(tribute)onSacrifice(t);
    S.units=S.units.filter(v=>!ids.includes(v.id));S.units.push(unit(k,t,x,y));
-   onCreatureSummoned(S.units[S.units.length-1]);
    if(k==='o'&&S.scribeRound?.[t]!==S.round){
     const pos=S.discards[t].findLastIndex(v=>!!D[v].spell);
     if(pos>=0){S.scribeRound||(S.scribeRound=[0,0]);S.scribeRound[t]=S.round;
      const spell=S.discards[t].splice(pos,1)[0];S.decks[t].push(spell);
     }else{grantShield(S.units[S.units.length-1],1)}
    }
-   trapImpact(S.units[S.units.length-1]);
+   const spawned=S.units[S.units.length-1];
+   trapImpact(spawned);
+   if(S.units.some(v=>v.id===spawned.id))onCreatureSummoned(spawned);
    log=q.name+' summoned!';
   }else{
    if(!resolveSpell(q,t,x,y))return false;
