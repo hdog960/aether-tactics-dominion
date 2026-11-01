@@ -1,15 +1,15 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.5.2 — Three Saved Armory Loadouts**
+**Current source release: v4.5.3 — Four Painted Creature Cards**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
-A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight preset strategies or save three custom 24-card deck loadouts from 36 cards, upgrade your commander and collection, or test experimental private duels.
+A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight preset strategies or save three custom 24-card deck loadouts from 40 cards, upgrade your commander and collection, or test experimental private duels.
 
 ## Start here
 - **Play**: Commander's Hall — select Quick Battle, Story Campaign or Private Duel; continue a previously saved solo battle.
 - **Map**: Riftfront Conquest — four illustrated regions with 12 sequential missions and 3 endgame Crown Trials.
-- **Cards**: the Grimoire — browse the 36-card collection or build a custom deck.
+- **Cards**: the Grimoire — browse the 40-card collection or build a custom deck.
 - **Forge**: level, gold, XP, card upgrades and six earnable milestone medallions.
 - **Duel**: experimental peer-to-peer private match invitations.
 
@@ -141,3 +141,10 @@ Your original deck, upgrades, campaign clears and in-progress matches are preser
 
 ## v4.5.2 — Three-Deck Armory Vault
 In the Commander's Armory, **DECK I, II and III** now store distinct, named 24-card combinations. Selecting a slot previews its cards, and **SAVE FOR NEXT MATCH** equips that slot; canceling does not change active strategy. The previously saved deck is automatically adopted as the primary slot without modifying the v20 deck key or any active battle, Forge XP, collection, campaign or profile save. The vault uses an additive local-only `aether-dominion-loadouts-v452` save key, and preserves all eight original/Astral deck presets. See `V452_ARMORY_LOADOUT_VAULT.md` for tests and limitations.
+
+## v4.5.3 — Four Painted Creature Cards
+Dominion adds **Zephyr Cartographer (M), Verdant Bastion (N), Cragsunder Duelist (O), and Umbral Siphon (P)**, bringing the public card collection to **40**. Each creature has a distinct battle ability, original card painting and matching transparent full-body battlefield character, with a **22-frame movement/combat/defeat atlas**. Existing cards, 24-card selected decks, three named loadout slots, campaign/profile saves, and upgrades are preserved.
+
+**Verification:** Real 390px Chromium browser QA passed all four painted art checks (512×96 portrait atlas, 384×120 cutouts, 2112×480 animation frames), 13/13 creature ability cases, 12/12 existing spell cases, 8/8 deck-vault checks, 7/7 boss checks, 30/30 expedition choices, and 60/60 legal-action campaign simulations with 0 invalid states. The normal non-QA Cards tab displayed exactly 40 different cards and all four new creature names. See `V453_RELEASE_AND_QA.md` for evidence and limitations. Physical iPhone Safari and live two-device multiplayer verification are still outstanding.
+
+**Development boundary:** Once v4.7 multiplayer reliability is completed, **STOP** for the creator's roadmap revisions; do not begin v5.0 without their input.
