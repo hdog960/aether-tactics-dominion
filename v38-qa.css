@@ -1,0 +1,33 @@
+/* v3.8 mobile QA: accessible Quick Battle replacement dialog.
+   Anchored to viewport instead of Safari system confirm prompt. */
+#game .quick-qa-overlay{
+ position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;
+ padding:calc(18px + env(safe-area-inset-top,0px)) 18px calc(18px + env(safe-area-inset-bottom,0px));
+ background:#060a18dd;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+#game .quick-qa-overlay.hidden{display:none!important}
+#game .quick-qa-panel{
+ position:relative;box-sizing:border-box;max-width:420px;width:100%;
+ padding:25px 18px 20px;background:linear-gradient(145deg,#3b2a48,#18243a 73%);
+ border:2px solid #e0bb87;border-radius:17px;color:#fff0d2;
+ box-shadow:0 16px 38px #000c,inset 0 1px #ffe3bb66;
+}
+#game .quick-qa-panel:before{
+ content:"";position:absolute;inset:7px;border:1px solid #f3d4a83d;pointer-events:none;border-radius:10px
+}
+#game .quick-qa-kicker{font:900 10px system-ui;letter-spacing:1.5px;color:#f5ca8a}
+#game .quick-qa-panel h2{
+ color:#ffe5ab;font:900 clamp(23px,7vw,30px)/1.1 Georgia,serif;
+ margin:10px 0 11px;text-shadow:0 2px 7px #0008
+}
+#game .quick-qa-panel p{font:600 12px/1.6 system-ui;color:#e1deed;margin-bottom:18px}
+#game .quick-qa-actions{display:grid;grid-template-columns:1fr;gap:9px}
+#game .quick-qa-actions button{
+ min-height:50px;padding:11px;border-radius:10px;
+ border:1px solid #af9caf;background:#393651;color:#ffeed5;
+ font:900 12px system-ui;letter-spacing:.25px;
+}
+#game .quick-qa-actions button[data-quick-confirm]{
+ color:#1d1930;border-color:#ffe3a6;
+ background:linear-gradient(#ffe9bf,#dcb078);box-shadow:inset 0 1px #ffffff66
+}

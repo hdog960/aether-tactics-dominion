@@ -69,11 +69,36 @@ $('home-continue').addEventListener('click',()=>{
  const s=G.get();
  if(s?.phase==='playing'||s?.mode==='online'&&s.phase==='waiting')showTab('battle');
 });
+// Native confirm dialogs are easy to miss in mobile PWAs and block browser QA.
+// Always provide an explicit, visually integrated choice when a match is active.
+function startFreshSkirmish(){
+ G.startQuickMatch();everLaunched=true;showTab('battle');
+}
+function confirmSkirmishReplacement(){
+ let overlay=$('quick-battle-dialog');
+ if(!overlay){
+  overlay=document.createElement('div');
+  overlay.id='quick-battle-dialog';
+  overlay.className='quick-qa-overlay hidden';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-labelledby','quick-qa-title');
+  overlay.innerHTML='<div class="quick-qa-panel"><span class="quick-qa-kicker">⚔ NEW SKIRMISH</span><h2 id="quick-qa-title">Begin a fresh battle?</h2><p>A match is already in progress. You can return to it, or begin a new solo battle. Your commander level, card collection, and campaign progress will stay saved.</p><div class="quick-qa-actions"><button type="button" data-quick-cancel>KEEP CURRENT MATCH</button><button type="button" data-quick-confirm>START QUICK BATTLE</button></div></div>';
+  $('game').appendChild(overlay);
+  overlay.querySelector('[data-quick-cancel]').addEventListener('click',()=>overlay.classList.add('hidden'));
+  overlay.querySelector('[data-quick-confirm]').addEventListener('click',()=>{
+   overlay.classList.add('hidden');startFreshSkirmish();
+  });
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.add('hidden')});
+ }
+ overlay.classList.remove('hidden');
+ overlay.querySelector('[data-quick-confirm]').focus();
+}
 $('home-quick').addEventListener('click',()=>{
  const s=G.get(),saved=savedBattle();
  const inProgress=s?.mode==='online'||s?.phase==='playing'&&(everLaunched||!!saved);
- if(inProgress&&!confirm('Start a new quick battle? This replaces your current match. Campaign progress and your card collection will remain.'))return;
- G.startQuickMatch();everLaunched=true;showTab('battle');
+ if(inProgress){confirmSkirmishReplacement();return}
+ startFreshSkirmish();
 });
 $('battle-home').addEventListener('click',()=>showTab('home'));
 function renderCampaign(){
