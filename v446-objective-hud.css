@@ -1,0 +1,39 @@
+/* Dominion v4.4.6 — mobile-readable battle objectives.
+   Presentation only. No board tile overlays, touch interception or game logic. */
+#game[data-tab="battle"]>.vista .vista-top{
+ height:auto!important;
+ min-height:46px!important;
+ display:grid!important;
+ grid-template-columns:minmax(94px,36%) minmax(0,1fr);
+ gap:7px!important;
+ align-content:center;
+ align-items:center;
+ padding:5px 11px!important;
+}
+#game[data-tab="battle"] .vista-top #arena-label{
+ min-width:0;max-width:100%!important;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#game[data-tab="battle"] .vista-top #arena-details{
+ display:-webkit-box;
+ -webkit-box-orient:vertical;
+ -webkit-line-clamp:2;
+ max-width:100%!important;
+ min-width:0;
+ white-space:normal!important;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ text-align:right!important;
+ font:750 9px/1.24 system-ui!important;
+ letter-spacing:.08px!important;
+}
+@media(max-width:380px){
+ #game[data-tab="battle"]>.vista .vista-top{
+  grid-template-columns:minmax(88px,34%) minmax(0,1fr);
+  gap:5px!important;
+  padding:5px 8px!important;
+ }
+ #game[data-tab="battle"] .vista-top #arena-details{
+  font-size:8.5px!important;
+ }
+}
