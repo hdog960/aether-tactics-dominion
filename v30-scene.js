@@ -28,6 +28,45 @@ const customFrames={t:0,l:1,c:2,j:3};
 const paintedFrames37={p:0,k:1,d:2,o:3,y:4,z:5,A:6,B:7};
 const unitColors={t:'#e7c36c',l:'#64daff',c:'#fa9e57',j:'#9be776',p:'#75eedc',
  k:'#a8ccff',d:'#c8edff',o:'#dab0fa',y:'#94d9b5',z:'#a29aff',A:'#f5a0c8',B:'#ffe1a7'};
+// v4.3.2 real, individually rasterized frame poses, not continuous single-image scaling.
+const rasterFrames=new Image();
+rasterFrames.decoding='async';rasterFrames.src='./art/battlefield-frames-v432.webp?v=432';
+const animationRows={t:0,l:1,c:2,j:3,p:4,k:5,d:6,o:7,y:8,z:9,A:10,B:11};
+const FRAME_W=96,FRAME_H=120;
+const defeated=new Map();
+function frameForUnit(u,t,walking){
+ const row=animationRows[u.k];
+ if(row===undefined||!rasterFrames.complete||rasterFrames.naturalWidth!==2112)return null;
+ let idx=Math.floor((t+u.id*91)/250)%4;
+ if(walking)idx=4+Math.floor(t/90)%6;
+ const atk=[...activeFx].reverse().find(f=>f.data.type==='strike'&&f.data.from?.id===u.id&&
+  t>=f.born&&fxProg(f,t)<1);
+ const hit=[...activeFx].reverse().find(f=>
+  (f.data.type==='strike'||f.data.type==='spell')&&f.data.to?.id===u.id&&
+  t>=f.born&&fxProg(f,t)>=fxImpact(f)&&fxProg(f,t)<.92);
+ if(atk)idx=10+Math.min(3,Math.floor(fxProg(atk,t)*4));
+ else if(hit)idx=14+Math.min(2,Math.floor((fxProg(hit,t)-fxImpact(hit))/
+  Math.max(.01,.92-fxImpact(hit))*3));
+ return{img:rasterFrames,x:idx*FRAME_W,y:row*FRAME_H,sourceW:FRAME_W,sourceH:FRAME_H,
+  tone:'none',boss:u.k==='t'||u.k==='l',frame:idx};
+}
+function drawDefeated(t){
+ if(!rasterFrames.complete||rasterFrames.naturalWidth!==2112)return;
+ for(const [id,death] of defeated){
+  const dt=t-death.start;
+  if(dt>850){defeated.delete(id);continue}
+  const u=death.unit,row=animationRows[u.k];
+  if(row===undefined){defeated.delete(id);continue}
+  const view=unitVisual(u,t),large=u.k==='t'||u.k==='l'?1.14:1,
+   vw=128*view.scale*large,vh=152*view.scale*large,
+   idx=17+Math.min(4,Math.floor(dt/165));
+  c.save();c.imageSmoothingEnabled=false;
+  c.globalAlpha=dt>550?Math.max(0,1-(dt-550)/300):1;
+  c.drawImage(rasterFrames,idx*96,row*120,96,120,
+   view.z[0]-vw/2,view.z[1]-vh+4*view.scale,vw,vh);
+  c.restore();
+ }
+}
 function unitSprite(k){
  if(paintedFrames37[k]!==undefined){
   // Never fall back to a recolored classic or an unrelated silhouette.
@@ -672,7 +711,8 @@ function drawUnit(view,t){
  const {u,x,y,z,scale,walking,stepPhase}=view;
  const front=u.team===seat;
  // Summons only render transparent painted sprites. No legacy geometric fallback.
- const pose=unitPose(u,t),motionPose=animatedCharacterPose(u,t,walking,stepPhase);
+ const pose=unitPose(u,t),sheet=frameForUnit(u,t,walking),
+  motionPose=sheet?{sx:1,sy:1,lean:0,lift:0}:animatedCharacterPose(u,t,walking,stepPhase);
   // A ground-contact shadow sits UNDER the painted boots; a second small halo
   // fixes the illusion of the character hovering above or ending in mid-air.
   const isFlying=!!u.fly||u.k==='d';
@@ -685,7 +725,7 @@ function drawUnit(view,t){
    ellipse(z[0]-9*scale,z[1]+3,3.5*scale*beat,1.6*scale,'#d1d3bb6b');
    ellipse(z[0]+9*scale,z[1]+2,3.5*scale*(1-beat),1.6*scale,'#8adbc65c');
   }
-  const sprite=unitSprite(u.k);
+  const sprite=sheet||unitSprite(u.k);
   if(sprite){
    const large=sprite.boss?1.14:1;
    const vw=128*scale*large,vh=152*scale*large;
@@ -703,11 +743,11 @@ function drawUnit(view,t){
    c.rotate(pose.rotate+motionPose.lean);
    c.scale(motionPose.sx,motionPose.sy);
    c.translate(-z[0]-pose.dx,-footY-pose.dy);
-   c.drawImage(sprite.img,sprite.x,0,sprite.sourceW,sprite.sourceH,dx,dy,vw,vh);
+   c.drawImage(sprite.img,sprite.x,sprite.y||0,sprite.sourceW,sprite.sourceH,dx,dy,vw,vh);
    if(pose.flash>.03){
     c.save();c.globalAlpha=Math.min(.78,pose.flash*.8);
     c.filter='brightness(3.6) saturate(.25)';
-    c.drawImage(sprite.img,sprite.x,0,sprite.sourceW,sprite.sourceH,dx,dy,vw,vh);c.restore();
+    c.drawImage(sprite.img,sprite.x,sprite.y||0,sprite.sourceW,sprite.sourceH,dx,dy,vw,vh);c.restore();
    }
    c.restore();
    if(unitColors[u.k]){
@@ -754,6 +794,7 @@ function draw(timestamp){
    .sort((a,b)=>a.z[1]-b.z[1]||a.z[0]-b.z[0]);
   for(const view of layers)drawUnit(view,time);
  }
+ drawDefeated(time);
  renderBattleFX(time);drawTacticalMarkers(time);atmosphere(time);
  requestAnimationFrame(draw)
 }
@@ -796,10 +837,10 @@ const intro=document.getElementById('vista-stage');if(intro)intro.classList.add(
 window.AetherScene={sync(s,my,choice){
  // Update movement before queuing attacks: the actor finishes stepping into
  // position before its sword swing/projectile begins.
- if(my!==seat){lastPositions.clear();movements.clear();healthTweens.clear();floorValid=false;activeFx.length=0;fxInitialized=false}
+ if(my!==seat){lastPositions.clear();movements.clear();healthTweens.clear();defeated.clear();floorValid=false;activeFx.length=0;fxInitialized=false}
  if((s.arenaId||'verdant')!==lastArenaId){
   lastArenaId=s.arenaId||'verdant';floorValid=false;
-  lastPositions.clear();movements.clear();
+  lastPositions.clear();movements.clear();defeated.clear();
  }
  const now=performance.now(),live=new Set(),hpChanges=[];
  for(const unit of s.units){
@@ -816,9 +857,15 @@ window.AetherScene={sync(s,my,choice){
   if(prev&&prev.hp!==unit.hp){
    hpChanges.push({unit,from:shownHealth({id:unit.id,hp:prev.hp},now)});
   }
-  lastPositions.set(unit.id,{x:unit.x,y:unit.y,team:unit.team,hp:unit.hp});
+  lastPositions.set(unit.id,{x:unit.x,y:unit.y,team:unit.team,hp:unit.hp,k:unit.k,max:unit.max,fly:unit.fly});
  }
- for(const id of lastPositions.keys())if(!live.has(id)){lastPositions.delete(id);movements.delete(id);healthTweens.delete(id)}
+ const lethalIds=new Set((s.fxEvents||[]).filter(e=>e.lethal&&e.to?.id).map(e=>e.to.id));
+ for(const [id,prev] of lastPositions)if(!live.has(id)){
+  if(lethalIds.has(id)&&animationRows[prev.k]!==undefined)
+   defeated.set(id,{start:now,unit:{...prev,id,hp:0,max:prev.max||1,shield:0}});
+  lastPositions.delete(id);movements.delete(id);healthTweens.delete(id);
+ }
+ while(defeated.size>16)defeated.delete(defeated.keys().next().value);
  const seq=s.fxSeq||0;
  if(!fxInitialized||seq<fxSeen){fxInitialized=true;fxSeen=seq;activeFx.length=0}
  else{
@@ -837,7 +884,11 @@ window.AetherScene={sync(s,my,choice){
  }
  game=s;seat=my;selected=choice?.unit;selectedCard=choice?.card;focusedTile=choice?.focus||null;tributes=choice?.tributes||[];
 },activeWalks:()=>movements.size,activeCombat:()=>activeFx.length,pickTile:resolveTileAt,
- motionSample:(k,walking=false,stepPhase=0)=>animatedCharacterPose({id:19,k,fly:k==='f'||k==='d'||k==='l'},performance.now(),walking,stepPhase)};
+ motionSample:(k,walking=false,stepPhase=0)=>animatedCharacterPose({id:19,k,fly:k==='f'||k==='d'||k==='l'},performance.now(),walking,stepPhase),
+ frameAtlasInfo:()=>({ready:rasterFrames.complete&&rasterFrames.naturalWidth===2112&&rasterFrames.naturalHeight===1440,
+  width:rasterFrames.naturalWidth,height:rasterFrames.naturalHeight,keys:Object.keys(animationRows),
+  framesPerUnit:22,defeated:defeated.size}),
+ frameSample:(k,t=0,walking=false)=>frameForUnit({k,id:19},t,walking)?.frame??-1};
 const initial=window.AetherGame?.get?.();if(initial)window.AetherScene.sync(initial,0,{unit:null,card:-1,tributes:[]});
 requestAnimationFrame(draw);
 })();

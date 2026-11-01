@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.3.1 — Creature Motion & Combat QA**
+**Current source release: v4.3.2 — 264 Raster Animation Frames**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -86,3 +86,6 @@ New spell-specific canvas effects for 14 battle actions, smarter deterministic s
 
 ## v4.3.1 motion and quality assurance
 Seven character-role animation profiles now modify stride, hovering, hit anticipation and recoil for all 18 summonable units, keeping the original painted sprite artwork. Attack effects now differentiate archers, casters, assassins and mythic creatures. An isolated QA page adds an 18-unit animation-bound audit and multi-match solo AI stress checks. These are sprite transforms, not bespoke illustrated multi-frame spritesheets. Physical iPhone performance and gameplay balance remain outstanding. See V431_ANIMATION_QA.md.
+
+## v4.3.2 — Real frame-sequence animations
+Twelve painted character types now use an actual 264-cell WebP sprite atlas: 4 idle frames, 6 walking frames, 4 attack frames, 3 damage frames and 5 defeat frames per creature. The combat renderer selects real bitmap frames from movement and hit events, including a brief defeat sequence. Six remaining original painted units continue with the previous safe transform system. These are digitally reconstructed key poses from existing art, not separately illustrated art frames. The v4.3.2 isolated QA page has a **264 FRAME AUDIT** control. See `V432_SPRITE_FRAMES.md` for mappings and remaining art goals. Saves, card stats, campaign and multiplayer are unchanged.

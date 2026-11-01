@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button><button data-qa="aitest">AI · 12 TURNS</button><button data-qa="spellfx">SPELL FX</button><button data-qa="motion">ANIMATION AUDIT</button><button data-qa="stress">AI STRESS</button><button data-qa="frames">264 FRAME AUDIT</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -202,6 +202,42 @@ function stressAI(){
  G.startQuickMatch();N.showTab('battle');
 }
 
+async function auditFrames(){
+ const info=window.AetherScene?.frameAtlasInfo?.();
+ if(!info){status('FRAME AUDIT FAIL: scene API unavailable');return}
+ const image=new Image();
+ try{await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;
+   image.src='./art/battlefield-frames-v432.webp?v=432'})}
+ catch(e){status('FRAME AUDIT FAIL: sprite atlas missing');return}
+ const canvas=document.createElement('canvas');canvas.width=96;canvas.height=120;
+ const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.imageSmoothingEnabled=false;
+ let cells=0,failed=[],nonempty=0,distinct=0;
+ const names=['t','l','c','j','p','k','d','o','y','z','A','B'];
+ for(let row=0;row<12;row++){
+  const fingerprints=new Set();
+  for(let frame=0;frame<22;frame++){
+   ctx.clearRect(0,0,96,120);ctx.drawImage(image,frame*96,row*120,96,120,0,0,96,120);
+   const pixels=ctx.getImageData(0,0,96,120).data;
+   let solid=0,h=2166136261;
+   for(let i=0;i<pixels.length;i+=16){
+    if(pixels[i+3]>32)solid++;
+    h=Math.imul(h^pixels[i],16777619);h=Math.imul(h^pixels[i+3],16777619);
+   }
+   cells++;if(solid>10)nonempty++;else failed.push(names[row]+':'+frame+' blank');
+   fingerprints.add(h>>>0);
+  }
+  distinct+=fingerprints.size;
+  if(fingerprints.size<16)failed.push(names[row]+' only '+fingerprints.size+' distinct frames');
+ }
+ const ok=info.ready&&image.naturalWidth===2112&&image.naturalHeight===1440&&
+  cells===264&&nonempty===264&&distinct>=200&&!failed.length;
+ window.__qaFrameReport={pass:ok,cells,nonempty,distinct,failures:failed,scene:info};
+ status('FRAME ATLAS '+(ok?'PASS':'FAIL')+' · '+nonempty+'/264 visible · '+distinct+' distinct');
+ $('qa-report').textContent='Dimensions '+image.naturalWidth+' × '+image.naturalHeight+
+ '\nAnimated creatures '+names.length+'\nNonempty frames '+nonempty+
+ '\nUnique frame fingerprints '+distinct+'\nErrors: '+failed.join('; ');
+}
+
 panel.addEventListener('click',e=>{
  const b=e.target.closest('[data-qa]');if(!b)return;
  const mode=b.dataset.qa;
@@ -213,6 +249,7 @@ panel.addEventListener('click',e=>{
  else if(mode==='spellfx')runSpellFXChecks();
  else if(mode==='motion')auditMotion();
  else if(mode==='stress')stressAI();
+ else if(mode==='frames')auditFrames();
 });
 document.body.classList.add('qa-page');
 setTimeout(()=>{
