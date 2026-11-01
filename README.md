@@ -1,15 +1,15 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.5.3 — Four Painted Creature Cards**
+**Current source release: v4.5.4 — Eight Painted Creature Cards**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
-A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight preset strategies or save three custom 24-card deck loadouts from 40 cards, upgrade your commander and collection, or test experimental private duels.
+A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight preset strategies or save three custom 24-card deck loadouts from 44 cards, upgrade your commander and collection, or test experimental private duels.
 
 ## Start here
 - **Play**: Commander's Hall — select Quick Battle, Story Campaign or Private Duel; continue a previously saved solo battle.
 - **Map**: Riftfront Conquest — four illustrated regions with 12 sequential missions and 3 endgame Crown Trials.
-- **Cards**: the Grimoire — browse the 40-card collection or build a custom deck.
+- **Cards**: the Grimoire — browse the 44-card collection or build a custom deck.
 - **Forge**: level, gold, XP, card upgrades and six earnable milestone medallions.
 - **Duel**: experimental peer-to-peer private match invitations.
 
@@ -148,3 +148,6 @@ Dominion adds **Zephyr Cartographer (M), Verdant Bastion (N), Cragsunder Duelist
 **Verification:** Real 390px Chromium browser QA passed all four painted art checks (512×96 portrait atlas, 384×120 cutouts, 2112×480 animation frames), 13/13 creature ability cases, 12/12 existing spell cases, 8/8 deck-vault checks, 7/7 boss checks, 30/30 expedition choices, and 60/60 legal-action campaign simulations with 0 invalid states. The normal non-QA Cards tab displayed exactly 40 different cards and all four new creature names. See `V453_RELEASE_AND_QA.md` for evidence and limitations. Physical iPhone Safari and live two-device multiplayer verification are still outstanding.
 
 **Development boundary:** Once v4.7 multiplayer reliability is completed, **STOP** for the creator's roadmap revisions; do not begin v5.0 without their input.
+
+## v4.5.4 — Four More Original Creatures
+The collection now contains **44 cards**, including **Tideglass Oracle, Ashen Harrier, Gravebloom Warden and Stormvault Artificer**. Each has its own painted portrait, identity-matched transparent battlefield character, 22-frame motion atlas, and a unique real-engine tactical ability. Earlier collections, all three saved decks, campaign progression, ranks and match snapshots are retained. GitHub mobile-sized Chromium QA confirmed the normal 44-card Codex, all four images, three loadouts, 14 new rule checks, 60 mixed-deck test battles, and no invalid states. See `V454_RELEASE_AND_QA.md`; physical iPhone and two-device testing remain outstanding.
