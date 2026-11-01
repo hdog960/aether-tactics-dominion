@@ -63,7 +63,16 @@ R:{name:'Ashen Harrier',cost:3,hp:4,atk:2,range:1,move:3,
 S:{name:'Gravebloom Warden',cost:4,hp:7,atk:2,range:1,move:1,
  role:'Briar Sentinel',desc:'On defeat, briefly root the closest non-boss enemy.'},
 T:{name:'Stormvault Artificer',cost:3,hp:4,atk:2,range:2,move:2,
- role:'Arcane Sapper',desc:'On summon, disarm a nearby enemy snare and gain 1 shield.'}
+ role:'Arcane Sapper',desc:'On summon, disarm a nearby enemy snare and gain 1 shield.'},
+// v4.5.5 — New spells require distinct painted card art to be publicly visible.
+U:{name:'Mirror Breach',cost:2,spell:'breach',power:1,role:'Wardbreaker',
+ desc:'Strip 2 shield from an enemy creature, then deal 1 damage.'},
+V:{name:'Gale Step',cost:2,spell:'gale',role:'Tactical Movement',
+ desc:'Shift an unrooted nearby ally to an empty adjacent tile. Preserve actions.'},
+W:{name:'Ember Covenant',cost:3,spell:'covenant',role:'Sacrifice Rite',
+ desc:'Sacrifice an ally to shield and rally up to two nearby allies.'},
+X:{name:'Crescent Refrain',cost:3,spell:'refrain',power:2,role:'Status Finisher',
+ desc:'Hit a burning or rooted enemy for 2, chaining 1 damage to another enemy.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
 const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"p":{"move":2},"o":{"hp":4,"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
@@ -97,10 +106,13 @@ const V453_UNIT_KEYS=['M','N','O','P'];
 const V453_ENABLED=V45_QA||window.DOMINION_V453_ART_RELEASE===true;
 const V454_UNIT_KEYS=['Q','R','S','T'];
 const V454_ENABLED=V45_QA||window.DOMINION_V454_ART_RELEASE===true;
+const V455_SPELL_KEYS=['U','V','W','X'];
+const V455_ENABLED=V45_QA||window.DOMINION_V455_ART_RELEASE===true;
 const CARD_KEYS=Object.keys(D).filter(k=>
  (V45_ENABLED||!V45_SPELL_KEYS.includes(k))&&
  (V453_ENABLED||!V453_UNIT_KEYS.includes(k))&&
- (V454_ENABLED||!V454_UNIT_KEYS.includes(k))),
+ (V454_ENABLED||!V454_UNIT_KEYS.includes(k))&&
+ (V455_ENABLED||!V455_SPELL_KEYS.includes(k))),
  DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
 // Two copies of each new spell leave room for 16 distinct existing creature
 // slots. The preset is invisible until artwork is explicitly available.
@@ -1373,6 +1385,10 @@ const GUIDE={
  I:{feature:'One-hit reactive defense.',detail:'Grant an ally 2 shield up to the global five-shield cap. The first enemy basic strike against it before its next turn takes 1 retaliation damage. Does not stack.',tip:'Protect an exposed spring holder; the ward is consumed on its first incoming basic strike.'},
  J:{feature:'Controlled positional displacement.',detail:'Deal 1 damage to a non-boss enemy within 3 of your army; move it one clear tile toward its nearest allied-side challenger when possible. The target must have a valid open landing tile.',tip:'Pull ranged enemies off high ground into melee range, or disturb a fortified formation.'},
  K:{feature:'Counter-protection attack blessing.',detail:'The next basic attack from one allied creature gains 1 damage and strips up to 3 shield before the hit. Expires at the start of that creature’s next turn.',tip:'Time this immediately before striking a heavily shielded boss or frontline guardian.'},
+ U:{feature:'Spell-based shield breaking.',detail:'Choose an enemy creature with at least 1 shield within 3 tiles of your army. Remove up to 2 of its shield, then resolve 1 normal spell damage. Never targets an enemy Core.',tip:'Counter defensive frontlines without wasting an expensive area spell.'},
+ V:{feature:'One-square formation shift.',detail:'Choose an empty tile adjacent to an unrooted friendly unit within army reach. Move the nearest eligible ally by one square; do not refresh attacks, movement or clear roots. Landing triggers traps normally.',tip:'Slip a guardian onto a spring or save a threatened support unit without granting extra turns.'},
+ W:{feature:'Sacrifice-powered warding.',detail:'Choose an allied non-champion creature with another ally within 2 tiles. Remove the chosen ally as a deliberate sacrifice, then give 2 shield and Rally to up to two nearest surviving allies. No defeat trigger.',tip:'Trade a low-health unit for protection and damage pressure on two important allies.'},
+ X:{feature:'Exploit roots and burning.',detail:'Deal 2 spell damage to a burning or rooted enemy creature within 3 of your army. If another enemy creature stands within 2 of that target, chain 1 spell damage to the closest one. No enemy Core targeting.',tip:'Combine Thorn Warden or Frostbind with a follow-up spell for efficient conditional damage.'},
  M:{feature:'Flying squad mobility support.',detail:'When summoned, restore movement to the nearest grounded, unrooted ally within two tiles that already moved. Once per round for your entire army; attacks are never refreshed.',tip:'Move your frontline, then summon the Cartographer close enough to dispatch it again.'},
  N:{feature:'Spring-based fortification.',detail:'If this defender is standing on an Aeth spring when your turn begins, grant one shield to a nearby ally within two tiles. If none qualifies, shield itself. Maximum five shield per creature.',tip:'Hold contested springs rather than using it as an ordinary slow bruiser.'},
  O:{feature:'Elevation-based shield breaker.',detail:'Its first basic attack launched from high ground each round removes up to two enemy shield before ordinary damage. A Core cannot be pierced this way.',tip:'Use elevation to counter ward-heavy opponents without dealing more raw damage.'},
