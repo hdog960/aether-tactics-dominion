@@ -21,3 +21,11 @@ The branch `dev/v45-first-spell-batch` adds **four experimental spells** with au
 
 ## Next release quality gate
 Create distinctive painted portraits for Starfall Lattice, Ashen Reprisal, Undertow and Dawn Edict; integrate them without generic art fallbacks. Test both sides' actions, save/load and mobile interaction in a real browser, verify frame and art identity, run balance simulations with these four cards included, then deliberately enable the release gate. Preserve all user collection and match save keys.
+
+## Live browser acceptance — deployed v4.4.9
+- **PASS** — Isolated public GitHub Pages QA run: https://agent.tinyfish.ai/runs/7393bdf0-9d31-47b0-8a80-a06bd72878d2
+- Clicked **MAP**, then the actual illustrated first mission marker `button.atlas-marker[data-atlas-mission='v1']`, and verified that `#atlas-dialog` opened **without starting a battle**.
+- TACTICIAN'S NOTE appeared with the three actual saved-deck/mission tips. Deck summary showed **24 CARDS · 16 UNITS · 8 SPELLS · AVG LV 1**.
+- EDIT DECK opened the authentic 24/24 Commander's Armory with seven presets, card quantities, CANCEL and SAVE FOR NEXT MATCH. No save mutation was requested or performed.
+- The original first browser run https://agent.tinyfish.ai/runs/bd57d7fa-e0d7-4928-bf36-6340b4f9e369 had inadvertently clicked a legacy fallback mission entry because `qa-v39.html` omitted four CSS files used by production. This was a **QA harness mismatch**, not evidence of a live feature failure. The QA page now includes `v41-campaign-atlas.css`, `v42-forge-scroll.css`, `v44-encounters.css`, and `v441-bosses.css`, and uses the correct v4.4.9 page label. The second run clicked the correct illustrated marker and passed.
+- Browser test was on isolated QA route; physical iPhone Safari touch and a full campaign playthrough remain unverified.
