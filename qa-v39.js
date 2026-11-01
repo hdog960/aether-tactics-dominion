@@ -16,7 +16,7 @@ const $=id=>document.getElementById(id);
 const G=window.AetherGame,N=window.DominionNav,A=window.AetherArt;
 if(!G||!N||!A){document.body.insertAdjacentHTML('afterbegin','<h1 style="color:red">QA bootstrap failed</h1>');return}
 const panel=document.createElement('aside');panel.id="qa-panel";
-panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button></div><pre id="qa-report"></pre>';
+panel.innerHTML='<h2>DOMINION · REAL BATTLE QA</h2><p id="qa-status">Starting battlefield...</p><div class="qa-buttons"><button data-qa="new">8 NEW UNITS</button><button data-qa="old">CLASSIC UNITS</button><button data-qa="opponents">RED + BLUE</button><button data-qa="cards">SPELL CARDS</button><button data-qa="report">ASSET STATUS</button><button data-qa="combat">COMBAT ENGINE TEST</button></div><pre id="qa-report"></pre>';
 document.body.appendChild(panel);
 let errors=[];window.addEventListener('error',e=>{errors.push(String(e.message||e.error));status('ERROR: '+String(e.message))});
 window.addEventListener('unhandledrejection',e=>{errors.push(String(e.reason));status('Promise error: '+String(e.reason))});
@@ -64,7 +64,7 @@ async function assetReport(){
   ['unit atlas','./art/units-character-v37.png?v=37',768,120],
   ['unit card atlas','./art/cards-character-v37.webp?v=37',1024,96],
   ['spell card atlas','./art/cards-spells-v37.webp?v=37',1280,96],
-  ['classic','./art/units-painted-v35.png',256,88]
+  ['classic','./art/units-painted-v35.png',320,88]
  ];
  const rs=await Promise.all(a.map(([name,url,w,h])=>new Promise(resolve=>{
   const img=new Image();
@@ -77,12 +77,50 @@ async function assetReport(){
  $('qa-report').textContent=rs.join('\n')+'\n'+portraits.join('\n')+'\nerrors: '+errors.join('; ');
  window.__qaReport={assets:rs,portraits,errors};
 }
+
+function runCombatChecks(){
+ const results=[];
+ const cells=emptySlots(40);
+ let pair=null;
+ for(const c of cells){for(const t of cells){
+  if(Math.abs(c[0]-t[0])+Math.abs(c[1]-t[1])===1){pair=[c,t];break}
+ }if(pair)break}
+ if(!pair){status('Combat test blocked: no adjacent empty squares');return}
+ const [from,to]=pair;
+ const candidates=keys.slice();
+ for(const k of candidates){
+  try{
+   G.startQuickMatch();const S=G.get();
+   const st=stats[k],ally={id:701,k,team:0,x:from[0],y:from[1],hp:st[0],max:st[0],atk:st[1],range:st[2],move:st[3],shield:0,fly:k==='d',moved:false,attacked:false};
+   const foe={id:702,k:'v',team:1,x:to[0],y:to[1],hp:50,max:50,atk:2,range:1,move:1,shield:0,moved:false,attacked:false};
+   S.units=[ally,foe];S.turn=0;S.phase='playing';S.round=1;S.energy=[10,10];
+   const ok=G.apply(0,{op:'attack',id:ally.id,x:foe.x,y:foe.y});
+   const attacked=!!ok&&ally.attacked&&foe.hp<50;
+   results.push({kind:k,action:'attack',pass:attacked,reason:!ok?'action rejected':foe.hp>=50?'no damage':'ok'});
+   // Re-seed before movement to avoid test interdependence.
+   G.startQuickMatch();
+   const M=G.get();
+   const p={...ally,hp:st[0],x:from[0],y:from[1],attacked:false,moved:false};
+   M.units=[p];M.turn=0;M.phase='playing';M.round=1;M.energy=[10,10];
+   const move=G.apply(0,{op:'move',id:p.id,x:to[0],y:to[1]});
+   results.push({kind:k,action:'move',pass:!!move&&p.moved&&p.x===to[0]&&p.y===to[1],reason:!move?'move rejected':'ok'});
+  }catch(e){results.push({kind:k,action:'exception',pass:false,reason:e.message});errors.push(k+': '+e.message)}
+ }
+ const passed=results.filter(t=>t.pass).length;
+ status('COMBAT '+passed+'/'+results.length+' checks passed');
+ window.__qaCombatResults=results;
+ showUnits('new');
+ $('qa-report').textContent=results.map(x=>(x.pass?'✓ ':'✗ ')+x.kind+' '+x.action+' '+x.reason).join('\n')+'\nJavascript errors: '+errors.length;
+ status('COMBAT '+passed+'/'+results.length+' checks passed; original 8-unit scene restored');
+}
+
 panel.addEventListener('click',e=>{
  const b=e.target.closest('[data-qa]');if(!b)return;
  const mode=b.dataset.qa;
  if(mode in groupLayouts)showUnits(mode);
  else if(mode==='cards')showCards();
  else if(mode==='report')assetReport();
+ else if(mode==='combat')runCombatChecks();
 });
 document.body.classList.add('qa-page');
 setTimeout(()=>{
