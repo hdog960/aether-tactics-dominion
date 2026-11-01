@@ -599,10 +599,26 @@ function mitigate(target,n,physical){
  return value;
 }
 function basicStrike(attacker,target){
- const raw=damage(attacker,target),actual=mitigate(target,raw,true);
+ // Dawn Edict is a single-use offensive effect. It removes at most three
+ // existing shield points, without touching unit health or creating attacks.
+ const edict=!!attacker.edict;
+ const raw=damage(attacker,target)+(edict?1:0);
+ if(edict){
+  attacker.edict=false;
+  if(!target.core)target.shield=Math.max(0,(target.shield||0)-3);
+  abilityPulse(attacker,'edict',1);
+ }
+ const actual=mitigate(target,raw,true);
  fxStrike(attacker,target,actual);
  const wasUnit=!target.core&&S.units.some(v=>v.id===target.id);
  applyDamage(target,actual);
+ // Ashen Reprisal triggers only once against a genuine physical strike.
+ // It never recurses: its 1-damage return is a spell impact, not a strike.
+ if(wasUnit&&target.reprisal&&S.units.some(v=>v.id===attacker.id)){
+  target.reprisal=0;
+  fxSpell(attacker,1,'reprisal',target.x,target.y,target.team);
+  applyDamage(attacker,1);
+ }
  // Mirror Court reflects at most one point per stored charge. It does not
  // reflect spells, hit an already defeated striker, or chain into itself.
  if(S.missionId==='t2'&&!target.core&&target.id===S.championId&&
@@ -682,15 +698,33 @@ function endSupportTurn(team){
  terrainTurn(team);
 }
 function startStatusTurn(team){
+ for(const u of S.units.filter(v=>v.team===team)){
+  if(u.reprisal&&S.round>=(u.reprisalUntil||0))u.reprisal=0;
+  if(u.edict&&S.round>=(u.edictUntil||0))u.edict=false;
+ }
  for(const u of [...S.units].filter(u=>u.team===team&&u.burning)){
   u.burning=false;
   fxSpell(u,1,'ignite',u.x,u.y,1-team);
   applyDamage(u,1);
  }
 }
+// Pull only into genuinely free, legal adjacent tiles. Never relocate bosses
+// or bypass collision, even if the target has flying movement.
+function undertowLanding(v,t){
+ if(!v||v.boss)return null;
+ const allies=S.units.filter(u=>u.team===t&&d(u,v)<=3)
+  .sort((a,b)=>d(a,v)-d(b,v)||a.id-b.id);
+ if(!allies.length)return null;
+ const anchor=allies[0],before=d(v,anchor);
+ const directions=[[0,1],[-1,0],[1,0],[0,-1]];
+ return directions.map(([dx,dy])=>P(v.x+dx,v.y+dy))
+  .filter(p=>bounds(p.x,p.y)&&d(p,anchor)<before&&!rocks.has(K(p.x,p.y))&&
+   !(p.x===3&&(p.y===0||p.y===7))&&!entity(p.x,p.y))
+  .sort((a,b)=>d(a,anchor)-d(b,anchor)||a.y-b.y||a.x-b.x)[0]||null;
+}
 function validSpellSpot(q,t,x,y){
  const target=entity(x,y),type=q.spell;
- if(['shield','heal','dash','cleanse','rally','bond','exchange','recall'].includes(type)){
+ if(['shield','heal','dash','cleanse','rally','bond','exchange','recall','reprisal','edict'].includes(type)){
   if(type==='recall'){
    const discarded=S.discards[t].some(k=>!D[k].spell&&!D[k].tribute);
    return discarded&&S.hands[t].length<=5&&S.echoRound?.[t]!==S.round&&
@@ -700,6 +734,8 @@ function validSpellSpot(q,t,x,y){
   if(type==='dash'&&target.dashRound===S.round)return false;
   if(type==='heal'&&(target.renewedRound===S.round||target.hp>=target.max&&!target.moved&&!target.attacked))return false;
   if(type==='shield'&&target.shield>=MAX_SHIELD)return false;
+  if(type==='reprisal'&&target.reprisal)return false;
+  if(type==='edict'&&(target.edict||target.attacked))return false;
   if(type==='exchange'&&(S.exchangeRound?.[t]===S.round||S.units.filter(v=>v.team===t).length<2||target.id===S.championId))return false;
   return true;
  }
@@ -710,6 +746,11 @@ function validSpellSpot(q,t,x,y){
  }
  if(!S.units.some(v=>v.team===t&&d(v,P(x,y))<=3))return false;
  if(['frost','ignite','silence'].includes(type))return !!target&&target.team!==t;
+ if(type==='undertow')return !!target&&target.team!==t&&!target.boss&&!!undertowLanding(target,t);
+ if(type==='diagonal'){
+  return S.units.some(v=>v.team!==t&&Math.abs(v.x-x)===1&&Math.abs(v.y-y)===1)||
+   (Math.abs(core(1-t).x-x)===1&&Math.abs(core(1-t).y-y)===1);
+ }
  if(type==='bolt')return target?.team===1-t||(x===3&&y===(t===0?0:7));
  if(type==='cross')return S.units.some(v=>v.team!==t&&d(v,P(x,y))<=1)||d(P(x,y),core(1-t))<=1;
  return false;
@@ -718,7 +759,35 @@ function resolveSpell(q,t,x,y){
  const target=entity(x,y),type=q.spell;
  if(!validSpellSpot(q,t,x,y))return false;
  const power=powerFor(q,t),boost=spellBonus(CARD_KEYS.find(k=>D[k]===q),t);
- if(type==='shield'){const n=grantShield(target,4+boost);abilityPulse(target,'shield',n)}
+ if(type==='reprisal'){
+  const n=grantShield(target,2);
+  target.reprisal=1;target.reprisalUntil=S.round+1;
+  abilityPulse(target,'reprisal',n);
+ }else if(type==='edict'){
+  target.edict=true;target.edictUntil=S.round+1;
+  abilityPulse(target,'edict',1);
+ }else if(type==='undertow'){
+  const landing=undertowLanding(target,t);
+  if(!landing)return false;
+  const impact=mitigate(target,power,false);
+  fxSpell(target,impact,'undertow',x,y,t);applyDamage(target,impact);
+  if(S.units.some(u=>u.id===target.id)){
+   target.x=landing.x;target.y=landing.y;
+   fxPush({type:'buff',kind:'undertow',to:fxTarget(target),amount:0});
+   trapImpact(target);
+  }
+ }else if(type==='diagonal'){
+  const victims=S.units.filter(v=>v.team!==t&&
+   Math.abs(v.x-x)===1&&Math.abs(v.y-y)===1);
+  for(const victim of [...victims]){
+   const impact=mitigate(victim,power,false);
+   fxSpell(victim,impact,'diagonal',x,y,t);applyDamage(victim,impact);
+  }
+  const enemyCore=core(1-t);
+  if(Math.abs(enemyCore.x-x)===1&&Math.abs(enemyCore.y-y)===1){
+   fxSpell(enemyCore,power,'diagonal',x,y,t);applyDamage(enemyCore,power);
+  }
+ }else if(type==='shield'){const n=grantShield(target,4+boost);abilityPulse(target,'shield',n)}
  else if(type==='heal'){const heal=Math.min(3+boost,target.max-target.hp);target.hp+=heal;
   target.moved=false;target.attacked=false;target.renewedRound=S.round;abilityPulse(target,'heal',heal)}
  else if(type==='dash'){target.moved=false;target.stride=0;target.dashRound=S.round;if(boost)grantShield(target,boost);abilityPulse(target,'dash',0)}
