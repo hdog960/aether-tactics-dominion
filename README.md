@@ -1,10 +1,10 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.5.1 — Painted Four-Spell Expansion**
+**Current source release: v4.5.2 — Three Saved Armory Loadouts**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
-A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight different 24-card deck strategies from 36 cards, upgrade your commander and collection, or test experimental private duels.
+A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight preset strategies or save three custom 24-card deck loadouts from 36 cards, upgrade your commander and collection, or test experimental private duels.
 
 ## Start here
 - **Play**: Commander's Hall — select Quick Battle, Story Campaign or Private Duel; continue a previously saved solo battle.
@@ -138,3 +138,6 @@ The **first batch of the Great Card Expansion is shipped**: Starfall Lattice, As
 **Testing:** Published isolated-browser QA passed all 12 targeted spell cases and 4/4 painted-image checks; 60 original-deck and 60 Astral-deck simulated battles had zero invalid states. A separate normal-game browser verified all 36 cards, the Astral preset, functional deck saving, and a progressing solo battle. Live physical iPhone touch/performance and two-device WebRTC still require verification.
 
 Your original deck, upgrades, campaign clears and in-progress matches are preserved by the same local save keys; saving a different deck applies to your **next NEW match**, not a resumed battle. The long-term 60-card target has **24 additional cards still planned**. See `V451_RELEASE_AND_QA.md` for mechanics, limitations, and test evidence.
+
+## v4.5.2 — Three-Deck Armory Vault
+In the Commander's Armory, **DECK I, II and III** now store distinct, named 24-card combinations. Selecting a slot previews its cards, and **SAVE FOR NEXT MATCH** equips that slot; canceling does not change active strategy. The previously saved deck is automatically adopted as the primary slot without modifying the v20 deck key or any active battle, Forge XP, collection, campaign or profile save. The vault uses an additive local-only `aether-dominion-loadouts-v452` save key, and preserves all eight original/Astral deck presets. See `V452_ARMORY_LOADOUT_VAULT.md` for tests and limitations.
