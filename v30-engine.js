@@ -360,6 +360,7 @@ function startMission(id,qa=false,planKind=null){
   S.units.push(champion);
  }
  S.hp[1]=m.objective==='assault'?24+Math.max(0,m.tier-2)*2:24;
+ S.coreMax=[24,Math.max(24,S.hp[1])];
  // The expedition doctrine belongs to this match only; existing v4 saves
  // and commander profile need no migration.
  if(selected){
@@ -1243,8 +1244,11 @@ function render(){
  if(!S)return;
  const my=localSeat,enemy=1-my,mirror=my===1;
  if($('battle-mode-tag'))$('battle-mode-tag').textContent=S.mode==='online'?'♜ PRIVATE DUEL':S.missionId?'🗺 CAMPAIGN':'⚔ SOLO BATTLE';
- $('selfhp').innerHTML=S.hp[my]+' <small>/ 24</small>';$('rivalhp').innerHTML=S.hp[enemy]+' <small>/ 24</small>';
- $('selfmeter').style.width=100*S.hp[my]/24+'%';$('rivalmeter').style.width=100*S.hp[enemy]/24+'%';
+ const coreMax=[Math.max(24,S.coreMax?.[0]||24),Math.max(24,S.coreMax?.[1]||24)];
+ $('selfhp').innerHTML=S.hp[my]+' <small>/ '+coreMax[my]+'</small>';
+ $('rivalhp').innerHTML=S.hp[enemy]+' <small>/ '+coreMax[enemy]+'</small>';
+ $('selfmeter').style.width=Math.min(100,100*S.hp[my]/coreMax[my])+'%';
+ $('rivalmeter').style.width=Math.min(100,100*S.hp[enemy]/coreMax[enemy])+'%';
  const mission=MISSION_BY_ID[S.missionId];
  if($('arena-label'))$('arena-label').textContent=mission?'✦ '+mission.name.toUpperCase():'✦ RIFTFRONT';
  if($('arena-details'))$('arena-details').textContent=mission?
@@ -1258,7 +1262,7 @@ function render(){
    (S.phase==='playing'?' · NEXT RD '+(event?.nextRound||mission.encounter.first):'');
  }
  $('round').textContent=S.round;$('turnlabel').textContent=S.phase==='over'?'MATCH OVER':S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
- $('aeth').textContent=S.energy[my];$('capacity').textContent=' / '+S.cap;
+ $('aeth').textContent=S.energy[my];$('capacity').textContent=' / '+Math.max(S.cap,S.energy[my]);
  $('deckcount').textContent=S.decks[my].length+' IN DECK';$('profile-open').textContent='LV '+profile.level;$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
  const unit=S.units.find(u=>u.id===chosenUnit),walk=new Set(unit&&!unit.moved&&!unit.rooted?movement(unit).map(z=>K(z.x,z.y)):[]),targets=new Set(unit&&!unit.attacked?[...S.units.filter(u=>u.team!==localSeat),core(enemy)].filter(z=>canAttack(unit,z)).map(z=>K(z.x,z.y)):[]);
  const card=chosenCard>=0?D[S.hands[my][chosenCard]]:null;
