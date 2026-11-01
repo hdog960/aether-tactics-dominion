@@ -413,7 +413,7 @@ function signatureFX(e,p,to,from){
   cross:'#ffc38e',aftershock:'#ffa371',silence:'#caa4ff',
   exchange:'#f7b0df',heal:'#9cf7ce',shield:'#b9d6ff',
   cleanse:'#c4ffe5',dash:'#a6dfff',rally:'#ffdaa4',bond:'#e2c4ff',
-  snare:'#cdaaff',recall:'#dbbaff'};
+  snare:'#cdaaff',recall:'#dbbaff',diagonal:'#ffedb3',reprisal:'#ff916e',undertow:'#83e3fa',edict:'#ffeb98'};
  const color=palette[kind]||'#dfd2ff';
  c.save();c.globalAlpha=.85*f;c.strokeStyle=color;c.fillStyle=color;
  c.lineCap='round';c.lineJoin='round';c.lineWidth=3;
@@ -449,6 +449,39 @@ function signatureFX(e,p,to,from){
   for(let i=0;i<6;i++){
    if(kind==='dash')line(x-50-p*23,y-34+i*11,x+12-p*23,y-40+i*11);
    else line(x+(i-3)*13,y+12,x+(i-3)*13,y-31-p*25);
+  }
+ }else if(kind==='diagonal'){
+  // Astral lances travel inward from four diagonal corners and burst
+  // around the painted target, not a generic buff ring.
+  for(let i=0;i<4;i++){
+   const dx=i%2?1:-1,dy=i<2?-1:1;
+   const k=1-p*.75;
+   line(x+dx*(48*k),y+dy*(26*k),x+dx*(16*k),y+dy*(7*k));
+   c.beginPath();c.arc(x+dx*(30*k),y+dy*(16*k),3.5+3*f,0,Math.PI*2);c.fill();
+  }
+ }else if(kind==='reprisal'){
+  // The two crossed embers converge onto the reprisal bearer.
+  const r=20+14*p;
+  c.beginPath();c.arc(x,y,r,Math.PI*.1,Math.PI*1.4);c.stroke();
+  for(const side of [-1,1]){
+   line(x+side*20,y+11,x+side*8,y-27-p*6);
+   line(x+side*8,y-27-p*6,x+side*13,y-17-p*6);
+  }
+ }else if(kind==='undertow'){
+  // A rolling tidal vortex conveys forced movement to nearby units.
+  for(let i=0;i<3;i++){
+   const y0=y+12-i*12;
+   c.beginPath();c.moveTo(x-37,y0);
+   c.bezierCurveTo(x-9-p*7,y0-25,x+13+p*11,y0+18,x+39,y0-12);
+   c.stroke();
+  }
+ }else if(kind==='edict'){
+  // Sunray crown with a prismatic central flash.
+  c.beginPath();c.arc(x,y,14+17*p,Math.PI,Math.PI*2);c.stroke();
+  for(let i=0;i<7;i++){
+   const a=Math.PI+i*Math.PI/6;
+   const r=22+p*13;
+   line(x+Math.cos(a)*r,y+Math.sin(a)*r,x+Math.cos(a)*(r+14),y+Math.sin(a)*(r+14));
   }
  }else if(kind==='recall'){
   c.beginPath();c.moveTo(x-28,y+11-22*p);c.quadraticCurveTo(x-14,y-13-22*p,x,y+6-22*p);
