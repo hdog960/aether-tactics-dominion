@@ -32,6 +32,20 @@ const unitColors={t:'#e7c36c',l:'#64daff',c:'#fa9e57',j:'#9be776',p:'#75eedc',
 const rasterFrames=new Image();
 rasterFrames.decoding='async';rasterFrames.src='./art/battlefield-frames-v432.webp?v=432';
 const animationRows={t:0,l:1,c:2,j:3,p:4,k:5,d:6,o:7,y:8,z:9,A:10,B:11};
+// Four independent 22-frame rows; never map M/N/O/P to existing units.
+const v453Rows={M:0,N:1,O:2,P:3};
+const v453Frames=new Image();v453Frames.decoding='async';
+v453Frames.src='./art/battlefield-frames-v453.webp?v=453';
+const v453Units=new Image();v453Units.decoding='async';
+v453Units.src='./art/units-creatures-v453.png?v=453';
+function v453FrameReady(){
+ return v453Frames.complete&&v453Frames.naturalWidth===2112&&
+  v453Frames.naturalHeight===480;
+}
+function v453SpriteReady(){
+ return v453Units.complete&&v453Units.naturalWidth===384&&
+  v453Units.naturalHeight===120;
+}
 // v4.3.3 — Six original monsters receive real, cached pixel frame sequences.
 // Built once after the existing monster PNG loads, not every game frame.
 // Separately animated torso and legs, with damage and collapse poses; never
@@ -113,10 +127,12 @@ const FRAME_W=96,FRAME_H=120;
 const defeated=new Map();
 function frameForUnit(u,t,walking){
  const classic=classicRows[u.k]!==undefined;
- const row=classic?classicRows[u.k]:animationRows[u.k];
+ const newer=v453Rows[u.k]!==undefined;
+ const row=newer?v453Rows[u.k]:classic?classicRows[u.k]:animationRows[u.k];
  if(row===undefined)return null;
+ if(newer&&!v453FrameReady())return null;
  if(classic&&!classicFrameReady)return null;
- if(!classic&&(!rasterFrames.complete||rasterFrames.naturalWidth!==2112))return null;
+ if(!newer&&!classic&&(!rasterFrames.complete||rasterFrames.naturalWidth!==2112))return null;
  let idx=Math.floor((t+u.id*91)/250)%4;
  if(walking)idx=4+Math.floor(t/90)%6;
  const atk=[...activeFx].reverse().find(f=>f.data.type==='strike'&&f.data.from?.id===u.id&&
@@ -128,7 +144,7 @@ function frameForUnit(u,t,walking){
  else if(hit)idx=14+Math.min(2,Math.floor((fxProg(hit,t)-fxImpact(hit))/
   Math.max(.01,.92-fxImpact(hit))*3));
  const w=classic?CW:FRAME_W,h=classic?CH:FRAME_H;
- return{img:classic?classicFrameAtlas:rasterFrames,x:idx*w,y:row*h,
+ return{img:newer?v453Frames:classic?classicFrameAtlas:rasterFrames,x:idx*w,y:row*h,
   sourceW:w,sourceH:h,tone:'none',boss:u.k==='t'||u.k==='l',frame:idx};
 }
 function drawDefeated(t){
@@ -136,8 +152,9 @@ function drawDefeated(t){
   const dt=t-death.start;
   if(dt>850){defeated.delete(id);continue}
   const u=death.unit,classic=classicRows[u.k]!==undefined,
-   row=classic?classicRows[u.k]:animationRows[u.k];
-  if(row===undefined||(classic?!classicFrameReady:!rasterFrames.complete)){
+   newer=v453Rows[u.k]!==undefined,
+   row=newer?v453Rows[u.k]:classic?classicRows[u.k]:animationRows[u.k];
+  if(row===undefined||(newer?!v453FrameReady():classic?!classicFrameReady:!rasterFrames.complete)){
    defeated.delete(id);continue;
   }
   const view=unitVisual(u,t),large=u.k==='t'||u.k==='l'?1.14:1,
@@ -146,12 +163,20 @@ function drawDefeated(t){
   c.save();c.imageSmoothingEnabled=false;
   c.globalAlpha=dt>550?Math.max(0,1-(dt-550)/300):1;
   const w=classic?CW:FRAME_W,h=classic?CH:FRAME_H;
-  c.drawImage(classic?classicFrameAtlas:rasterFrames,idx*w,row*h,w,h,
+  c.drawImage(newer?v453Frames:classic?classicFrameAtlas:rasterFrames,idx*w,row*h,w,h,
    view.z[0]-vw/2,view.z[1]-vh+4*view.scale,vw,vh);
   c.restore();
  }
 }
 function unitSprite(k){
+ // Never substitute old faction/unit art for new v4.5.3 characters.
+ // Original 96×120 transparent silhouette is the only static fallback
+ // while actual M/N/O/P animated frames are loading.
+ if(v453Rows[k]!==undefined){
+  if(!v453SpriteReady())return null;
+  return{img:v453Units,x:v453Rows[k]*96,y:0,sourceW:96,
+   sourceH:120,tone:'none',boss:false};
+ }
  if(paintedFrames37[k]!==undefined){
   // Never fall back to a recolored classic or an unrelated silhouette.
   if(!paintedAtlas37.complete||!paintedAtlas37.naturalWidth)return null;
@@ -275,6 +300,7 @@ function newFx(data,now,sequenceIndex=0){
 // v4.3.1 — silhouette-preserving character motion. These are animation
 // transforms of each actual illustrated sprite (not fake extra artwork).
 const battleRole={
+ N:'guardian',M:'flyer',O:'skirmisher',P:'caster',
  b:'guardian',g:'guardian',j:'guardian',B:'guardian',y:'guardian',
  t:'colossus',l:'colossus',
  s:'skirmisher',A:'skirmisher',k:'skirmisher',
@@ -1006,6 +1032,12 @@ window.AetherScene={sync(s,my,choice){
   width:rasterFrames.naturalWidth,height:rasterFrames.naturalHeight,keys:Object.keys(animationRows),
   framesPerUnit:22,defeated:defeated.size}),
  frameSample:(k,t=0,walking=false)=>frameForUnit({k,id:19},t,walking)?.frame??-1,
+ v453ArtInfo:()=>({cards:window.AetherArt.v453ArtStatus?.()||null,
+  spriteReady:v453SpriteReady(),framesReady:v453FrameReady(),
+  spriteDimensions:[v453Units.naturalWidth||0,v453Units.naturalHeight||0],
+  frameDimensions:[v453Frames.naturalWidth||0,v453Frames.naturalHeight||0],
+  characterIds:Object.keys(v453Rows),framesPerUnit:22,
+  originalRosterUnchanged:animationRows.B===11}),
  classicFrameInfo:()=>({ready:classicFrameReady,rows:Object.keys(classicRows),
   width:classicFrameAtlas.width,height:classicFrameAtlas.height,
   framesPerUnit:COL_COUNT,totalFrames:6*COL_COUNT}),
