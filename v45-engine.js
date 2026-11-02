@@ -2990,6 +2990,10 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
       if(o.key==='R'&&S.units.some(v=>v.team===0&&v.k!=='R'))return 2.1;
       if(o.key==='S'&&mission.objective==='defend')return 1.8;
       if(o.key==='T'&&(S.traps||[]).some(t=>t.team===1))return 2.4;
+      if(o.key==='Y'&&S.units.some(v=>v.team===1&&!v.boss))return 2.6;
+      if(o.key==='Z'&&S.units.some(v=>v.team===1&&v.burning))return 3.2;
+      if(o.key==='aa'&&S.hands[0].some(k=>D[k].tribute||k==='W'||k==='F'))return 2.4;
+      if(o.key==='ab'&&mission.objective==='capture')return 2.8;
       return 0;
      };
      const sa=a.q.atk*1.7+a.q.hp*.43+a.q.range*.6-a.q.cost*.35-
@@ -3022,6 +3026,13 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
      if(choice.key==='R'&&S.units.some(v=>v.team===0&&d(v,pt)<=2))score+=2;
      if(choice.key==='S'&&S.units.some(v=>v.team===1&&d(v,pt)<=2))score+=2;
      if(choice.key==='T'&&(S.traps||[]).some(t=>t.team===1&&d(t,pt)<=2))score+=8;
+     if(choice.key==='Y'&&S.units.some(v=>v.team===1&&!v.boss&&d(v,pt)<=2))score+=6;
+     if(choice.key==='Z'&&S.units.some(v=>v.team===1&&v.burning&&d(v,pt)<=2))score+=5;
+     if(choice.key==='aa'&&S.units.some(v=>v.team===1&&d(v,pt)<=3))score+=1.5;
+     if(choice.key==='ab'&&springs.some(k=>{
+      const [x,y]=k.split(',').map(Number);
+      return d(pt,P(x,y))<=2&&!S.units.some(v=>v.x===x&&v.y===y);
+     }))score+=5;
      return score;
     };
     slots.sort((a,b)=>deployScore(b)-deployScore(a)||a.y-b.y||a.x-b.x);
@@ -3126,6 +3137,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
        v455SpellsPlayed:(S.usedCards||[[],[]]).map(hand=>hand.filter(k=>V455_SPELL_KEYS.includes(k))),
        newCreaturesPlayed:(S.usedCards||[[],[]]).map(hand=>hand.filter(k=>V453_UNIT_KEYS.includes(k))),
        v454CreaturesPlayed:(S.usedCards||[[],[]]).map(hand=>hand.filter(k=>V454_UNIT_KEYS.includes(k))),
+       v456CreaturesPlayed:(S.usedCards||[[],[]]).map(hand=>hand.filter(k=>V456_UNIT_KEYS.includes(k))),
        championHP:S.units.find(v=>v.id===S.championId)?.hp||0,
        remainingBossShield:S.units.find(v=>v.id===S.championId)?.shield||0,
        valid,steps:orders,
@@ -3171,6 +3183,12 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
       }
      });
      return summary;
+    },{player:{},rival:{}}),
+    v456CreatureUsage:reports.reduce((summary,r)=>{
+     (r.v456CreaturesPlayed||[[],[]]).forEach((played,t)=>{
+      for(const k of played){const holder=t===0?summary.player:summary.rival;
+       holder[k]=(holder[k]||0)+1}
+     });return summary;
     },{player:{},rival:{}}),
     v455SpellUsage:reports.reduce((summary,r)=>{
      (r.v455SpellsPlayed||[[],[]]).forEach((played,t)=>{
