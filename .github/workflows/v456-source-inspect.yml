@@ -1,0 +1,38 @@
+name: Dominion v4.5.6 source-art candidate inspection
+on:
+  push:
+    branches: [dev/v456-four-creatures]
+    paths:
+      - .github/workflows/v456-source-inspect.yml
+permissions: {contents: read}
+jobs:
+  fetch-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve original character source PNG (staging artifact only)
+        env:
+          SOURCE_URL: "https://dnznrvs05pmza.cloudfront.net/gemini/gemini-3-pro-image/images/a1b51b98-4d24-43af-bced-29c02f27ce3c/d4fb45d3-128f-4df9-97f6-f1171da79a66/SINGLE_SQUARE_PRODUCTION_CHARACTER_CONCEPT_SOURCE_SHEET__exa.png?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiZjBlZmRiYjg2Y2U0MzY0OCIsImJ1Y2tldCI6InJ1bndheS10YXNrLWFydGlmYWN0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc5Mzc3NzU5Mn0.x_5SsFDTIIcx3fyT9W6vNFpM7YjLaE0sAMw3pc_iIq4"
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          curl -fsSL --retry 3 "$SOURCE_URL" -o candidate/v456-original-characters.png
+          file candidate/v456-original-characters.png
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          im=Image.open('candidate/v456-original-characters.png')
+          im.verify()
+          im=Image.open('candidate/v456-original-characters.png')
+          w,h=im.size
+          assert w>=1024 and h>=1024 and abs(w-h)<max(w,h)*0.09,(w,h)
+          assert Path('candidate/v456-original-characters.png').stat().st_size>100000
+          print('VALID_CANDIDATE_SOURCE',im.size)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dominion-v456-original-candidate-inspect
+          path: candidate/v456-original-characters.png
+          if-no-files-found: error
+          retention-days: 7
