@@ -4,6 +4,7 @@ on:
     branches: [dev/v456-four-creatures]
     paths:
       - art/sources/v456-original-characters.png
+      - .github/workflows/v456-build-from-source.yml
 permissions: {contents: write}
 jobs:
   validate-uploaded-original-art:
