@@ -1,6 +1,6 @@
 # Dominion v4.7 — Final Remote iPhone Multiplayer Acceptance
 
-**Status:** Automated source, browser, real local RTCDataChannel, and public Trystero signaling evidence exists. This document records the still-required real Safari-on-device acceptance gate. Mark v4.7 complete **only** when results are recorded.
+**Status:** Automated rules and browser QA, five real local RTCDataChannel rounds, public Trystero signaling, and a five-round duel between independent cloud runners (including guest reload and rejoin) passed on November 2, 2026. Physical iPhone Safari testing remains outstanding. This document records the still-required real Safari-on-device acceptance gate. Mark v4.7 complete **only** when results are recorded.
 
 ## Setup (two real iPhones)
 1. Use normal Safari tabs (not private). Both visit `https://hdog960.github.io/aether-tactics-dominion/` while online and confirm the visible app build is **v4.7.2 or later**.
