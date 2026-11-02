@@ -2635,6 +2635,83 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
  },
+ // Isolated real v4.6.0 progression tests; all local keys restored.
+ qaV46Gauntlet:()=>{
+  const checks=[],test=(name,ok,detail='')=>checks.push({name,pass:!!ok,detail});
+  const before=JSON.stringify(profile),beforeState=S,beforeMode=mode,beforeSeat=localSeat,
+   keys=[PROFILE_STORE,'aether-dominion-v04'],
+   storage=keys.map(k=>localStorage.getItem(k));
+  const settle=(win,hp)=>{
+   S.phase='over';S.winner=win?0:1;S.hp[0]=hp;
+   return awardMatch();
+  };
+  try{
+   profile.gauntlet={version:1,attempts:0,clears:0,bestStage:0,firstClearRewarded:false,current:null};
+   profile.claimed={};profile.last=null;profile.mastery={};profile.masteryClaims={};
+   profile.gold=0;profile.xp=0;profile.level=1;profile.copies={};
+   const deck=chosenDeck.slice();
+   test('Gauntlet starts only with a valid 24-card deck',checkDeck(deck)&&startGauntlet());
+   const one=profile.gauntlet.current;
+   test('Stage one is a true solo battle and a locked run',
+    one?.stage===1&&one.status==='active'&&S.gauntletStage===1&&
+    S.gauntletRunId===one.id&&S.arenaId==='verdant'&&
+    S.decks[0].every(k=>deck.includes(k)));
+   test('Cannot skip first battle to stage two',continueGauntlet()===false&&one.stage===1);
+   test('Game save retains original version four schema with run identification',
+    (()=>{save();const old=S;S=null;const ok=load();return ok&&S.version===4&&
+      S.gauntletRunId===one.id&&S.gauntletStage===1&&S.matchId===old.matchId})());
+   profile.mastery.v=3;profile.masteryClaims.v=0;
+   S.usedCards=[['v','v'],[]];
+   const first=settle(true,16),initialGold=profile.gold;
+   test('First stage records victory and original Core attrition exactly once',
+     first?.victory&&one.status==='ready'&&one.wins===1&&one.core===16);
+   test('One card used twice gains one mastery mark per match',
+     profile.mastery.v===4&&profile.masteryClaims.v===1&&
+     first.masteryRewards?.filter(x=>x.card==='v').length===1);
+   const claimedAgain=awardMatch();
+   test('Duplicate gameover render cannot award stage or gold twice',
+     claimedAgain?.matchId===first.matchId&&profile.gold===initialGold&&one.wins===1);
+   test('A correctly claimed win permits stage progression',
+     continueGauntlet()===true&&one.stage===2&&one.status==='active'&&
+     S.gauntletStage===2&&S.arenaId==='frost'&&S.hp[0]===20&&S.hp[1]===27);
+   test('Stage two keeps original deck and frozen rank snapshot',
+     S.rewardPool.length===24&&deck.every((k,i)=>S.rewardPool[i]===k)&&
+     deck.every(k=>S.cardRanks[k]===one.ranks[k]));
+   const second=settle(true,7);
+   test('Stage two updates wounded Core and unlocks only stage three',
+     second?.gauntlet?.stage===2&&one.status==='ready'&&one.core===7&&one.wins===2);
+   test('Third stage starts on ruins with capped carry heal and a guarded Core',
+     continueGauntlet()&&S.arenaId==='ruins'&&S.gauntletStage===3&&
+     S.hp[0]===11&&S.hp[1]===30&&S.units.some(u=>u.boss&&u.team===1));
+   const third=settle(true,3);
+   test('Full Gauntlet clear yields one-time first-clear rewards',
+     third.gauntlet?.status==='cleared'&&third.gauntlet?.firstClear===true&&
+     one.status==='cleared'&&profile.gauntlet.clears===1&&
+     profile.gauntlet.firstClearRewarded===true&&third.gauntlet.bonusGold===180&&
+     third.gauntlet.bonusXP===210);
+   const gold=profile.gold,xp=profile.xp,copies=profile.copies.ag||0;
+   awardMatch();
+   test('Repeated completion never duplicates bonus gold, XP or card copies',
+     gold===profile.gold&&xp===profile.xp&&copies===(profile.copies.ag||0));
+   test('Cleared final match never advances into nonexistent stage four',
+     continueGauntlet()===false&&one.stage===3);
+   test('New run resets stage without resetting career-wide best and clears',
+     startGauntlet()===true&&profile.gauntlet.current.stage===1&&
+     profile.gauntlet.attempts===2&&profile.gauntlet.clears===1&&
+     profile.gauntlet.bestStage===3);
+   const retry=profile.gauntlet.current;
+   settle(false,0);
+   test('Losing a stage ends the run without a bonus or continuation',
+     retry.status==='failed'&&continueGauntlet()===false&&
+     profile.gauntlet.clears===1&&profile.gauntlet.firstClearRewarded);
+  }catch(e){checks.push({name:'Unhandled QA exception',pass:false,detail:String(e.stack||e)})}
+  finally{
+   profile=JSON.parse(before);S=beforeState;mode=beforeMode;localSeat=beforeSeat;
+   keys.forEach((k,i)=>{if(storage[i]===null)localStorage.removeItem(k);
+    else localStorage.setItem(k,storage[i])});
+  }
+  return{pass:checks.length===16&&checks.every(c=>c.pass),checks};
+ },
  // v4.5.8 final four creatures. Exercises actual unit and combat state.
  qaV458Creatures:()=>{
   const tests=[],check=(name,pass,detail='')=>tests.push({name,pass:!!pass,detail});
