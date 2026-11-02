@@ -71,7 +71,7 @@ flush();
 check('Only the known guest supplies the host loadout',host.state.decks.length===1&&host.state.decks[0].length===24);
 check('Invalid or overlength deck is refused',G.sendLoadout(['v'])===false&&
  G.sendLoadout(Array.from({length:24},()=>'verylongvalue'.repeat(10)))===false);
-check('Guest may send an action with authoritative revision',G.intent({rev:8,cmd:{op:'end'}})===true);
+check('Guest may send an action with authoritative revision',G.intent({rev:8,cmd:{op:'end'}})===1);
 const packet=wire.shift();
 deliver(packet);deliver(packet);
 check('Duplicated action sequence can reach host only once',
@@ -82,7 +82,7 @@ check('Malformed intent and revision are rejected before host callback',
  (()=>{rooms.host.handlers.get('act').onMessage({seq:2,rev:-1,cmd:{op:'end'}},{peerId:'guest'});
  rooms.host.handlers.get('act').onMessage({seq:2,rev:9,cmd:'end'},{peerId:'guest'});
  return host.state.intents.length===1})());
-check('A newer sequenced guest action is admitted',G.intent({rev:9,cmd:{op:'end'}})===true);
+check('A newer sequenced guest action is admitted',G.intent({rev:9,cmd:{op:'end'}})===2);
 flush();
 check('Accepted actions are sequenced without replay',host.state.intents.length===2&&host.state.intents[1].seq===2);
 check('Old packets delivered out of order are ignored',(()=>{deliver(packet);return host.state.intents.length===2})());
@@ -101,7 +101,7 @@ check('Disconnect marks both peers unavailable without resetting the duel',!H.co
 check('Guest cannot send an action while disconnected',G.intent({rev:12,cmd:{op:'end'}})===false);
 open();
 check('Reconnect restores one peer without admitting intruder',H.connected()&&G.connected()&&host.state.joined===2&&guest.state.joined===2);
-check('Reconnected guest sends a new action with ordered sequence',G.intent({rev:12,cmd:{op:'end'}})===true);
+check('Reconnected guest sends a new action with ordered sequence',G.intent({rev:12,cmd:{op:'end'}})===3);
 flush();
 check('Host accepts the fresh reconnection packet',host.state.intents.length===3&&host.state.intents[2].rev===12);
 H.leave();
