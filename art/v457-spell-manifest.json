@@ -1,0 +1,28 @@
+{
+  "version": "4.5.7",
+  "keys": [
+    "ac",
+    "ad",
+    "ae",
+    "af"
+  ],
+  "names": [
+    "Gravemire Ring",
+    "Prism Relay",
+    "Cinder Bloom",
+    "Tidal Reprieve"
+  ],
+  "width": 512,
+  "height": 96,
+  "cell_width": 128,
+  "cell_height": 96,
+  "source": {
+    "file": "art/sources/v457-original-spells.png",
+    "sha256": "ec51b9153db75ed71c584744d3dafdbb40c2ff4f23dc25a5b08ea7fc2aca0637",
+    "dimensions": [
+      2048,
+      2048
+    ]
+  },
+  "unique_paintings": 4
+}
