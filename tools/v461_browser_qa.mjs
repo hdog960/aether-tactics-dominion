@@ -72,6 +72,12 @@ try{
    paths:paths.map(x=>({left:x.left,right:x.right})),
    tabs:tabs.map(x=>({left:x.left,right:x.right}))};
  });
+ const namesFit=await narrow.evaluate(()=>[...document.querySelectorAll('.rift-path-grid button b')].every(el=>{
+  const r=document.createRange();r.selectNodeContents(el);
+  const lines=r.getClientRects();
+  return lines.length===1&&el.scrollWidth<=el.clientWidth+2;
+ }));
+ assert(namesFit,'320px route names wrap, overflow or truncate ungracefully');
  assert(geometry.hallLeft>=-3&&geometry.hallRight<=323&&geometry.tabs.every(t=>t.left>=-3&&t.right<=323)&&
   geometry.paths.length===3&&geometry.paths.every(t=>t.left>=-3&&t.right<=323),
   'Gauntlet or five-tab navigation clips narrow phone: '+JSON.stringify(geometry));
