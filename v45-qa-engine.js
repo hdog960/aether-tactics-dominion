@@ -2054,7 +2054,8 @@ function renderProfile(){
    (m.drawn?'DRAW':m.victory?'VICTORY':'DEFEAT')+' · +'+m.xp+' XP · +'+m.gold+' gold · '+
     m.rewards.map(k=>D[k]?.name||k).join(', ')+(m.missionTitle?' · '+m.missionTitle+(m.storyClear?' FIRST CLEAR':'')+' · '+m.stars+' SIGILS':'')+(m.levelUp?' · LEVEL UP!':'')+
     (m.gauntlet?' · GAUNTLET '+m.gauntlet.stage+'/3 '+m.gauntlet.status.toUpperCase():'')+
-    (m.masteryRewards?.length?' · '+m.masteryRewards.length+' NEW MASTERIES':''):
+    (m.masteryRewards?.length?' · '+m.masteryRewards.length+' NEW MASTERIES':'')+
+    (m.contractRewards?.length?' · '+m.contractRewards.length+' MASTERY CONTRACT(S)':''):
     'Finish a match to earn XP, gold and copies of cards from your deck.';
  if($('profile-achievements')){
   const earned=Object.keys(profile.achievements).filter(k=>profile.achievements[k]);
@@ -2207,7 +2208,8 @@ function render(){
   (reward.missionTitle?' · '+reward.missionTitle+(reward.storyClear?' FIRST CLEAR':'')+' · '+reward.stars+'★':'')+
   (reward.levelUp?' · LEVEL UP!':'')+
   (reward.gauntlet?' · RIFT GAUNTLET '+reward.gauntlet.stage+'/3 · '+reward.gauntlet.status.toUpperCase():'')+
-  (reward.masteryRewards?.length?' · '+reward.masteryRewards.length+' MASTERY REWARD(S)':''):'');
+  (reward.masteryRewards?.length?' · '+reward.masteryRewards.length+' MASTERY REWARD(S)':'')+
+  (reward.contractRewards?.length?' · '+reward.contractRewards.length+' CAREER CONTRACT(S) COMPLETED':''):'');
   // Authored campaign result, grounded in this actual match and settled rewards.
   // Avoid modifying match outcomes, progression, or already-claimed rewards.
   const epilogue=$('campaign-epilogue'),tale=mission?.epilogue;
