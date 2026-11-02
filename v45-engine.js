@@ -2346,6 +2346,121 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
  },
  // v4.5.5 exact battle-law checks on real engine, isolated from public saves.
+ qaV456Creatures:()=>{
+  const checks=[],check=(name,pass,detail='')=>checks.push({name,pass:!!pass,detail});
+  const setup=()=>{
+   if(!startMission('v1',true,'rush'))throw Error('QA mission not started');
+   S.turn=0;S.energy[0]=6;S.energy[1]=6;S.hands=[[],[]];
+   S.traps=[];S.units=[];S.next=800;S.round=1;
+  };
+  const add=(k,t,x,y)=>{
+   const u=unit(k,t,x,y,true);S.units.push(u);return u;
+  };
+  try{
+   {
+    setup();const bell=add('Y',0,2,5),enemy=add('r',1,3,5),other=add('v',1,5,5);
+    onCreatureSummoned(bell);
+    check('Bellkeeper weakens closest enemy by exactly one',enemy.weakened===1&&!other.weakened);
+   }
+   {
+    setup();const bell=add('Y',0,2,5),boss=add('g',1,3,5),enemy=add('v',1,4,5);
+    boss.boss=true;onCreatureSummoned(bell);
+    check('Bellkeeper ignores champion and chooses eligible creature',!boss.weakened&&enemy.weakened===1);
+   }
+   {
+    setup();const bell=add('Y',0,2,5),enemy=add('r',1,6,2);
+    onCreatureSummoned(bell);
+    check('Bellkeeper cannot curse out-of-range enemies',!enemy.weakened);
+   }
+   {
+    setup();const bell=add('Y',0,2,5),enemy=add('r',1,3,5);
+    enemy.weakened=2;onCreatureSummoned(bell);
+    check('Bellkeeper never weakens a stronger existing hex',enemy.weakened===2);
+   }
+   {
+    setup();const bell=add('Y',1,2,3),enemy=add('v',0,2,4);
+    onCreatureSummoned(bell);
+    check('Enemy Bellkeeper uses identical team-aware debuff',enemy.weakened===1);
+   }
+   {
+    setup();const hunter=add('Z',0,2,5),burn=add('g',1,3,5),spread=add('v',1,4,5);
+    burn.burning=true;burn.hp=burn.max=20;
+    basicStrike(hunter,burn);
+    check('Prowler spreads ignition to one second enemy after burning-target hit',
+     spread.burning&&hunter.prowlerRound===S.round);
+    const second=add('v',1,3,4);
+    second.burning=false;basicStrike(hunter,burn);
+    check('Prowler only propagates once per round',!second.burning);
+   }
+   {
+    setup();const hunter=add('Z',0,2,5),enemy=add('g',1,3,5),other=add('v',1,4,5);
+    enemy.hp=enemy.max=20;basicStrike(hunter,enemy);
+    check('Prowler requires burning target to ignite a second enemy',!other.burning);
+   }
+   {
+    setup();const hunter=add('Z',0,3,1),enemy=add('v',1,2,1);
+    hunter.prowlerRound=0;
+    basicStrike(hunter,core(1));
+    check('Prowler never spreads burn from a Core attack',!enemy.burning&&!hunter.prowlerRound);
+   }
+   {
+    setup();const dev=add('aa',0,2,5);dev.hp=3;dev.max=7;
+    onSacrifice(0);
+    check('Devourer heals by exactly two on voluntary ally sacrifice',
+      dev.hp===5&&dev.devourRound===S.round);
+    onSacrifice(0);
+    check('Devourer cannot heal twice within the same round',dev.hp===5);
+   }
+   {
+    setup();const dev=add('aa',0,2,5),ally=add('v',0,3,5);
+    dev.hp=2;applyDamage(ally,999);
+    check('Normal nearby battle death never heals Devourer',dev.hp===2);
+   }
+   {
+    setup();const dev=add('aa',0,2,5);dev.hp=6;dev.max=7;onSacrifice(0);
+    check('Devourer sacrifice healing never exceeds printed health',dev.hp===7);
+   }
+   {
+    setup();const dev=add('aa',0,2,5),sac=add('v',0,3,5);
+    dev.hp=3;S.energy[0]=10;S.hands[0]=['W'];
+    const cast=apply(0,{op:'card',idx:0,x:sac.x,y:sac.y,tributes:[]});
+    check('Real Ember Covenant sacrifice activates Devourer passive',
+     cast&&dev.hp===5&&!S.units.some(v=>v.id===sac.id));
+   }
+   {
+    setup();const herald=add('ab',0,1,4);
+    S.energy[0]=4;const moved=apply(0,{op:'move',id:herald.id,x:1,y:3});
+    check('Moving Herald onto spring gains 1 shield and exactly 1 Aeth',
+      moved&&herald.shield===1&&S.energy[0]===5&&herald.heraldRound===S.round);
+    herald.x=1;herald.y=4;afterMove(herald);
+    herald.x=1;herald.y=3;afterMove(herald);
+    check('Herald cannot exploit repeated movement onto spring same round',
+      herald.shield===1&&S.energy[0]===5);
+   }
+   {
+    setup();const herald=add('ab',0,1,4);
+    S.traps=[{team:1,x:1,y:3,damage:99,expires:S.round+4}];
+    S.energy[0]=5;const moved=apply(0,{op:'move',id:herald.id,x:1,y:3});
+    check('A lethal trap resolves before Herald gains spring reward',
+      moved&&!S.units.some(v=>v.id===herald.id)&&S.energy[0]===5);
+   }
+   {
+    setup();const herald=add('ab',0,1,3);S.energy[0]=10;
+    onCreatureSummoned(herald);
+    check('Summoning Herald directly on spring never grants movement reward',
+      herald.shield===0&&S.energy[0]===10);
+   }
+   {
+    setup();S.energy[0]=6;S.hands[0]=['Y'];
+    add('v',1,3,5);
+    const cast=apply(0,{op:'card',idx:0,x:2,y:5,tributes:[]});
+    check('Legal Bellkeeper card summon activates same combat rule',
+      cast&&S.units.find(v=>v.k==='v')?.weakened===1&&S.energy[0]===3);
+   }
+  }catch(err){checks.push({name:'Runtime exception',pass:false,detail:String(err)})}
+  finally{startQuickMatch()}
+  return{pass:checks.length===17&&checks.every(x=>x.pass),checks};
+ },
  qaV455Spells:()=>{
   const tests=[],check=(name,ok,info='')=>tests.push({name,pass:!!ok,info});
   const setup=k=>{
