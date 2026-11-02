@@ -1,6 +1,6 @@
 # Dominion v4.7 — Final Remote iPhone Multiplayer Acceptance
 
-**Status:** Automated source, browser, real local RTCDataChannel, and public Trystero signaling evidence exists. This document records the still-required real Safari-on-device acceptance gate. Mark v4.7 complete **only** when results are recorded.
+**Status (November 2, 2026):** All automated rules, phone-sized Chromium and WebKit-family browser tests, local real RTCDataChannel gameplay, and five-round independent-cloud-host WebRTC tests have passed. Both remote peers successfully summoned cards through the visible painted battlefield, preserved six units, and resumed after a guest reload. See `V473_REMOTE_CARD_PLAY_QA.md`. **Physical iPhone Safari testing across independent networks has not yet been performed.** This document records that final acceptance gate. Mark v4.7 complete **only** when results are recorded.
 
 ## Setup (two real iPhones)
 1. Use normal Safari tabs (not private). Both visit `https://hdog960.github.io/aether-tactics-dominion/` while online and confirm the visible app build is **v4.7.2 or later**.
