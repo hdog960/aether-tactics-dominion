@@ -3,7 +3,7 @@
  const G=window.AetherGame,N=window.DominionNav;
  if(!G?.gauntletStatus||!G?.startGauntlet||!N?.showTab)return;
  const $=id=>document.getElementById(id),title=['Whispering Gate','Frostbound Passage','Crownfall Reckoning'];
- let last='',selectedPath='wayfinder';
+ let last='',lastContracts='',masteryFilter='active',selectedPath='wayfinder';
  function render(){
   const g=G.gauntletStatus(),current=g.current,match=G.get();
   let line=current?.status==='ready'?'STAGE '+current.stage+' CLEARED · NEXT '+(current.stage+1)+'/3':
@@ -37,20 +37,44 @@
    else if(same&&current?.status==='failed')action.textContent='RETRY RIFT GAUNTLET';
   }else if(action&&action.textContent!=='FIGHT AGAIN')action.textContent='FIGHT AGAIN';
   const masters=$('v46-masteries');
+  const all=G.masteryStatus(),contracts=G.masteryContractsStatus();
+  const list=masteryFilter==='gold'?all.filter(x=>x.rank===3):
+   masteryFilter==='active'?all.filter(x=>x.uses>0):all;
+  document.querySelectorAll('button[data-mastery-filter]').forEach(button=>
+   button.setAttribute('aria-pressed',String(button.dataset.masteryFilter===masteryFilter)));
+  const count=$('v462-mastery-count');
+  if(count)count.textContent=list.length+' OF '+all.length+' CARDS · '+
+   all.filter(x=>x.rank===3).length+' GOLD MASTERIES';
   if(masters){
-   const list=G.masteryStatus().filter(x=>x.uses>0).slice(0,6);
    const markup=list.length?list.map(x=>{
     const next=x.next||30,ratio=Math.min(100,100*x.uses/next);
+    const name=x.name.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
     return '<div class="rift-mastery-row"><div class="rift-mastery-top"><b>'+
-     x.name.replaceAll('&','&amp;').replaceAll('<','&lt;')+
-     '</b><span>'+['UNRANKED','BRONZE','SILVER','GOLD'][x.rank]+'</span></div>'+
+     name+'</b><span>'+['UNRANKED','BRONZE','SILVER','GOLD'][x.rank]+'</span></div>'+
      '<div class="rift-mastery-rail"><i style="width:'+ratio+'%"></i></div>'+
-     '<small>'+x.uses+' WIN/PLAY MARKS · '+(x.next?x.next+' TO NEXT TIER':'MAX RANK')+
+     '<small>'+x.uses+' SOLO PARTICIPATIONS · '+(x.next?x.next+' TO NEXT RANK':'MAX RANK')+
      ' · '+x.claimed+'/3 REWARDS CLAIMED</small></div>';
-   }).join(''):'<p>Play cards during solo matches to begin unlocking mastery rewards.</p>';
+   }).join(''):'<p class="v462-empty">No cards in this filter yet. Try ALL 60 to explore the roster.</p>';
    if(markup!==last){masters.innerHTML=markup;last=markup}
   }
+  const box=$('v462-contracts');
+  if(box){
+   const markup=contracts.map(c=>{
+    const fraction=Math.min(100,Math.round(100*c.progress/c.goal));
+    return '<div class="v462-contract'+(c.claimed?' complete':'')+'">'+
+     '<div class="v462-contract-top"><b>'+c.name+'</b><span>'+
+     (c.claimed?'CLAIMED':'+'+c.gold+' GOLD')+'</span></div>'+
+     '<div class="v462-contract-description">'+c.detail+'</div>'+
+     '<div class="rift-mastery-rail"><i style="width:'+fraction+'%"></i></div>'+
+     '<small>'+c.progress+'/'+c.goal+' · '+(c.claimed?'COMPLETE':'EARN ON VICTORY')+'</small>'+
+     '</div>';
+   }).join('');
+   if(markup!==lastContracts){box.innerHTML=markup;lastContracts=markup}
+  }
  }
+ document.querySelectorAll('button[data-mastery-filter]').forEach(button=>button.addEventListener('click',()=>{
+  masteryFilter=button.dataset.masteryFilter;render();
+ }));
  document.querySelectorAll('button[data-rift-path]').forEach(button=>button.addEventListener('click',()=>{
   const cur=G.gauntletStatus().current;
   if(['active','ready'].includes(cur?.status))return;
