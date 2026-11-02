@@ -77,8 +77,17 @@ try{
    shield:0,fly:false,moved:false,attacked:false
   }));
   window.AetherScene.sync(g,0,{unit:null,card:-1,tributes:[]});
+  // Refresh the REAL board DOM. Old overlay <img> sprites otherwise cover
+  // the new painted canvas units despite drawImage events being recorded.
+  document.querySelector('#board button[data-x="0"][data-y="4"]')?.click();
   const panel=document.querySelector('#qa-panel');if(panel)panel.style.display='none';
  });
+ await page.waitForFunction(()=>
+  ['Aether Lanternist','Vesper Kestrel','Hollowroot Collector','Rimeshard Sentinel']
+   .every(name=>[...document.querySelectorAll('#board button[aria-label]')]
+    .some(el=>el.getAttribute('aria-label')?.includes(name)))&&
+  document.querySelectorAll('#board img.unitimg').length===4,
+  null,{timeout:12000});
  await page.waitForFunction(()=>
   [0,120,240,360].every(row=>window.__dominionV458DrawRows?.includes(row)),
   null,{timeout:15000});
