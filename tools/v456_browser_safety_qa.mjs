@@ -29,6 +29,28 @@ try{
   report.prior.plans===report.prior.plansTotal,'Previous combat regression failed');
  // Until actual source images are committed, the art gate MUST remain closed.
  assert(!report.art.ready,'Unreviewed v4.5.6 artwork silently marked ready');
+
+ // Stage four genuine canvas spell-feedback signatures without requiring
+ // missing character paintings. This exercises the 2D effect renderer itself.
+ const fx=await qa.evaluate(()=>{
+  const state=window.AetherGame.get(),scene=window.AetherScene;
+  const units=(state.units||[]).slice(0,4);
+  state.fxSeq=0;state.fxEvents=[];
+  scene.sync(state,0,{unit:null,card:-1,tributes:[]});
+  const kinds=['bellkeeper','cinderwake','oathmoss','tidebreak'];
+  state.fxEvents=kinds.map((kind,i)=>({
+   id:101+i,type:'buff',kind,amount:i===2?2:1,
+   to:{id:units[i]?.id||i+1,x:units[i]?.x??i+1,y:units[i]?.y??5,
+       team:units[i]?.team??0}
+  }));
+  state.fxSeq=104;
+  scene.sync(state,0,{unit:null,card:-1,tributes:[]});
+  return{queued:scene.activeCombat(),kinds};
+ });
+ assert(fx.queued>=4,'Four unique staged visual events did not reach the battlefield');
+ await qa.waitForTimeout(130);
+ await qa.screenshot({path:'art/v456-four-ability-fx-390px.png',fullPage:false});
+
  const real=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
  real.on('pageerror',e=>problems.push('Regular game: '+e.message));
  await real.goto('http://127.0.0.1:8000/index.html',{waitUntil:'load',timeout:40000});
