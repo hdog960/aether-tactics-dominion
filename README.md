@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current development release candidate: v4.6.4 — Rift Chronicle and Gauntlet polish**
+**Current source release: v4.6.4 — Rift Chronicle and Gauntlet polish**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
