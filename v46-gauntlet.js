@@ -3,7 +3,7 @@
  const G=window.AetherGame,N=window.DominionNav;
  if(!G?.gauntletStatus||!G?.startGauntlet||!N?.showTab)return;
  const $=id=>document.getElementById(id),title=['Whispering Gate','Frostbound Passage','Crownfall Reckoning'];
- let last='',lastContracts='',masteryFilter='active',selectedPath='wayfinder';
+ let last='',lastContracts='',masteryFilter='active',selectedPath='wayfinder',selectedFlux=false;
  function render(){
   const g=G.gauntletStatus(),current=g.current,match=G.get();
   let line=current?.status==='ready'?'STAGE '+current.stage+' CLEARED · NEXT '+(current.stage+1)+'/3':
@@ -25,6 +25,28 @@
   if(detail&&activePath)detail.textContent=activePath.description+
    (activePath.firstGold&&!g.pathFirstRewards[activePath.id]?
    ' · First clear: +'+activePath.firstGold+' gold':'');
+  const active=['active','ready'].includes(current?.status);
+  const showingFlux=active?current?.flux===true:selectedFlux;
+  const toggle=$('v463-flux-toggle');
+  if(toggle){toggle.disabled=active;toggle.setAttribute('aria-pressed',String(showingFlux))}
+  const label=$('v463-flux-toggle-label');
+  if(label)label.textContent=showingFlux?'ON':'OFF';
+  const details=$('v463-flux-details');
+  if(details)details.hidden=!showingFlux;
+  const progress=$('v463-flux-progress');
+  if(progress)progress.textContent=
+   (g.fluxClears||0)+' Flux clear'+(g.fluxClears===1?'':'s')+' · '+
+   (g.fluxFirstRewarded?'First-clear 60 gold claimed':'First full Flux clear: +60 gold');
+  const forecast=$('v463-omen-forecast');
+  if(forecast){
+   const catalog=Object.fromEntries((g.omenCatalog||[]).map(v=>[v.id,v]));
+   const picks=active&&showingFlux?(current.omens||[]).map(k=>catalog[k]):g.nextOmens||[];
+   const markup=showingFlux?picks.filter(Boolean).map((omen,i)=>
+    '<div class="v463-omen-row'+(active&&current.stage===i+1?' current':'')+'">'+
+    '<span class="v463-omen-step">'+(i+1)+'</span><span><b>'+omen.name+
+    '</b><small>'+omen.detail+'</small></span></div>').join(''):'';
+   if(forecast.innerHTML!==markup)forecast.innerHTML=markup;
+  }
   const status=$('home-gauntlet-status');
   if(status&&status.textContent!==line)status.textContent=line;
   const dots=document.querySelectorAll('#home-gauntlet .rift-progress i');
@@ -75,6 +97,10 @@
  document.querySelectorAll('button[data-mastery-filter]').forEach(button=>button.addEventListener('click',()=>{
   masteryFilter=button.dataset.masteryFilter;render();
  }));
+ $('v463-flux-toggle')?.addEventListener('click',()=>{
+  if(['active','ready'].includes(G.gauntletStatus().current?.status))return;
+  selectedFlux=!selectedFlux;render();
+ });
  document.querySelectorAll('button[data-rift-path]').forEach(button=>button.addEventListener('click',()=>{
   const cur=G.gauntletStatus().current;
   if(['active','ready'].includes(cur?.status))return;
@@ -91,7 +117,7 @@
   }
   if(state?.phase==='playing'&&!state.gauntletRunId&&
    !confirm('Begin a Rift Gauntlet? Your current solo battle will be replaced. Commander, deck, and campaign progression will remain saved.'))return;
-  if(G.startGauntlet(selectedPath)){N.showTab('battle');render()}
+  if(G.startGauntlet(selectedPath,selectedFlux)){N.showTab('battle');render()}
  });
  document.addEventListener('click',e=>{
   if(e.target.closest('[data-page],#battle-home,#home-forge,#home-continue,#home-campaign,#home-quick,#again,#result-rewards')){
