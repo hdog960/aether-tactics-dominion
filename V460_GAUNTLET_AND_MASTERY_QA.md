@@ -12,7 +12,7 @@ Three sequential encounters must be won in one run, using the **same saved 24-ca
 | II — **Frostbound Passage** | Frostglass Reach | Arcane AI plus real frost hazard tiles | 27 | Starts at previous battle's surviving HP +4, capped at 24 |
 | III — **Crownfall Reckoning** | Crownfall Sanctum | Fortress AI with a separately rendered armored sentinel, plus real arcane hazard tiles | 30 | Starts at surviving HP after stage II +4, capped at 24 |
 
-A loss or draw ends the current run, and replay starts a new attempt at Stage I. Completed stages do not skip a future run. Player health never resets fully between stages unless the player earns enough health through survival plus the bounded +4 reprieve. A defeated enemy Core ends an encounter under the same basic battle rules as existing solo play.
+A loss or draw ends the current run, and replay starts a new attempt at Stage I. Choosing a new standard skirmish abandons the current Gauntlet; if a saved stage is subsequently replaced by another battle, the Hall safely restarts a new run rather than leaving an orphaned continuation. Completed stages do not skip a future run. Player health never resets fully between stages unless the player earns enough health through survival plus the bounded +4 reprieve. A defeated enemy Core ends an encounter under the same basic battle rules as existing solo play.
 
 ### Saves, fairness and idempotence
 
@@ -42,7 +42,7 @@ The Forge shows each used card's rank, a progress rail, next threshold and claim
 
 ## Automated verification
 
-- [Rift Gauntlet real-engine CI](https://github.com/hdog960/aether-tactics-dominion/actions/workflows/v460-rules-qa.yml): 18 focused persistence, stage, environmental hazard, mastery and reward-idempotence checks, with all previous v4.5.3–v4.5.8 spell/creature regressions, campaign bosses, mission plans, decks and **180 simulated normal battles**. A test failure blocks release.
+- [Rift Gauntlet real-engine CI](https://github.com/hdog960/aether-tactics-dominion/actions/workflows/v460-rules-qa.yml): 20 focused persistence, stage, environmental hazard, mastery and reward-idempotence checks, with all previous v4.5.3–v4.5.8 spell/creature regressions, campaign bosses, mission plans, decks and **180 simulated normal battles**. A test failure blocks release.
 - [Mobile-sized Chromium screenshots and UI](https://github.com/hdog960/aether-tactics-dominion/actions/workflows/v460-browser-qa.yml): actual Hall launch at 390px, actual first battlefield, page reload and Gauntlet resume, visible Forge mastery section, 320px Hall/tabs geometry, an isolated QA run of all stage/claim tests, and no JavaScript page errors.
 - `tools/v460_release_guard.mjs`: both entrypoints loaded the new UI; production/QA engine and scene parity; existing card collection and version-4 save keys unchanged; stop after v4.7; PWA precaches the Gauntlet script, styles, and versioned game engine.
 
