@@ -329,6 +329,7 @@ function awardMatch(){
      gauntletResult={status:'cleared',stage:3,firstClear:true,bonusGold:180,bonusXP:210,copy};
     }else gauntletResult={status:'cleared',stage:3,firstClear:false};
     const path=GAUNTLET_PATHS[run.path]||GAUNTLET_PATHS.wayfinder;
+    profile.gauntlet.pathClears||={};profile.gauntlet.pathFirstRewards||={};
     profile.gauntlet.pathClears[path.id]=(profile.gauntlet.pathClears[path.id]||0)+1;
     // Only optional challenge paths award a small one-time trophy bonus.
     const bonus=path.firstGold||0;
@@ -378,9 +379,9 @@ function gauntletStatus(){
  const g=profile.gauntlet,run=g.current;
  return{attempts:g.attempts,clears:g.clears,bestStage:g.bestStage,
    firstClearRewarded:g.firstClearRewarded,
-   pathClears:{...g.pathClears},pathFirstRewards:{...g.pathFirstRewards},
+   pathClears:{...(g.pathClears||{})},pathFirstRewards:{...(g.pathFirstRewards||{})},
    paths:Object.values(GAUNTLET_PATHS).map(v=>({id:v.id,name:v.name,description:v.description,
-    firstGold:v.firstGold,clears:g.pathClears[v.id]||0})),
+    firstGold:v.firstGold,clears:g.pathClears?.[v.id]||0})),
    current:run?{id:run.id,stage:run.stage,wins:run.wins,core:run.core,
     status:run.status,deckSize:run.deck?.length||0,path:run.path||'wayfinder'}:null};
 }
@@ -2680,6 +2681,79 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
   }catch(e){checks.push({name:'Runtime exception',pass:false,detail:String(e)})}
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
+ },
+ // v4.6.1: three independent Rift Paths with no save-schema migration.
+ qaV461Paths:()=>{
+  const checks=[],test=(name,ok)=>checks.push({name,pass:!!ok});
+  const before=JSON.stringify(profile),state=S,savedMode=mode,seat=localSeat;
+  const keys=[PROFILE_STORE,'aether-dominion-v04'],stored=keys.map(k=>localStorage.getItem(k));
+  const win=hp=>{S.phase='over';S.winner=0;S.hp[0]=hp;return awardMatch()};
+  try{
+   profile.gauntlet={version:1,attempts:0,clears:0,bestStage:0,
+    firstClearRewarded:false,current:null,pathClears:{},pathFirstRewards:{}};
+   profile.claimed={};profile.mastery={};profile.masteryClaims={};
+   profile.gold=0;profile.xp=0;profile.level=1;profile.copies={};
+   test('Unknown path rejected without beginning or charging an attempt',
+    startGauntlet('invented')===false&&profile.gauntlet.attempts===0);
+   test('Stormbound begins with two bonus Aeth and a tougher enemy Core',
+    startGauntlet('stormbound')&&S.gauntletPath==='stormbound'&&
+    S.hp[0]===24&&S.hp[1]===27&&S.energy[0]===5);
+   const storm=profile.gauntlet.current;
+   test('Run snapshots exact chosen path and original 24-card deck',
+    storm.path==='stormbound'&&storm.deck.length===24&&storm.stage===1);
+   win(14);
+   test('Stormbound carry heal is two, rather than the classic four',
+    continueGauntlet()&&S.gauntletStage===2&&S.hp[0]===16&&
+    S.hp[1]===30&&S.energy[0]===5);
+   const stageID=S.matchId;save();S=null;const loaded=load();
+   test('Version-four saved match preserves path, stage and match ID across reload',
+    loaded&&S.gauntletPath==='stormbound'&&S.gauntletStage===2&&
+    S.matchId===stageID&&S.version===4);
+   win(8);continueGauntlet();
+   test('Stormbound final Core and restore remain route-specific',
+    S.gauntletStage===3&&S.hp[0]===10&&S.hp[1]===33);
+   const result=win(2),extra=result?.gauntlet?.pathBonusGold;
+   test('First Stormbound clear receives a bounded, one-time path trophy',
+    extra===70&&profile.gauntlet.pathClears.stormbound===1&&
+    profile.gauntlet.pathFirstRewards.stormbound&&
+    profile.gauntlet.clears===1);
+   const oldGold=profile.gold,oldClear=profile.gauntlet.pathClears.stormbound;
+   awardMatch();
+   test('Reload/result repaint cannot repeat path bonus or clear count',
+    profile.gold===oldGold&&profile.gauntlet.pathClears.stormbound===oldClear);
+   startGauntlet('stormbound');win(24);continueGauntlet();
+   win(24);continueGauntlet();const duplicate=win(24);
+   test('Repeating Stormbound increases clears but never repeats its gold bonus',
+    profile.gauntlet.pathClears.stormbound===2&&
+    duplicate.gauntlet.pathBonusGold===undefined);
+   test('Ironbound starts damaged, shields two allies, and fortifies enemies',
+    startGauntlet('ironbound')&&S.hp[0]===20&&S.hp[1]===26&&
+    S.units.filter(u=>u.team===0).slice(0,2).every(u=>u.shield>=1));
+   win(14);continueGauntlet();
+   test('Ironbound restores three Core HP and retains selected path',
+    S.hp[0]===17&&S.gauntletPath==='ironbound'&&S.hp[1]===29);
+   win(7);continueGauntlet();const iron=win(2);
+   test('Ironbound first clear pays its own once-only bonus, not global first-clear again',
+    iron.gauntlet.pathBonusGold===100&&iron.gauntlet.firstClear===false&&
+    profile.gauntlet.pathClears.ironbound===1);
+   // Compatibility: old v4.6.0 profile/run has no path or path records.
+   const old=profile.gauntlet;
+   profile.gauntlet={version:1,attempts:1,clears:0,bestStage:1,
+    firstClearRewarded:false,current:null};
+   const display=gauntletStatus();
+   test('Pre-v4.6.1 profile with no path fields still renders as Wayfinder',
+    display.paths.length===3&&display.paths[0].clears===0&&
+    startGauntlet()&&S.gauntletPath==='wayfinder'&&S.hp[1]===24);
+   profile.gauntlet=old;
+   test('Match saves retain version 4 and 60 original cards remain available',
+    S.version===4&&CARD_KEYS.length===60);
+  }catch(e){checks.push({name:'Unhandled path QA exception',pass:false,detail:String(e.stack||e)})}
+  finally{
+   profile=JSON.parse(before);S=state;mode=savedMode;localSeat=seat;
+   keys.forEach((k,i)=>{if(stored[i]===null)localStorage.removeItem(k);
+    else localStorage.setItem(k,stored[i])});
+  }
+  return{pass:checks.length===14&&checks.every(x=>x.pass),checks};
  },
  // Isolated real v4.6.0 progression tests; all local keys restored.
  qaV46Gauntlet:()=>{
