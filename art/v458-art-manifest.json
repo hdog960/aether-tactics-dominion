@@ -1,0 +1,41 @@
+{
+  "version": "4.5.8",
+  "characters": [
+    "ag",
+    "ah",
+    "ai",
+    "aj"
+  ],
+  "frames_per_character": 22,
+  "source": {
+    "file": "v458-original-characters.png",
+    "sha256": "45990d6a10f84ae470bc183af1e38fb05bc8adb71bb8dcde751b6fc6842196fd",
+    "dimensions": [
+      2048,
+      2048
+    ]
+  },
+  "atlases": {
+    "cards-creatures-v458.webp": {
+      "dimensions": [
+        512,
+        96
+      ],
+      "bytes": 14026
+    },
+    "units-creatures-v458.png": {
+      "dimensions": [
+        384,
+        120
+      ],
+      "bytes": 76216
+    },
+    "battlefield-frames-v458.webp": {
+      "dimensions": [
+        2112,
+        480
+      ],
+      "bytes": 504456
+    }
+  }
+}
