@@ -53,6 +53,9 @@ Players can select **Wayfinder** (classic +4 recovery), **Stormbound** (+2 Core 
 ### v4.6.2 — Full Mastery Codex & Career Contracts (completed)
 Forge now displays mastery progress for **all 60 cards** with PROGRESS, ALL 60 and GOLD filters, instead of only the six most-played cards. Six persistent one-time career contracts reward earning different Bronze/Silver/Gold masteries, winning with eight distinct cards, and clearing two or three Rift Paths. Contract payouts total a bounded 615 gold over the entire account and only claim on actual solo wins; no special multiplayer benefits or saved data reset. The `V462_MASTERY_CODEX_AND_CONTRACTS_QA.md` report covers gameplay, save and mobile browser checks. Physical iPhone and remote two-device play remain unverified.
 
+### v4.6.3 — Optional Rotating Rift Flux (completed)
+Added **Rift Flux**: an optional three-omen encounter variant for any Gauntlet path, with three different saved stage conditions per run. Aeth Tide (+2 Aeth both players), Warden Patrol (shielded enemy soldier, +1 player Aeth), Siege Lines (+4 enemy Core, +1 player Aeth and one opening card), and Veil of Wards (+1 shield to early summons on both teams) rotate across attempts. Hall previews each exact omen and locks changes during a run. The first complete Flux clear earns **60 gold only once**; subsequent clears advance a permanent counter. Classic Gauntlet remains the default, and older runs/playthrough saves keep their original rules. The live 60-card collection, Forge Masteries, Rift Paths and level-equalized PvP are unchanged. Source: `V463_RIFT_FLUX_RELEASE_AND_QA.md`.
+
 ### v4.6 — Further Replayability & Progression (in progress)
 Continue with more varied Gauntlet challenges, longer-term mastery objectives, progression pacing and anti-repeat safeguards. Never reset existing save keys or inflate stat power in private duels.
 
