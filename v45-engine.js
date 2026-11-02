@@ -2559,7 +2559,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
      enemy=add('v',1,3,4,{atk:2});
     const hp=sentinel.hp;basicStrike(enemy,sentinel);
     check('Rimeshard survives one strike, clears both statuses and gains one shield',
-      sentinel.hp<hp&&!sentinel.burning&&!sentinel.rooted&&sentinel.shield===2);
+      sentinel.hp<hp&&!sentinel.burning&&!sentinel.rooted&&sentinel.shield===1);
    }
    {
     const add=setup(),sentinel=add('aj',0,2,4,{hp:8,max:8}),
@@ -2567,7 +2567,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     basicStrike(enemy,sentinel);const shield=sentinel.shield;
     basicStrike(enemy,sentinel);
     check('Rimeshard reactive shield is limited to once each round',
-      shield===2&&sentinel.shield<=shield&&sentinel.rimeRound===1);
+      shield===1&&sentinel.shield<shield&&sentinel.rimeRound===1);
    }
    {
     const add=setup(),sentinel=add('aj',0,2,4,{hp:1,max:8,shield:0}),
