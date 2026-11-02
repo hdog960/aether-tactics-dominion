@@ -1,0 +1,71 @@
+import fs from 'node:fs';
+const read=p=>fs.readFileSync(p,'utf8');
+const checks=[],problems=[],test=(name,pass)=>{checks.push({name,pass:!!pass});if(!pass)problems.push(name)};
+const index=read('index.html'),secondary=read('v30.html'),sw=read('sw.js'),
+ eng=read('v45-engine.js'),qa=read('v45-qa-engine.js'),scene=read('v45-scene.js'),
+ css=read('v46-gauntlet.css'),ui=read('v46-gauntlet.js'),road=read('DOMINION_ROADMAP.md');
+test('Real game and isolated engine are byte-identical',eng===qa);
+test('Real and QA renderer are unchanged and synchronized',scene===read('v45-qa-scene.js'));
+test('Both entrypoints include Hall, mastery, JS and CSS',
+ [index,secondary].every(s=>['id="home-gauntlet"','id="home-gauntlet-status"',
+ 'id="v46-masteries"','v46-gauntlet.js?v=463','v46-gauntlet.css?v=460','v461-rift-paths.css?v=461','v462-masteries.css?v=462','v463-flux.css?v=463'].every(x=>s.includes(x))));
+test('New original 60-card catalogue is preserved with no newly gated cards',
+ eng.includes("const V458_UNIT_KEYS=['ag','ah','ai','aj']")&&
+ index.includes('window.DOMINION_V458_ART_RELEASE=true')&&
+ secondary.includes('window.DOMINION_V458_ART_RELEASE=true'));
+test('Existing locally saved match version and deck/profile keys unchanged',
+ eng.includes("version:4,usedCards:")&&
+ eng.includes("const PROFILE_STORE='aether-dominion-profile-v21'")&&
+ eng.includes("DECK_STORE='aether-dominion-deck-v20'")&&
+ eng.includes("const LOADOUT_STORE='aether-dominion-loadouts-v452'"));
+test('Gauntlet rewards depend on same run and only a win',
+ eng.includes("S.gauntletRunId===run.id")&&eng.includes("run.status==='active'")&&
+ eng.includes("if(victory){")&&eng.includes('profile.gauntlet.firstClearRewarded=true'));
+test('Run is a linked sequence with a fixed original 24-card deck',
+ eng.includes("name:'Whispering Gate'")&&eng.includes("name:'Frostbound Passage'")&&
+ eng.includes("name:'Crownfall Reckoning'")&&eng.includes('checkDeck(run.deck)')&&
+ eng.includes('S.rewardPool=run.deck.slice()'));
+test('First Gauntlet award cannot repeat after first clear',
+ eng.includes('if(!profile.gauntlet.firstClearRewarded)'));
+test('Card mastery rewards are one time with bounded milestones',
+ eng.includes('const tiers=[{uses:4,gold:30},{uses:12,gold:65},{uses:30,gold:125}]')&&
+ eng.includes('profile.masteryClaims[k]=claimed'));
+test('New PvE gauntlet does not modify online balance',
+ eng.includes("function combatLevel(k,t){return mode==='ai'"));
+test('Released PWA caches all Gauntlet JS/CSS and fresh engine',
+ ['v46-gauntlet.js?v=463','v46-gauntlet.css?v=460','v461-rift-paths.css?v=461','v462-masteries.css?v=462','v463-flux.css?v=463','v45-engine.js?v=463',
+ 'aether-dominion-v463-rotating-rift-omens'].every(x=>sw.includes(x)));
+test('Three Rift paths are presented in both game entrypoints',
+ [index,secondary].every(x=>['data-rift-path="wayfinder"','data-rift-path="stormbound"','data-rift-path="ironbound"'].every(v=>x.includes(v))));
+test('Original run uses Wayfinder and new variants are bounded to PvE',
+ eng.includes('const GAUNTLET_PATHS=')&&eng.includes("stormbound:{id:'stormbound'")&&
+ eng.includes("ironbound:{id:'ironbound'")&&eng.includes('firstGold:70')&&eng.includes('firstGold:100')&&
+ eng.includes('profile.gauntlet.pathFirstRewards[path.id]'));
+test('All 60 original cards accessible in both Forge pages',
+ [index,secondary].every(s=>['data-mastery-filter="active"','data-mastery-filter="all"',
+ 'data-mastery-filter="gold"','id="v462-contracts"','id="v462-mastery-count"'].every(x=>s.includes(x))));
+test('Six named one-time contracts have their own saved flags',
+ ['bronze-five','silver-three','gold-two','versatile-eight','rift-two','rift-three'].every(x=>eng.includes("id:'"+x+"'"))&&
+ eng.includes('profile.masteryContracts[contract.id]=true')&&
+ eng.includes("if(victory)for(const contract of masteryContractsStatus())"));
+test('One-time contracts only provide progression currency, not duel stats',
+ eng.includes('profile.gold+=contract.gold;coins+=contract.gold;')&&
+ eng.includes("if(!S||mode!=='ai'")&&
+ !eng.includes('profile.levels[contract.id]'));
+test('Rift Flux toggle, three forecasts and clear reward shown in both real entrypoints',
+ [index,secondary].every(h=>['id="v463-flux-toggle"','id="v463-omen-forecast"',
+ 'id="v463-flux-progress"','v463-flux.css?v=463'].every(t=>h.includes(t))));
+test('Stage omens are distinct, deterministic and opt-in',
+ eng.includes('function riftOmenSchedule(attempts=0)')&&eng.includes('RIFT_OMEN_IDS[(offset+i)%RIFT_OMEN_IDS.length]')&&
+ eng.includes("function startGauntlet(chosenPath='wayfinder',enableFlux=false)")&&
+ eng.includes("S.gauntletOmen=id")&&eng.includes("run.flux===true"));
+test('One-time Flux reward bounded and saved separately from existing Gauntlet rewards',
+ eng.includes("if(!profile.gauntlet.fluxFirstRewarded)")&&
+ eng.includes('profile.gold+=60;coins+=60;gauntletResult.fluxFirstBonus=60')&&
+ eng.includes('profile.gauntlet.fluxClears=(profile.gauntlet.fluxClears||0)+1'));
+test('Gauntlet has real 320px style rules',
+ css.includes('@media(max-width:370px)')&&css.includes('.hall-choice.hall-gauntlet'));
+test('GAUNTLET is available and all source has no ambiguous post-v4.7 work',
+ road.includes('Mandatory stopping point after v4.7')&&ui.includes('startGauntlet'));
+console.log(JSON.stringify({pass:problems.length===0,checks,problems},null,2));
+if(problems.length)process.exitCode=1;
