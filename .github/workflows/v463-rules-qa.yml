@@ -8,6 +8,13 @@ on:
       - v45-engine.js
       - v45-qa-engine.js
       - DOMINION_ROADMAP.md
+      - tools/v463_release_guard.mjs
+      - index.html
+      - v30.html
+      - v463-flux.css
+      - v46-gauntlet.js
+      - sw.js
+      - V463_RIFT_FLUX_RELEASE_AND_QA.md
 permissions: {contents: read}
 jobs:
   flux-regression:
@@ -18,6 +25,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: node tools/v463_rules_qa.mjs
+      - run: node tools/v463_release_guard.mjs
       - run: |
           cmp v45-engine.js v45-qa-engine.js
           cmp v45-scene.js v45-qa-scene.js
