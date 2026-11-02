@@ -86,7 +86,7 @@ ab:{name:'Tidebreak Herald',cost:3,hp:5,atk:1,range:2,move:3,
 ac:{name:'Gravemire Ring',cost:3,spell:'gravemire',role:'Gravity Hex',
  desc:'Root up to two nearby non-champion enemies; no damage.'},
 ad:{name:'Prism Relay',cost:2,spell:'prismrelay',role:'Ward Transfer',
- desc:'Move 2 existing shield from an ally to its nearest vulnerable ally.'},
+ desc:'Transfer 2 shield to a nearby ally; refresh its movement once per round.'},
 ae:{name:'Cinder Bloom',cost:3,spell:'cinderbloom',role:'Ember Hex',
  desc:'Ignite a foe and one nearby unburned foe; no immediate damage.'},
 af:{name:'Tidal Reprieve',cost:3,spell:'tidalreprieve',role:'Group Restoration',
@@ -1113,6 +1113,11 @@ function resolveSpell(q,t,x,y){
   if(!receiver)return false;
   target.shield-=2;
   const gained=grantShield(receiver,2);
+  // Strategic reason to use the relay instead of the cheaper-to-aim Ward:
+  // movement tempo is returned only once per recipient per round, never attack.
+  if(receiver.moved&&!receiver.rooted&&receiver.relayRound!==S.round){
+   receiver.moved=false;receiver.stride=0;receiver.relayRound=S.round;
+  }
   abilityPulse(target,'prismrelay',-2);abilityPulse(receiver,'prismrelay',gained);
  }else if(type==='cinderbloom'){
   for(const victim of cinderBloomVictims(target,t)){
@@ -1402,7 +1407,8 @@ function aiTurn(){
     spot=moves[0];
    }else if(q.spell==='prismrelay'){
     spot=friends.filter(u=>(u.shield||0)>=3&&prismReceiver(u,1)&&
-     (prismReceiver(u,1).shield||0)<=1)
+     (prismReceiver(u,1).shield||0)<=1&&prismReceiver(u,1).moved&&
+     !prismReceiver(u,1).rooted&&prismReceiver(u,1).relayRound!==S.round)
      .sort((a,b)=>(b.shield||0)-(a.shield||0)||a.id-b.id)[0];
    }else if(q.spell==='tidalreprieve'){
     spot=friends.filter(u=>tidalReprieveVictims(u,1).length>=2)
@@ -1582,7 +1588,7 @@ const GUIDE={
  Z:{feature:'Burn propagation via successful strike.',detail:'Once per round, a basic attack against an already burning enemy creature ignites one other non-burning enemy creature within 2 tiles of the first victim. Never spreads to a Core or boosts base strike damage.',tip:'Pair with Ember Sigil to pressure clustered creatures.'},
  aa:{feature:'Survive through voluntary sacrifice.',detail:'Whenever you voluntarily sacrifice a friendly unit to a mythic, Fateful Exchange or Ember Covenant, restore up to 2 missing HP to this Devourer once per round. Defeat of any creature never qualifies.',tip:'Keep this slow beast alive on a contested lane while using sacrifice cards.'},
  ac:{feature:'Control a clustered enemy advance.',detail:'Select an opposing non-champion creature within three tiles of your army. Root up to two unrooted opposing non-champions within one tile of that target, nearest first. Deals no immediate damage, excludes Cores and never affects champions.',tip:'Interrupt a pair of advancing skirmishers before their next movement.'},
- ad:{feature:'Redistribute shields, not create them.',detail:'Choose an allied creature holding at least two shields. Move exactly two of its shield points to the most weakly shielded different ally within two tiles who has space for both. Never exceeds the five-shield cap and cannot target a Core.',tip:'Transfer protection from a safe backliner to a front-line defender.'},
+ ad:{feature:'Redistribute shields and movement tempo.',detail:'Choose an allied creature holding at least two shields. Move exactly two of its shield points to the most weakly shielded different ally within two tiles who has space for both. If that ally already moved, is unrooted and has not been refreshed by Prism Relay this round, it may move once more, but never gains another attack. Never exceeds the five-shield cap and cannot target a Core.',tip:'Transfer your backline protection to a fast spring runner after its first move.'},
  ae:{feature:'Set up an Ember combination.',detail:'Choose an unburned enemy non-champion creature within three tiles of your army. Ignite it and the nearest other unburned non-champion enemy within two tiles. Deals no immediate damage; existing burn is never stacked.',tip:'Set up Cinderjaw Prowler or force enemies to spend a cleanse.'},
  af:{feature:'Recover a wounded squad.',detail:'Choose one injured allied creature. Restore up to two HP to it, plus one HP each to the two most injured different allies within two tiles. Healing never refreshes their movement or attack and cannot exceed maximum HP.',tip:'Best when several allied creatures survive a tough round together.'},
  ab:{feature:'Earn momentum from spring control.',detail:'The first time this Herald moves onto an Aeth spring each round, it gains 1 shield and restores 1 Aeth to its owner, capped at 10. Triggered after any hostile snare damage; summoning directly on a spring does not count.',tip:'Move from another tile onto a spring when your Aeth is below the cap.'},
@@ -2312,7 +2318,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    }
   }catch(err){checks.push({name:'Runtime exception',pass:false,detail:String(err)})}
   finally{startQuickMatch()}
-  return{pass:checks.length===14&&checks.every(v=>v.pass),checks};
+  return{pass:checks.length===16&&checks.every(v=>v.pass),checks};
  },
  qaV453Creatures:()=>{
   const checks=[],check=(name,ok,detail='')=>
@@ -2478,6 +2484,21 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
     const ok=cast(0,2,4);
     check('Prism Relay refuses receiver with no two-shield capacity',
       !ok&&S.energy[0]===10);
+   }
+   {
+    const add=setup('ad');const donor=add('v',0,2,4,{shield:4});
+    const receiver=add('r',0,3,4,{shield:0,moved:true,attacked:true});
+    const ok=cast(0,2,4);
+    check('Prism Relay refreshes recipient movement but never its attack',
+      ok&&donor.shield===2&&receiver.shield===2&&!receiver.moved&&receiver.attacked&&
+      receiver.relayRound===S.round);
+   }
+   {
+    const add=setup('ad');const donor=add('v',0,2,4,{shield:4});
+    const receiver=add('r',0,3,4,{shield:0,moved:true,attacked:true,relayRound:1});
+    const ok=cast(0,2,4);
+    check('Prism Relay cannot refresh same recipient movement twice in a round',
+      ok&&receiver.moved&&receiver.attacked&&donor.shield===2&&receiver.shield===2);
    }
    {
     const add=setup('ae');add('r',0,2,4);
