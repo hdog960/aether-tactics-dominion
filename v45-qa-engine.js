@@ -2424,6 +2424,123 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
  },
+ // v4.5.7: actual card application, legal target, ownership, limits & persistence.
+ qaV457Spells:()=>{
+  const checks=[],check=(name,pass,detail='')=>checks.push({name,pass:!!pass,detail});
+  const setup=k=>{
+   if(!startMission('v1',true,'rush'))throw Error('QA mission not started');
+   S.turn=0;S.round=1;S.energy=[10,10];S.hands=[[k],[]];S.units=[];S.traps=[];
+   return(k,t,x,y,opts={})=>{
+    const u=unit(k,t,x,y,true);Object.assign(u,opts);S.units.push(u);return u;
+   };
+  };
+  const cast=(t,x,y)=>apply(t,{op:'card',idx:0,x,y,tributes:[]});
+  try{
+   {
+    const add=setup('ac');add('v',0,2,5);
+    const first=add('v',1,3,4),second=add('r',1,4,4),
+      far=add('s',1,6,4),before=S.energy[0];
+    const ok=cast(0,3,4);
+    check('Gravemire roots two nearby enemies without damage',
+      ok&&first.rooted&&second.rooted&&!far.rooted&&first.hp===first.max&&
+      second.hp===second.max&&S.energy[0]===before-3);
+   }
+   {
+    const add=setup('ac');add('v',0,2,5);
+    const boss=add('g',1,3,4,{boss:true}),other=add('v',1,4,4);
+    const old=S.energy[0],ok=cast(0,3,4);
+    check('Gravemire rejects champion focus, consumes no resources',
+      !ok&&!boss.rooted&&!other.rooted&&S.energy[0]===old&&S.hands[0][0]==='ac');
+   }
+   {
+    const add=setup('ac');add('v',0,2,5);
+    const prior=add('v',1,3,4,{rooted:true}),other=add('v',1,4,4);
+    const ok=cast(0,3,4);
+    check('Gravemire never consumes its two-target limit on already-rooted units',
+      ok&&prior.rooted&&other.rooted);
+   }
+   {
+    const add=setup('ad');const donor=add('v',0,2,4,{shield:4});
+    const needy=add('v',0,3,4,{shield:0}),safe=add('r',0,2,5,{shield:3});
+    const ok=cast(0,2,4);
+    check('Prism Relay transfers exactly two real shields to lowest-shield ally',
+      ok&&donor.shield===2&&needy.shield===2&&safe.shield===3);
+   }
+   {
+    const add=setup('ad');const donor=add('v',0,2,4,{shield:1});
+    const needy=add('r',0,3,4,{shield:0}),energy=S.energy[0];
+    const ok=cast(0,2,4);
+    check('Prism Relay refuses donor below two shields without spending Aeth',
+      !ok&&donor.shield===1&&needy.shield===0&&S.energy[0]===energy);
+   }
+   {
+    const add=setup('ad');add('v',0,2,4,{shield:4});add('r',0,3,4,{shield:4});
+    const ok=cast(0,2,4);
+    check('Prism Relay refuses receiver with no two-shield capacity',
+      !ok&&S.energy[0]===10);
+   }
+   {
+    const add=setup('ae');add('r',0,2,4);
+    const first=add('v',1,3,4),second=add('v',1,4,4),far=add('v',1,6,6);
+    const ok=cast(0,3,4);
+    check('Cinder Bloom ignites two foes without immediate damage or extra flames',
+      ok&&first.burning&&second.burning&&!far.burning&&first.hp===first.max&&
+      second.hp===second.max);
+   }
+   {
+    const add=setup('ae');add('r',0,2,4);
+    const enemy=add('v',1,3,4,{burning:true}),other=add('v',1,4,4);
+    const energy=S.energy[0],ok=cast(0,3,4);
+    check('Cinder Bloom rejects already burning focus and leaves secondary untouched',
+      !ok&&enemy.burning&&!other.burning&&S.energy[0]===energy);
+   }
+   {
+    const add=setup('ae');add('v',0,2,4);
+    const boss=add('g',1,3,4,{boss:true}),other=add('v',1,4,4);
+    const ok=cast(0,3,4);
+    check('Cinder Bloom cannot target boss or ignite indirectly from it',
+      !ok&&!boss.burning&&!other.burning);
+   }
+   {
+    const add=setup('af');
+    const target=add('v',0,2,4,{hp:2,max:5});
+    const ally=add('v',0,3,4,{hp:3,max:5});
+    const third=add('r',0,2,5,{hp:3,max:4});
+    const enemy=add('r',1,4,4);
+    const ok=cast(0,2,4);
+    check('Tidal Reprieve heals two on focus and one each on two wounded allies',
+      ok&&target.hp===4&&ally.hp===4&&third.hp===4&&enemy.hp===enemy.max);
+   }
+   {
+    const add=setup('af');add('v',0,2,4,{hp:5,max:5});add('v',0,3,4,{hp:2,max:5});
+    const energy=S.energy[0],ok=cast(0,2,4);
+    check('Tidal Reprieve refuses fully healed focus with no Aeth cost',
+      !ok&&S.energy[0]===energy);
+   }
+   {
+    const add=setup('af');const ally=add('v',0,2,4,{hp:1,max:5,moved:true,attacked:true});
+    const ok=cast(0,2,4);
+    check('Tidal Reprieve never grants extra movement or attacks',
+      ok&&ally.hp===3&&ally.moved&&ally.attacked);
+   }
+   {
+    const add=setup('ac');const ally=add('v',0,2,4),enemy=add('v',1,3,4);
+    S.turn=1;S.hands[1]=['ac'];S.energy[1]=10;const ok=cast(1,2,4);
+    check('Opponent uses the same zone-control rules without team inversion',
+      ok&&ally.rooted&&!enemy.rooted);
+   }
+   {
+    const add=setup('ae');add('r',0,2,4);
+    const target=add('v',1,3,4);
+    const ok=cast(0,3,4);save();S=null;const loaded=load();
+    const restored=S?.units.find(u=>u.id===target.id);
+    check('Version-four match save and reload preserve new burning state',
+      ok&&loaded&&S?.version===4&&restored?.burning===true);
+   }
+  }catch(e){checks.push({name:'Unhandled test exception',pass:false,detail:String(e.stack||e)})}
+  finally{startQuickMatch()}
+  return{pass:checks.length===14&&checks.every(v=>v.pass),checks};
+ },
  // v4.5.5 exact battle-law checks on real engine, isolated from public saves.
  qaV456Creatures:()=>{
   const checks=[],check=(name,pass,detail='')=>checks.push({name,pass:!!pass,detail});
