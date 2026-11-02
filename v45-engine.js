@@ -487,6 +487,25 @@ let S=null,localSeat=0,mode='ai',net=null,room='',chosenUnit=null,chosenCard=-1,
 // guest orders while an earlier order awaits host confirmation.
 let networkEpoch=0,duelStarted=false,duelOrderPending=false;
 let duelPendingOrder=null,duelAckTimer=null,duelAckRetries=0,lastDuelAckSeq=0;
+let duelHandshakeTimer=null,duelHandshakeTries=0;
+function clearDuelHandshake(){
+ if(duelHandshakeTimer!==null){clearTimeout(duelHandshakeTimer);duelHandshakeTimer=null}
+ duelHandshakeTries=0;
+}
+function repeatDuelLoadout(ticket){
+ if(ticket!==networkEpoch||mode!=='online'||localSeat!==1||!connected||
+    duelStarted||S?.phase==='over')return;
+ if(duelHandshakeTries>=5){
+  $('roomstatus').textContent='Deck not confirmed. Use SYNC DUEL or rejoin the room.';
+  return;
+ }
+ duelHandshakeTries++;
+ net?.sendLoadout(chosenDeck.slice());
+ // Five bounded attempts; no new room or extra gameplay commands.
+ duelHandshakeTimer=setTimeout(()=>{
+  duelHandshakeTimer=null;repeatDuelLoadout(ticket);
+ },4000);
+}
 function clearDuelAck(){
  if(duelAckTimer!==null){clearTimeout(duelAckTimer);duelAckTimer=null}
  duelOrderPending=false;duelPendingOrder=null;duelAckRetries=0;
@@ -2434,7 +2453,7 @@ function startAI(){
  message('<b>Single Player</b> · Rune Valley','Tap a card to summon, or tap an ally to command it.');render();
 }
 function disconnect(){
- networkEpoch++;clearDuelAck();duelStarted=false;lastDuelAckSeq=0;
+ networkEpoch++;clearDuelAck();clearDuelHandshake();duelStarted=false;lastDuelAckSeq=0;
  if(net){try{net.leave()}catch(e){}net=null}
  room='';connected=false;
 }
@@ -2449,7 +2468,7 @@ function join(code,host){
  if(!window.AetherNet?.ready){$('roomstatus').textContent='Network module is still loading, or unavailable. Try again with internet access.';return}
  disconnect();code=code.replace(/[^A-Z0-9]/g,'').toUpperCase().slice(0,8);if(code.length<5){$('roomstatus').textContent='Enter a room code of at least five characters.';return}
  const ticket=networkEpoch;
- room=code;localSeat=host?0:1;clearSelection();seed('online');revision=0;clearDuelAck();lastDuelAckSeq=0;
+ room=code;localSeat=host?0:1;clearSelection();seed('online');revision=0;clearDuelAck();clearDuelHandshake();lastDuelAckSeq=0;
  $('roomid').value=code;$('roomstatus').textContent='Connecting to public signaling relays…';$('invite').classList.toggle('hidden',!host);
  try{net=window.AetherNet.connect(code,host,{
   join:peer=>{
@@ -2462,13 +2481,21 @@ function join(code,host){
      $('roomstatus').textContent='Friend reconnected. Battlefield restored from the host.';
     }else{
      S.phase='waiting';$('roomstatus').textContent='Friend connected. Verifying their 24-card deck…';
+     // The guest may have signaled before our onPeerJoin handler was ready.
+     // Publishing the waiting snapshot confirms the host is listening.
+     publish();
     }
    }else{
     S.phase='waiting';
     $('roomstatus').textContent='Connected. Sending your deck and requesting the latest match.';
-    if(!net?.sendLoadout(chosenDeck.slice()))
-     $('roomstatus').textContent='Could not send deck. Rejoin the room to retry.';
+    net?.sendLoadout(chosenDeck.slice());
     net?.requestState?.();
+    if(!duelStarted){
+     clearDuelHandshake();duelHandshakeTries=1;
+     duelHandshakeTimer=setTimeout(()=>{
+      duelHandshakeTimer=null;repeatDuelLoadout(ticket);
+     },4000);
+    }
    }
    render();
   },
@@ -2488,7 +2515,7 @@ function join(code,host){
   },
   leave:()=>{
    if(ticket!==networkEpoch)return;
-   connected=false;clearDuelAck();lastDuelAckSeq=0;
+   connected=false;clearDuelAck();clearDuelHandshake();lastDuelAckSeq=0;
    $('roomstatus').textContent='Friend disconnected. Orders paused until reconnection.';
    if(S.phase==='playing'){
     S.phase='waiting';
@@ -2512,6 +2539,9 @@ function join(code,host){
    if(duelOrderPending&&sameRevision&&!matchingAck)return;
    const rejected=duelOrderPending&&sameRevision&&matchingAck;
    S=p.s;revision=p.rev;clearDuelAck();clearSelection();
+   if(S.phase==='playing'||S.phase==='over'){
+    duelStarted=true;clearDuelHandshake();
+   }
    $('roomstatus').textContent=rejected?
     'Host did not accept that action. Review the current battlefield.':
     S.phase==='playing'?'Connected. '+(S.turn===1?'Your turn.':'Waiting for your friend.'):
@@ -2554,6 +2584,7 @@ $('duel-refresh-link')?.addEventListener('click',()=>{
  if(localSeat===0){publish();$('roomstatus').textContent='Current duel state sent to your friend.'}
  else{
   if(duelOrderPending&&duelPendingOrder)net?.retryIntent?.(duelPendingOrder);
+  if(!duelStarted&&S.phase!=='over')net?.sendLoadout(chosenDeck.slice());
   net?.requestState?.();
   $('roomstatus').textContent='Requesting the latest host state…';
  }
@@ -2562,6 +2593,7 @@ document.addEventListener('visibilitychange',()=>{
  if(document.hidden||mode!=='online'||localSeat!==1||!connected)return;
  // iPhone Safari can suspend web timers and rendering while backgrounded.
  if(duelOrderPending&&duelPendingOrder)net?.retryIntent?.(duelPendingOrder);
+ if(!duelStarted&&S.phase!=='over')net?.sendLoadout(chosenDeck.slice());
  net?.requestState?.();
 });
 const board=$('board');board.innerHTML='';for(let y=0;y<8;y++)for(let x=0;x<7;x++){let b=document.createElement('button');b.type='button';b.dataset.x=x;b.dataset.y=y;board.appendChild(b)}

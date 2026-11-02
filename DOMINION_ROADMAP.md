@@ -67,6 +67,8 @@ Continue with more varied Gauntlet challenges, longer-term mastery objectives, p
 
 **v4.7.1:** Lost acknowledgment recovery: original-sequence bounded retransmissions, host-specific `ackSeq` receipts on accepted/rejected moves, safe read-only snapshot requests, 700ms transport throttling, manual **SYNC DUEL** action, Safari wake resync, and matching-ACK guest controls. Designed to prevent repeated combat effects and stuck awaiting-host states. Automated QA: `V471_LOST_ACK_RECOVERY_QA.md`.
 
+**v4.7.2:** First-join deck handshake retries (bounded to five sends), authoritative host-ready snapshots, no reshuffling of an active duel, safe timer cancellation, and a five-round real browser RTCDataChannel test with local signaling. Same-game and UI regressions remain mandatory. See `V472_PEER_HANDSHAKE_AND_RTC_QA.md`.
+
 **Remaining acceptance gate:** Real two-device iPhone Safari duel across independent Wi-Fi/cellular networks, reconnect test matrix and network failure handling; only after independent human/device verification can v4.7 be called complete. No claim of current production matchmaking, authoritative accounts, anti-cheat or ranked mode. Then **STOP** for creator roadmap review.
 
 ## Mandatory stopping point after v4.7

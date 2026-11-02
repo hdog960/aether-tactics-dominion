@@ -51,7 +51,7 @@ try{
   snapshots:window.__duelProbe.snapshots.length,
   rank:window.AetherGame.get().cardRanks
  }));
- assert(ready.phase==='playing'&&ready.turn===0&&ready.snapshots===1,
+ assert(ready.phase==='playing'&&ready.turn===0&&ready.snapshots>=2,
   'A valid private rival deck must begin a host-authoritative match');
  assert(await host.locator('#duel-link-status').getAttribute('data-link')==='linked',
   'Active duel should show connected indicator');
