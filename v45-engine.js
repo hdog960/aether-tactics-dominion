@@ -2779,6 +2779,102 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
  },
+ // v4.6.3: actual battlefield omens and legacy-saves remain independent.
+ qaV463Flux:()=>{
+  const checks=[],check=(name,pass,details='')=>checks.push({name,pass:!!pass,details});
+  const savedProfile=JSON.stringify(profile),savedS=S,savedMode=mode,savedSeat=localSeat;
+  const keys=[PROFILE_STORE,'aether-dominion-v04'],storage=keys.map(k=>localStorage.getItem(k));
+  const win=(hp=12)=>{S.phase='over';S.winner=0;S.hp[0]=hp;return awardMatch()};
+  try{
+   profile.gauntlet={version:1,attempts:0,clears:0,bestStage:0,
+    firstClearRewarded:false,fluxClears:0,fluxFirstRewarded:false,current:null,
+    pathClears:{},pathFirstRewards:{}};
+   profile.mastery={};profile.masteryClaims={};profile.masteryContracts={};
+   profile.masteryVersatilityBest=0;profile.claimed={};profile.last=null;
+   profile.gold=0;profile.xp=0;profile.level=1;profile.copies={};
+   const order=riftOmenSchedule(0);
+   check('Every optional run has three distinct recognized omens',
+    order.length===3&&new Set(order).size===3&&order.every(k=>RIFT_OMENS[k]));
+   check('Next attempt rotates its forecast without random save desynchronization',
+    riftOmenSchedule(1).join(',')!==order.join(',')&&
+    riftOmenSchedule(4).join(',')===order.join(','));
+   startGauntlet('wayfinder');
+   const legacy=profile.gauntlet.current;
+   check('Ordinary Wayfinder remains unchanged and never applies Flux by default',
+    !legacy.flux&&legacy.omens.length===0&&!S.gauntletOmen&&
+    S.hp[0]===24&&S.hp[1]===24&&S.energy[0]===3&&S.energy[1]===3);
+   profile.gauntlet.attempts=0;
+   startGauntlet('wayfinder',true);
+   const run=profile.gauntlet.current;
+   check('Enabling Flux saves a locked three-omen schedule on the run',
+    run.flux===true&&run.omens.join(',')===order.join(',')&&
+    S.gauntletOmen===order[0]&&S.gauntletStage===1);
+   check('Aeth Tide is symmetric and restores correct starting 5 Aeth',
+    S.energy[0]===5&&S.energy[1]===5&&S.hp[1]===24);
+   const oldId=S.matchId;save();S=null;const loaded=load();
+   check('Reload retains the current omen, stage, run ID and v4 snapshot',
+    loaded&&S.version===4&&S.matchId===oldId&&S.gauntletOmen===order[0]&&
+    S.gauntletRunId===run.id&&S.gauntletStage===1);
+   win(19);
+   check('Completing stage 1 with Flux never pays premature first-clear bonus',
+    run.status==='ready'&&profile.gauntlet.fluxClears===0&&!profile.gauntlet.fluxFirstRewarded);
+   const stage2=continueGauntlet();
+   const soldier=S.units.find(u=>u.team===1&&u.k==='v'&&u.shield===1);
+   check('Warden Patrol starts only one shielded enemy and offsets it with player Aeth',
+    stage2&&S.gauntletOmen==='patrol'&&!!soldier&&S.energy[0]===4&&S.hp[1]===27);
+   win(15);
+   continueGauntlet();
+   check('Siege Lines increases enemy Core, grants Aeth and one opening card',
+    S.gauntletOmen==='siege'&&S.hp[1]===34&&S.energy[0]===4&&
+    S.hands[0].length===5&&S.units.some(u=>u.boss&&u.team===1));
+   const first=win(10);
+   check('First full Flux clear awards exactly 60 extra gold once',
+    first.gauntlet?.fluxFirstBonus===60&&first.gauntlet?.fluxClear===true&&
+    profile.gauntlet.fluxClears===1&&profile.gauntlet.fluxFirstRewarded===true);
+   const gold=profile.gold,clears=profile.gauntlet.fluxClears;
+   awardMatch();
+   check('Re-rendering final stage never pays another Flux bonus or clear',
+    profile.gold===gold&&profile.gauntlet.fluxClears===clears);
+   startGauntlet('stormbound',true);
+   const second=profile.gauntlet.current;
+   check('New attempt rotates omens and keeps existing path difficulty modifiers',
+    second.flux&&second.omens.join(',')===riftOmenSchedule(1).join(',')&&
+    second.path==='stormbound'&&S.gauntletOmen==='patrol'&&S.hp[1]===27);
+   win(20);continueGauntlet();win(18);continueGauntlet();
+   const ally=unit('v',0,3,5,true),enemy=unit('v',1,2,2,true);
+   S.units.push(ally,enemy);
+   onCreatureSummoned(ally);onCreatureSummoned(enemy);
+   check('Veil of Wards shields both sides for first two rounds',
+    S.gauntletOmen==='veil'&&ally.shield===1&&enemy.shield===1);
+   S.round=3;const late=unit('v',0,2,5,true);S.units.push(late);onCreatureSummoned(late);
+   check('Veil stops shielding new summons after the second round',
+    late.shield===0);
+   const secondResult=win(4);
+   check('Repeat Flux clear records progress without repeating the first clear bonus',
+    secondResult.gauntlet.fluxClear===true&&!secondResult.gauntlet.fluxFirstBonus&&
+    profile.gauntlet.fluxClears===2);
+   // An older v4.6.2 run lacking all new Flux fields must still continue.
+   const oldRun=profile.gauntlet.current;
+   profile.gauntlet.current={id:'old-gauntlet',stage:1,wins:0,core:24,
+    status:'active',deck:chosenDeck.slice(),ranks:{},tier:1,path:'wayfinder'};
+   buildGauntletStage(profile.gauntlet.current);
+   check('Old saved Gauntlet run without Flux fields preserves classic mechanics',
+    !S.gauntletOmen&&S.energy[0]===3&&S.hp[1]===24&&
+    !profile.gauntlet.current.flux);
+   profile.gauntlet.current=oldRun;
+   S.mode='online';S.gauntletOmen='veil';S.round=1;
+   const pvpUnit=unit('v',0,2,5,true);
+   S.units.push(pvpUnit);onCreatureSummoned(pvpUnit);
+   check('Flux summon shielding does not apply in competitive online state',pvpUnit.shield===0);
+   check('The exact 60-card roster and original match version remain intact',
+    CARD_KEYS.length===60&&S.version===4);
+  }catch(e){checks.push({name:'Unhandled Flux regression exception',pass:false,details:String(e.stack||e)})}
+  finally{
+   profile=JSON.parse(savedProfile);S=savedS;mode=savedMode;localSeat=savedSeat;
+   keys.forEach((k,i)=>{if(storage[i]===null)localStorage.removeItem(k);else localStorage.setItem(k,storage[i])});
+  }
+  return{pass:checks.length===18&&checks.every(x=>x.pass),checks};
+ },
  // v4.6.2: real solo-victory contract and old-profile regression coverage.
  qaV462MasteryContracts:()=>{
   const checks=[],check=(name,pass)=>checks.push({name,pass:!!pass});
