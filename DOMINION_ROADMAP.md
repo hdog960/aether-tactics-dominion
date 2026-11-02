@@ -56,6 +56,9 @@ Forge now displays mastery progress for **all 60 cards** with PROGRESS, ALL 60 a
 ### v4.6.3 — Optional Rotating Rift Flux (completed)
 Added **Rift Flux**: an optional three-omen encounter variant for any Gauntlet path, with three different saved stage conditions per run. Aeth Tide (+2 Aeth both players), Warden Patrol (shielded enemy soldier, +1 player Aeth), Siege Lines (+4 enemy Core, +1 player Aeth and one opening card), and Veil of Wards (+1 shield to early summons on both teams) rotate across attempts. Hall previews each exact omen and locks changes during a run. The first complete Flux clear earns **60 gold only once**; subsequent clears advance a permanent counter. Classic Gauntlet remains the default, and older runs/playthrough saves keep their original rules. The live 60-card collection, Forge Masteries, Rift Paths and level-equalized PvP are unchanged. Source: `V463_RIFT_FLUX_RELEASE_AND_QA.md`.
 
+### v4.6.4 — Rift Chronicle and honest rematch polish (release candidate)
+Twelve-entry per-run Chronicle, separated classic/Flux best surviving Core by path, accurate real-time Core in the Commander’s Hall, true path enemy-Core forecasts, and automatic abandonment records when switching game modes. Fixes a results-screen rematch bug that previously reset route/Flux to classic Wayfinder. No new rewards, game-altering ranks, card IDs, save keys or duel advantages. QA and browser evidence: `V464_CHRONICLE_RELEASE_AND_QA.md`.
+
 ### v4.6 — Further Replayability & Progression (in progress)
 Continue with more varied Gauntlet challenges, longer-term mastery objectives, progression pacing and anti-repeat safeguards. Never reset existing save keys or inflate stat power in private duels.
 
