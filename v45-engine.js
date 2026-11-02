@@ -250,6 +250,9 @@ if(!profile.gauntlet.pathFirstRewards||typeof profile.gauntlet.pathFirstRewards!
  profile.gauntlet.pathFirstRewards={};
 if(!Number.isFinite(profile.gauntlet.fluxClears))profile.gauntlet.fluxClears=0;
 if(typeof profile.gauntlet.fluxFirstRewarded!=='boolean')profile.gauntlet.fluxFirstRewarded=false;
+if(!Array.isArray(profile.gauntlet.chronicle))profile.gauntlet.chronicle=[];
+if(!profile.gauntlet.bestCoreByPath||typeof profile.gauntlet.bestCoreByPath!=='object')profile.gauntlet.bestCoreByPath={};
+if(!profile.gauntlet.bestFluxCoreByPath||typeof profile.gauntlet.bestFluxCoreByPath!=='object')profile.gauntlet.bestFluxCoreByPath={};
 function saveProfile(){try{localStorage.setItem(PROFILE_STORE,JSON.stringify(profile))}catch(e){}}
 function xpNeeded(level){return 90+(level-1)*45}
 function cardLevel(k){return Math.max(1,Math.min(MAX_CARD_LEVEL,profile.levels[k]||1))}
@@ -283,6 +286,33 @@ function masteryContractsStatus(){
  const scores=[bronze,silver,gold,profile.masteryVersatilityBest||0,routes,routes];
  return MASTERY_CONTRACTS.map((c,i)=>({...c,progress:Math.min(c.goal,scores[i]),
   claimed:!!profile.masteryContracts[c.id]}));
+}
+// One entry per concluded run, at most twelve; no new rewards or PvP stats.
+function archiveGauntletRun(run,outcome){
+ if(!run?.id||!['cleared','failed','abandoned'].includes(outcome))return false;
+ const g=profile.gauntlet;
+ if(!Array.isArray(g.chronicle))g.chronicle=[];
+ if(g.chronicle.some(entry=>entry.id===run.id))return false;
+ const live=outcome==='abandoned'&&S?.gauntletRunId===run.id&&S.phase==='playing';
+ const core=Math.max(0,Math.min(24,Number(live?S.hp[0]:run.core)||0));
+ const path=['wayfinder','stormbound','ironbound'].includes(run.path)?run.path:'wayfinder';
+ const entry={id:run.id,path,flux:run.flux===true,result:outcome,
+  stage:Math.max(1,Math.min(3,Math.floor(Number(run.stage)||1))),
+  wins:Math.max(0,Math.min(3,Math.floor(Number(run.wins)||0))),
+  core,finished:Date.now()};
+ g.chronicle=[entry,...g.chronicle].slice(0,12);
+ if(outcome==='cleared'){
+  g.bestCoreByPath||={};g.bestFluxCoreByPath||={};
+  const best=entry.flux?g.bestFluxCoreByPath:g.bestCoreByPath;
+  best[path]=Math.max(Number(best[path])||0,core);
+ }
+ return true;
+}
+function abandonGauntletOnMatchReplace(){
+ const run=profile.gauntlet.current;
+ if(['active','ready'].includes(run?.status)&&S?.gauntletRunId===run.id){
+  run.status='abandoned';archiveGauntletRun(run,'abandoned');saveProfile();
+ }
 }
 function awardMatch(){
  if(!S||mode!=='ai'||S.mode!=='ai'||S.phase!=='over'||![0,1,-1].includes(S.winner))return null;
@@ -371,9 +401,10 @@ function awardMatch(){
       profile.gold+=60;coins+=60;gauntletResult.fluxFirstBonus=60;
      }
     }
+    archiveGauntletRun(run,'cleared');
    }else gauntletResult={status:'ready',stage:run.stage};
   }else{
-   run.status='failed';
+   run.status='failed';archiveGauntletRun(run,'failed');
    gauntletResult={status:'failed',stage:run.stage};
   }
  }
@@ -422,7 +453,15 @@ function masteryStatus(){
 }
 function gauntletStatus(){
  const g=profile.gauntlet,run=g.current;
+ const inPlay=run?.status==='active'&&S?.gauntletRunId===run.id&&S.phase==='playing';
+ const liveCore=inPlay?Math.max(0,Math.min(24,Number(S.hp[0])||0)):run?.core;
  return{attempts:g.attempts,clears:g.clears,bestStage:g.bestStage,
+   chronicle:(g.chronicle||[]).slice(0,12).map(entry=>({...entry})),
+   bestCoreByPath:{...(g.bestCoreByPath||{})},
+   bestFluxCoreByPath:{...(g.bestFluxCoreByPath||{})},
+   stageForecast:Object.fromEntries(Object.values(GAUNTLET_PATHS).map(path=>[
+    path.id,{startCore:path.startHP,heal:path.heal,
+    enemyCores:GAUNTLET_STAGES.map(stage=>stage.enemyHP+path.enemyHP)}])),
    firstClearRewarded:g.firstClearRewarded,
    fluxClears:g.fluxClears||0,fluxFirstRewarded:!!g.fluxFirstRewarded,
    omenCatalog:Object.values(RIFT_OMENS).map(o=>({...o})),
@@ -430,7 +469,7 @@ function gauntletStatus(){
    pathClears:{...(g.pathClears||{})},pathFirstRewards:{...(g.pathFirstRewards||{})},
    paths:Object.values(GAUNTLET_PATHS).map(v=>({id:v.id,name:v.name,description:v.description,
     firstGold:v.firstGold,clears:g.pathClears?.[v.id]||0})),
-   current:run?{id:run.id,stage:run.stage,wins:run.wins,core:run.core,
+   current:run?{id:run.id,stage:run.stage,wins:run.wins,core:run.core,liveCore,
     status:run.status,deckSize:run.deck?.length||0,path:run.path||'wayfinder',
     flux:run.flux===true,omens:run.omens||[],currentOmen:run.flux===true?
      RIFT_OMENS[run.omens?.[run.stage-1]]?.name||'':null}:null};
@@ -668,6 +707,7 @@ function startMission(id,qa=false,planKind=null){
  const testMode=qa===true&&window.__qaIsolatedStorage===true&&
   location.pathname.endsWith('/qa-v39.html');
  if(!m||(!testMode&&!campaignAvailable(id)))return false;
+ abandonGauntletOnMatchReplace();
  const choices=m.storyScene?.choices||[];
  const selected=choices.find(p=>p.kind===planKind)||choices[0]||null;
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
@@ -828,9 +868,11 @@ function startGauntlet(chosenPath='wayfinder',enableFlux=false){
  if(current?.status==='ready'){
   if(S?.gauntletRunId===current.id&&S.gauntletStage===current.stage&&
      S.phase==='over'&&profile.claimed[S.matchId]?.victory)return continueGauntlet();
-  current.status='abandoned';
+  current.status='abandoned';archiveGauntletRun(current,'abandoned');
  }
- if(current?.status==='active')current.status='abandoned';
+ if(current?.status==='active'){
+  current.status='abandoned';archiveGauntletRun(current,'abandoned');
+ }
  const run={id:'rift-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
   stage:1,wins:0,core:GAUNTLET_PATHS[chosenPath].startHP,
   path:chosenPath,status:'active',flux:enableFlux===true,
@@ -2305,12 +2347,7 @@ function render(){
 }
 function publish(){if(net&&mode==='online'&&localSeat===0){net.state({s:S,rev:revision});}}
 function startQuickMatch(){
- // A fresh skirmish intentionally ends any unresolved Gauntlet; never
- // leave an apparently resumable run pointing to a different match.
- if(['active','ready'].includes(profile.gauntlet.current?.status)&&
-    S?.gauntletRunId===profile.gauntlet.current.id){
-  profile.gauntlet.current.status='abandoned';saveProfile();
- }
+ abandonGauntletOnMatchReplace();
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
  seed('ai');setArena('verdant');
  $('mode-ai').classList.add('active');$('mode-online').classList.remove('active');$('lobby').classList.add('hidden');
@@ -2331,6 +2368,7 @@ function startAI(){
 }
 function disconnect(){if(net){try{net.leave()}catch(e){}net=null}room='';connected=false}
 function startOnline(){
+ abandonGauntletOnMatchReplace();
  disconnect();mode='online';localSeat=0;clearSelection();seed('online');setArena('verdant');
  $('mode-ai').classList.remove('active');$('mode-online').classList.add('active');$('lobby').classList.remove('hidden');
  $('roomid').value='';$('roomstatus').textContent='Create a room, then send the code to your friend.';message('<b>Online Duel</b> · Private playtest','One player hosts; one joins using the same six-character code.');render();
@@ -2388,10 +2426,6 @@ $('cycle').addEventListener('click',()=>{if(chosenCard<0){message('<b>Select a c
 $('reset').addEventListener('click',()=>{
  if(S?.gauntletRunId){
   if(confirm('Abandon this Rift Gauntlet run and begin a normal skirmish?')){
-   if(profile.gauntlet.current?.id===S.gauntletRunId&&
-     profile.gauntlet.current.status==='active'){
-    profile.gauntlet.current.status='abandoned';saveProfile();
-   }
    startQuickMatch();
   }
   return;
@@ -2408,7 +2442,7 @@ $('again').addEventListener('click',()=>{
    continueGauntlet();return;
   }
   if(status?.id===S.gauntletRunId&&['failed','cleared'].includes(status.status)){
-   startGauntlet();return;
+   startGauntlet(status.path||'wayfinder',status.flux===true);return;
   }
  }
  if(mode==='online')startOnline();
