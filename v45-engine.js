@@ -960,9 +960,12 @@ function galePassenger(t,x,y){
  const dest=P(x,y);
  if(!bounds(x,y)||entity(x,y)||rocks.has(K(x,y))||
     (x===3&&(y===0||y===7)))return null;
- return S.units.filter(u=>u.team===t&&!u.rooted&&!u.boss&&
-   u.id!==S.championId&&d(u,dest)===1)
-  .sort((a,b)=>a.id-b.id)[0]||null;
+ // Because the player taps only the destination, multiple adjacent allies
+ // would make the passenger ambiguous. Reject that square instead of moving
+ // an arbitrary unit selected by internal ID.
+ const eligible=S.units.filter(u=>u.team===t&&!u.rooted&&!u.boss&&
+  u.id!==S.championId&&d(u,dest)===1);
+ return eligible.length===1?eligible[0]:null;
 }
 function validSpellSpot(q,t,x,y){
  const target=entity(x,y),type=q.spell;
@@ -1448,7 +1451,7 @@ const GUIDE={
  J:{feature:'Controlled positional displacement.',detail:'Deal 1 damage to a non-boss enemy within 3 of your army; move it one clear tile toward its nearest allied-side challenger when possible. The target must have a valid open landing tile.',tip:'Pull ranged enemies off high ground into melee range, or disturb a fortified formation.'},
  K:{feature:'Counter-protection attack blessing.',detail:'The next basic attack from one allied creature gains 1 damage and strips up to 3 shield before the hit. Expires at the start of that creature’s next turn.',tip:'Time this immediately before striking a heavily shielded boss or frontline guardian.'},
  U:{feature:'Spell-based shield breaking.',detail:'Choose an enemy creature with at least 1 shield within 3 tiles of your army. Remove up to 2 of its shield, then resolve 1 normal spell damage. Never targets an enemy Core.',tip:'Counter defensive frontlines without wasting an expensive area spell.'},
- V:{feature:'One-square formation shift.',detail:'Choose an empty tile adjacent to an unrooted friendly unit within army reach. Move the nearest eligible ally by one square; do not refresh attacks, movement or clear roots. Landing triggers traps normally.',tip:'Slip a guardian onto a spring or save a threatened support unit without granting extra turns.'},
+ V:{feature:'One-square formation shift.',detail:'Choose an empty tile adjacent to an unrooted friendly unit within army reach. Move the only adjacent eligible ally by one square; contested destinations with multiple eligible allies are invalid. Do not refresh attacks or movement. Landing triggers traps normally.',tip:'Slip a guardian onto a spring or save a threatened support unit without granting extra turns.'},
  W:{feature:'Sacrifice-powered warding.',detail:'Choose an allied non-champion creature with another ally within 2 tiles. Remove the chosen ally as a deliberate sacrifice, then give 2 shield and Rally to up to two nearest surviving allies. No defeat trigger.',tip:'Trade a low-health unit for protection and damage pressure on two important allies.'},
  X:{feature:'Exploit roots and burning.',detail:'Deal 2 spell damage to a burning or rooted enemy creature within 3 of your army. If another enemy creature stands within 2 of that target, chain 1 spell damage to the closest one. No enemy Core targeting.',tip:'Combine Thorn Warden or Frostbind with a follow-up spell for efficient conditional damage.'},
  M:{feature:'Flying squad mobility support.',detail:'When summoned, restore movement to the nearest grounded, unrooted ally within two tiles that already moved. Once per round for your entire army; attacks are never refreshed.',tip:'Move your frontline, then summon the Cartographer close enough to dispatch it again.'},
@@ -2322,6 +2325,14 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
       cast&&ally.x===3&&ally.y===4&&ally.moved&&ally.attacked&&S.energy[0]===before-2);
    }
    {
+    const {ally,wing}=setup('V');
+    wing.x=4;wing.y=4; // Both could land at (3,4): that is ambiguous.
+    const energy=S.energy[0];
+    const cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
+    check('Gale refuses ambiguous tiles with multiple eligible allies',
+      !cast&&ally.x===2&&wing.x===4&&S.energy[0]===energy);
+   }
+   {
     const {ally}=setup('V');ally.rooted=true;
     const before=S.energy[0],cast=apply(0,{op:'card',idx:0,x:3,y:4,tributes:[]});
     check('Gale Step cannot bypass roots or spend energy illegally',
@@ -2399,7 +2410,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    }
   }catch(err){tests.push({name:'Runtime exception',pass:false,info:String(err)})}
   finally{startQuickMatch()}
-  return{pass:tests.length===14&&tests.every(t=>t.pass),tests};
+  return{pass:tests.length===15&&tests.every(t=>t.pass),tests};
  },
  qaV45Spells:()=>{
   const results=[],check=(name,pass,info='')=>results.push({name,pass:!!pass,info});
