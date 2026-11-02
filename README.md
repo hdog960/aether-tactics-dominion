@@ -4,7 +4,7 @@
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
-A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight preset strategies or save three custom 24-card deck loadouts from 48 cards, upgrade your commander and collection, or test experimental private duels.
+A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight preset strategies or save three custom 24-card deck loadouts from 60 cards, upgrade your commander and collection, or test experimental private duels.
 
 ## Start here
 - **Play**: Commander's Hall — select Quick Battle, Story Campaign or Private Duel; continue a previously saved solo battle.
