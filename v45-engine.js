@@ -2804,6 +2804,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
    check('Ordinary Wayfinder remains unchanged and never applies Flux by default',
     !legacy.flux&&legacy.omens.length===0&&!S.gauntletOmen&&
     S.hp[0]===24&&S.hp[1]===24&&S.energy[0]===3&&S.energy[1]===3);
+   startQuickMatch(); // Explicitly abandon the classic run; never overwrite it silently.
    profile.gauntlet.attempts=0;
    startGauntlet('wayfinder',true);
    const run=profile.gauntlet.current;
