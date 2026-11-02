@@ -47,6 +47,48 @@ try{
    .some(name=>cards.names.includes(name)),
   'Public 48-card collection unexpectedly exposed unpainted v4.5.6 creatures');
  await real.screenshot({path:'art/v456-staged-public-safety-390px.png',fullPage:false});
+
+ // Simulate the future 52-card flag ONLY inside a disposable test browser.
+ // The original art is still missing, so this is an interaction/key-routing QA
+ // and must never be interpreted as visual approval or a public release.
+ const future=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ future.on('pageerror',e=>problems.push('52-card UI-only preview: '+e.message));
+ await future.addInitScript(()=>{window.DOMINION_V456_ART_RELEASE=true});
+ await future.goto('http://127.0.0.1:8000/index.html',{waitUntil:'load',timeout:40000});
+ await future.waitForFunction(()=>window.AetherGame&&document.querySelector('button[data-page="cards"]'),
+  null,{timeout:25000});
+ await future.locator('button[data-page="cards"]').click();
+ await future.locator('#codex-tabs button[data-tab="deck"]').click();
+ const futureCount=Number(await future.locator('#codex-deck-count').textContent());
+ assert(futureCount===52,'Future gated 52-card collection did not load in UI test');
+ for(const [id,name] of [['Y','Gloam Bellkeeper'],['Z','Cinderjaw Prowler'],
+  ['aa','Oathmoss Devourer'],['ab','Tidebreak Herald']]){
+  await future.locator('#codex-list button[data-inspect="'+id+'"]').click();
+  const actual=(await future.locator('#codex-detail-body h2').textContent()||'').trim();
+  assert(actual===name,'Two-letter or single-letter detail routing failed for '+id+': '+actual);
+  await future.locator('#codex-back').click();
+ }
+ await future.locator('#open-builder').click();
+ assert(await future.locator('#deck-cards button[data-add="aa"]').count()===1&&
+  await future.locator('#deck-cards button[data-add="ab"]').count()===1,
+  'Armory did not render independent two-letter card buttons');
+ await future.locator('#deck-cards button[data-remove="v"]').click();
+ await future.locator('#deck-cards button[data-remove="v"]').click();
+ await future.locator('#deck-cards button[data-add="aa"]').click();
+ await future.locator('#deck-cards button[data-add="ab"]').click();
+ assert(await future.locator('#deck-save').isEnabled(),
+  'A valid two-letter-card custom deck was rejected');
+ await future.locator('#deck-save').click();
+ const edited=await future.evaluate(()=>({
+  deck:window.AetherGame.loadouts().currentDeck,
+  slots:window.AetherGame.loadouts().slots.length,
+  persisted:JSON.parse(localStorage.getItem('aether-dominion-deck-v20')||'null')
+ }));
+ assert(edited.deck.length===24&&edited.deck.includes('aa')&&edited.deck.includes('ab')&&
+  edited.slots===3&&JSON.stringify(edited.persisted)===JSON.stringify(edited.deck),
+  'Future UI interaction failed to save distinct aa/ab card keys');
+ await future.close();
+
  assert(problems.length===0,'Browser exception: '+problems.join('; '));
  console.log(JSON.stringify({pass:true,qa:report,public:cards,errors:problems},null,2));
 }finally{await browser.close()}
