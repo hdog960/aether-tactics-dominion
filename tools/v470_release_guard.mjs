@@ -5,17 +5,20 @@ const engine=read('v45-engine.js'),qa=read('v45-qa-engine.js'),
  net=read('v30-net.js'),ui=read('index.html'),alternate=read('v30.html'),
  cache=read('sw.js'),road=read('DOMINION_ROADMAP.md');
 const checks=[],check=(name,pass)=>checks.push({name,pass:!!pass});
+const v472=ui.includes('v45-engine.js?v=472')&&alternate.includes('v45-engine.js?v=472');
 const v471=ui.includes('v45-engine.js?v=471')&&alternate.includes('v45-engine.js?v=471');
-const suffix=v471?'471':'470';
-const cacheName=v471?'aether-dominion-v471-duel-ack-recovery':'aether-dominion-v470-duel-reliability';
+const suffix=v472?'472':v471?'471':'470';
+const netSuffix=v472?'471':suffix;
+const cacheName=v472?'aether-dominion-v472-peer-handshake':
+ v471?'aether-dominion-v471-duel-ack-recovery':'aether-dominion-v470-duel-reliability';
 check('Production and isolated engine remain identical',engine===qa);
 check('Production and isolated renderer remain identical',
  read('v45-scene.js')===read('v45-qa-scene.js'));
 check('Both entrypoints version the same duel transport, combat engine and ribbon',
- [ui,alternate].every(s=>['src="./v30-net.js?v='+suffix+'"','v45-engine.js?v='+suffix,
+ [ui,alternate].every(s=>['src="./v30-net.js?v='+netSuffix+'"','v45-engine.js?v='+suffix,
   'v470-duel.css?v=470','id="duel-link-status"','id="roomstatus"'].every(v=>s.includes(v))));
 check('iPhone PWA precaches the updated duel networking and UI',
- [cacheName,'v30-net.js?v='+suffix,
+ [cacheName,'v30-net.js?v='+netSuffix,
   'v45-engine.js?v='+suffix,'v470-duel.css?v=470'].every(v=>cache.includes(v)));
 check('Local profile, deck and v4 match keys preserved',
  ["const PROFILE_STORE='aether-dominion-profile-v21'",
