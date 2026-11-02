@@ -1,0 +1,19 @@
+name: Dominion v4.5.5 four-spell rules CI
+on:
+  push:
+    branches: [dev/v455-four-tactical-spells]
+    paths:
+      - .github/workflows/v455-rules-qa.yml
+      - tools/v455_rules_qa.mjs
+      - v45-engine.js
+      - v30-campaign-data.js
+permissions: {contents: read}
+jobs:
+  four-spell-engine-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/v455_rules_qa.mjs
