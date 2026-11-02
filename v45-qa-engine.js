@@ -72,7 +72,16 @@ V:{name:'Gale Step',cost:2,spell:'gale',role:'Tactical Movement',
 W:{name:'Ember Covenant',cost:3,spell:'covenant',role:'Sacrifice Rite',
  desc:'Sacrifice an ally to shield and rally up to two nearby allies.'},
 X:{name:'Crescent Refrain',cost:3,spell:'refrain',power:2,role:'Status Finisher',
- desc:'Hit a burning or rooted enemy for 2, chaining 1 damage to another enemy.'}
+ desc:'Hit a burning or rooted enemy for 2, chaining 1 damage to another enemy.'},
+// v4.5.6 painted creature expansion. Release gated until art/QA pass.
+Y:{name:'Gloam Bellkeeper',cost:3,hp:4,atk:1,range:2,move:2,
+ role:'Debuff Support',desc:'On summon, weaken the closest nonboss enemy within two tiles.'},
+Z:{name:'Cinderjaw Prowler',cost:3,hp:5,atk:2,range:1,move:3,
+ role:'Burn Hunter',desc:'First strike on a burning foe spreads burn to a nearby enemy.'},
+aa:{name:'Oathmoss Devourer',cost:4,hp:7,atk:2,range:1,move:1,
+ role:'Sacrifice Survivor',desc:'After a voluntary ally sacrifice, restore 2 HP once each round.'},
+ab:{name:'Tidebreak Herald',cost:3,hp:5,atk:1,range:2,move:3,
+ role:'Spring Runner',desc:'First move onto a spring each round gains 1 shield and 1 Aeth.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
 const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"p":{"move":2},"o":{"hp":4,"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
@@ -108,11 +117,14 @@ const V454_UNIT_KEYS=['Q','R','S','T'];
 const V454_ENABLED=V45_QA||window.DOMINION_V454_ART_RELEASE===true;
 const V455_SPELL_KEYS=['U','V','W','X'];
 const V455_ENABLED=V45_QA||window.DOMINION_V455_ART_RELEASE===true;
+const V456_UNIT_KEYS=['Y','Z','aa','ab'];
+const V456_ENABLED=V45_QA||window.DOMINION_V456_ART_RELEASE===true;
 const CARD_KEYS=Object.keys(D).filter(k=>
  (V45_ENABLED||!V45_SPELL_KEYS.includes(k))&&
  (V453_ENABLED||!V453_UNIT_KEYS.includes(k))&&
  (V454_ENABLED||!V454_UNIT_KEYS.includes(k))&&
- (V455_ENABLED||!V455_SPELL_KEYS.includes(k))),
+ (V455_ENABLED||!V455_SPELL_KEYS.includes(k))&&
+ (V456_ENABLED||!V456_UNIT_KEYS.includes(k))),
  DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
 // Two copies of each new spell leave room for 16 distinct existing creature
 // slots. The preset is invisible until artwork is explicitly available.
@@ -573,6 +585,14 @@ function nearestAlly(u,radius=2){
 // On-summon movement assistance does not create a new attack, affect flyers
 // or ignore roots. Its round quota is shared between cards of the same team.
 function onCreatureSummoned(u){
+ if(u.k==='Y'){
+  const target=S.units.filter(v=>v.team!==u.team&&!v.boss&&v.hp>0&&d(v,u)<=2)
+   .sort((a,b)=>d(a,u)-d(b,u)||a.id-b.id)[0];
+  if(target){
+   target.weakened=Math.max(Number(target.weakened)||0,1);
+   abilityPulse(target,'silence',0);
+  }
+ }
  if(u.k==='T'){
   const traps=S.traps||[];
   const idx=traps.map((trap,i)=>({...trap,index:i}))
@@ -715,6 +735,16 @@ function bossReaction(boss){
  }
 }
 function onSacrifice(t){
+ // A voluntary sacrifice is distinct from an ordinary combat death.
+ // Each surviving Devourer may heal at most once during a round.
+ for(const devourer of S.units.filter(v=>v.team===t&&v.k==='aa'&&
+   v.devourRound!==S.round&&v.hp<v.max)){
+  const healed=Math.min(2,devourer.max-devourer.hp);
+  if(healed){
+   devourer.hp+=healed;devourer.devourRound=S.round;
+   abilityPulse(devourer,'heal',healed);
+  }
+ }
  for(const u of S.units.filter(v=>v.team===t&&v.k==='B'&&v.oathRound!==S.round)){
   u.oathRound=S.round;const amt=grantShield(u,2);u.oathBonus=1;abilityPulse(u,'shield',amt);
  }
@@ -765,6 +795,12 @@ function afterMove(u){
  // Entering a concealed snare resolves before arrival-based shield bonuses.
  trapImpact(u);
  if(!S.units.some(v=>v.id===u.id))return;
+ if(u.k==='ab'&&springs.includes(K(u.x,u.y))&&u.heraldRound!==S.round){
+  u.heraldRound=S.round;
+  const n=grantShield(u,1);
+  S.energy[u.team]=Math.min(10,S.energy[u.team]+1);
+  if(n)abilityPulse(u,'shield',n);
+ }
  if(u.k==='v'&&u.braceRound!==S.round&&u.shield<1&&
     S.units.some(v=>v.team!==u.team&&d(v,u)===1)){
   grantShield(u,1);u.braceRound=S.round;abilityPulse(u,'shield',1);
@@ -804,6 +840,13 @@ function mitigate(target,n,physical){
  return value;
 }
 function basicStrike(attacker,target){
+ // A burning target may pass its flame to ONE other unburned enemy
+ // creature within 2 tiles, once per Prowler per round. Never to a Core.
+ const flameTarget=attacker.k==='Z'&&!target.core&&!!target.burning&&
+  attacker.prowlerRound!==S.round?
+  S.units.filter(v=>v.team!==attacker.team&&v.id!==target.id&&
+   !v.burning&&v.hp>0&&d(v,target)<=2)
+   .sort((a,b)=>d(a,target)-d(b,target)||a.id-b.id)[0]:null;
  // Harrier: moving after a successful flank is a single tactical action.
  // An attack is never refreshed, and core strikes cannot trigger the bonus.
  const harrierFlank=attacker.k==='R'&&!target.core&&
@@ -840,6 +883,12 @@ function basicStrike(attacker,target){
  fxStrike(attacker,target,actual);
  const wasUnit=!target.core&&S.units.some(v=>v.id===target.id);
  applyDamage(target,actual);
+ if(flameTarget&&S.units.some(v=>v.id===attacker.id)&&
+    S.units.some(v=>v.id===flameTarget.id)){
+  flameTarget.burning=true;
+  attacker.prowlerRound=S.round;
+  abilityPulse(flameTarget,'ignite',0);
+ }
  if(harrierFlank&&S.units.some(v=>v.id===attacker.id)){
   attacker.harrierRound=S.round;attacker.moved=false;attacker.stride=0;
   abilityPulse(attacker,'dash',0);
@@ -1454,6 +1503,10 @@ const GUIDE={
  V:{feature:'One-square formation shift.',detail:'Choose an empty tile adjacent to an unrooted friendly unit within army reach. Move the only adjacent eligible ally by one square; contested destinations with multiple eligible allies are invalid. Do not refresh attacks or movement. Landing triggers traps normally.',tip:'Slip a guardian onto a spring or save a threatened support unit without granting extra turns.'},
  W:{feature:'Sacrifice-powered warding.',detail:'Choose an allied non-champion creature with another ally within 2 tiles. Remove the chosen ally as a deliberate sacrifice, then give 2 shield and Rally to up to two nearest surviving allies. No defeat trigger.',tip:'Trade a low-health unit for protection and damage pressure on two important allies.'},
  X:{feature:'Exploit roots and burning.',detail:'Deal 2 spell damage to a burning or rooted enemy creature within 3 of your army. If another enemy creature stands within 2 of that target, chain 1 spell damage to the closest one. No enemy Core targeting.',tip:'Combine Thorn Warden or Frostbind with a follow-up spell for efficient conditional damage.'},
+ Y:{feature:'Close-range opening hex.',detail:'On summon, give the nearest enemy nonboss creature within 2 tiles -1 on its next basic strike. Can never overwrite a stronger weakening effect or suppress a champion.',tip:'Deploy by an opposing frontline attacker before it swings.'},
+ Z:{feature:'Burn propagation via successful strike.',detail:'Once per round, a basic attack against an already burning enemy creature ignites one other non-burning enemy creature within 2 tiles of the first victim. Never spreads to a Core or boosts base strike damage.',tip:'Pair with Ember Sigil to pressure clustered creatures.'},
+ aa:{feature:'Survive through voluntary sacrifice.',detail:'Whenever you voluntarily sacrifice a friendly unit to a mythic, Fateful Exchange or Ember Covenant, restore up to 2 missing HP to this Devourer once per round. Defeat of any creature never qualifies.',tip:'Keep this slow beast alive on a contested lane while using sacrifice cards.'},
+ ab:{feature:'Earn momentum from spring control.',detail:'The first time this Herald moves onto an Aeth spring each round, it gains 1 shield and restores 1 Aeth to its owner, capped at 10. Triggered after any hostile snare damage; summoning directly on a spring does not count.',tip:'Move from another tile onto a spring when your Aeth is below the cap.'},
  M:{feature:'Flying squad mobility support.',detail:'When summoned, restore movement to the nearest grounded, unrooted ally within two tiles that already moved. Once per round for your entire army; attacks are never refreshed.',tip:'Move your frontline, then summon the Cartographer close enough to dispatch it again.'},
  N:{feature:'Spring-based fortification.',detail:'If this defender is standing on an Aeth spring when your turn begins, grant one shield to a nearby ally within two tiles. If none qualifies, shield itself. Maximum five shield per creature.',tip:'Hold contested springs rather than using it as an ordinary slow bruiser.'},
  O:{feature:'Elevation-based shield breaker.',detail:'Its first basic attack launched from high ground each round removes up to two enemy shield before ordinary damage. A Core cannot be pierced this way.',tip:'Use elevation to counter ward-heavy opponents without dealing more raw damage.'},
@@ -2293,6 +2346,121 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
  },
  // v4.5.5 exact battle-law checks on real engine, isolated from public saves.
+ qaV456Creatures:()=>{
+  const checks=[],check=(name,pass,detail='')=>checks.push({name,pass:!!pass,detail});
+  const setup=()=>{
+   if(!startMission('v1',true,'rush'))throw Error('QA mission not started');
+   S.turn=0;S.energy[0]=6;S.energy[1]=6;S.hands=[[],[]];
+   S.traps=[];S.units=[];S.next=800;S.round=1;
+  };
+  const add=(k,t,x,y)=>{
+   const u=unit(k,t,x,y,true);S.units.push(u);return u;
+  };
+  try{
+   {
+    setup();const bell=add('Y',0,2,5),enemy=add('r',1,3,5),other=add('v',1,5,5);
+    onCreatureSummoned(bell);
+    check('Bellkeeper weakens closest enemy by exactly one',enemy.weakened===1&&!other.weakened);
+   }
+   {
+    setup();const bell=add('Y',0,2,5),boss=add('g',1,3,5),enemy=add('v',1,4,5);
+    boss.boss=true;onCreatureSummoned(bell);
+    check('Bellkeeper ignores champion and chooses eligible creature',!boss.weakened&&enemy.weakened===1);
+   }
+   {
+    setup();const bell=add('Y',0,2,5),enemy=add('r',1,6,2);
+    onCreatureSummoned(bell);
+    check('Bellkeeper cannot curse out-of-range enemies',!enemy.weakened);
+   }
+   {
+    setup();const bell=add('Y',0,2,5),enemy=add('r',1,3,5);
+    enemy.weakened=2;onCreatureSummoned(bell);
+    check('Bellkeeper never weakens a stronger existing hex',enemy.weakened===2);
+   }
+   {
+    setup();const bell=add('Y',1,2,3),enemy=add('v',0,2,4);
+    onCreatureSummoned(bell);
+    check('Enemy Bellkeeper uses identical team-aware debuff',enemy.weakened===1);
+   }
+   {
+    setup();const hunter=add('Z',0,2,5),burn=add('g',1,3,5),spread=add('v',1,4,5);
+    burn.burning=true;burn.hp=burn.max=20;
+    basicStrike(hunter,burn);
+    check('Prowler spreads ignition to one second enemy after burning-target hit',
+     spread.burning&&hunter.prowlerRound===S.round);
+    const second=add('v',1,3,4);
+    second.burning=false;basicStrike(hunter,burn);
+    check('Prowler only propagates once per round',!second.burning);
+   }
+   {
+    setup();const hunter=add('Z',0,2,5),enemy=add('g',1,3,5),other=add('v',1,4,5);
+    enemy.hp=enemy.max=20;basicStrike(hunter,enemy);
+    check('Prowler requires burning target to ignite a second enemy',!other.burning);
+   }
+   {
+    setup();const hunter=add('Z',0,3,1),enemy=add('v',1,2,1);
+    hunter.prowlerRound=0;
+    basicStrike(hunter,core(1));
+    check('Prowler never spreads burn from a Core attack',!enemy.burning&&!hunter.prowlerRound);
+   }
+   {
+    setup();const dev=add('aa',0,2,5);dev.hp=3;dev.max=7;
+    onSacrifice(0);
+    check('Devourer heals by exactly two on voluntary ally sacrifice',
+      dev.hp===5&&dev.devourRound===S.round);
+    onSacrifice(0);
+    check('Devourer cannot heal twice within the same round',dev.hp===5);
+   }
+   {
+    setup();const dev=add('aa',0,2,5),ally=add('v',0,3,5);
+    dev.hp=2;applyDamage(ally,999);
+    check('Normal nearby battle death never heals Devourer',dev.hp===2);
+   }
+   {
+    setup();const dev=add('aa',0,2,5);dev.hp=6;dev.max=7;onSacrifice(0);
+    check('Devourer sacrifice healing never exceeds printed health',dev.hp===7);
+   }
+   {
+    setup();const dev=add('aa',0,2,5),sac=add('v',0,3,5);
+    dev.hp=3;S.energy[0]=10;S.hands[0]=['W'];
+    const cast=apply(0,{op:'card',idx:0,x:sac.x,y:sac.y,tributes:[]});
+    check('Real Ember Covenant sacrifice activates Devourer passive',
+     cast&&dev.hp===5&&!S.units.some(v=>v.id===sac.id));
+   }
+   {
+    setup();const herald=add('ab',0,1,4);
+    S.energy[0]=4;const moved=apply(0,{op:'move',id:herald.id,x:1,y:3});
+    check('Moving Herald onto spring gains 1 shield and exactly 1 Aeth',
+      moved&&herald.shield===1&&S.energy[0]===5&&herald.heraldRound===S.round);
+    herald.x=1;herald.y=4;afterMove(herald);
+    herald.x=1;herald.y=3;afterMove(herald);
+    check('Herald cannot exploit repeated movement onto spring same round',
+      herald.shield===1&&S.energy[0]===5);
+   }
+   {
+    setup();const herald=add('ab',0,1,4);
+    S.traps=[{team:1,x:1,y:3,damage:99,expires:S.round+4}];
+    S.energy[0]=5;const moved=apply(0,{op:'move',id:herald.id,x:1,y:3});
+    check('A lethal trap resolves before Herald gains spring reward',
+      moved&&!S.units.some(v=>v.id===herald.id)&&S.energy[0]===5);
+   }
+   {
+    setup();const herald=add('ab',0,1,3);S.energy[0]=10;
+    onCreatureSummoned(herald);
+    check('Summoning Herald directly on spring never grants movement reward',
+      herald.shield===0&&S.energy[0]===10);
+   }
+   {
+    setup();S.energy[0]=6;S.hands[0]=['Y'];
+    add('v',1,3,5);
+    const cast=apply(0,{op:'card',idx:0,x:2,y:5,tributes:[]});
+    check('Legal Bellkeeper card summon activates same combat rule',
+      cast&&S.units.find(v=>v.k==='v')?.weakened===1&&S.energy[0]===3);
+   }
+  }catch(err){checks.push({name:'Runtime exception',pass:false,detail:String(err)})}
+  finally{startQuickMatch()}
+  return{pass:checks.length===19&&checks.every(x=>x.pass),checks};
+ },
  qaV455Spells:()=>{
   const tests=[],check=(name,ok,info='')=>tests.push({name,pass:!!ok,info});
   const setup=k=>{
