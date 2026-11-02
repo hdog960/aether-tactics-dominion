@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.6.4 — Rift Chronicle and Gauntlet polish**
+**Current development candidate: v4.7.0 — Private Duel Reliability (real-device verification pending)**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
