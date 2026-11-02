@@ -54,5 +54,7 @@ jobs:
           git add art/cards-spells-v457.webp art/v457-spell-manifest.json
           if ! git diff --cached --quiet; then
             git commit -m "Build painted Gravemire, Prism, Cinder and Tidal spell art from original"
+            git fetch origin dev/v457-four-spells
+            git -c rebase.autoStash=true rebase origin/dev/v457-four-spells
             git push origin HEAD:dev/v457-four-spells
           fi
