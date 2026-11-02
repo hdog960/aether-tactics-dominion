@@ -60,3 +60,28 @@ The developer resumed work on the original `dev/v456-four-creatures` branch, wit
 - In-chat promotional mockups are **not** production image files, do not match the required 2x2 figure source, and must never be uploaded or represented as validated game art.
 
 **Next step:** transfer the genuine four-figure source sheet to `art/sources/v456-original-characters.png` on the staging branch through the [GitHub upload form](https://github.com/hdog960/aether-tactics-dominion/upload/dev/v456-four-creatures/art/sources), then inspect the source-conversion workflow and its three actual screenshot artifacts. Any failure in matte extraction should be fixed in the builder against the real art, not bypassed. Continue to require manual quality approval before any public release. The v4.7 stopping boundary remains unchanged.
+
+## Extended development session — source integrity, distinctive combat VFX and real mobile QA
+
+Development continued on the existing staging branch; public `main` was deliberately not modified.
+
+### Source and release safety
+- Added `tools/v456_release_guard.mjs`, running in the [GitHub creature rules workflow](https://github.com/hdog960/aether-tactics-dominion/actions/workflows/v456-rules-qa.yml). This fail-closed check verifies synchronized live/QA engine and renderer files, distinct Y/Z/aa/ab mappings, the v4.7 hard stop and the release-art flag. A complete release requires the original input plus all generated outputs, a valid manifest and original PNG SHA-256, and precaching the new atlases.
+- Updated `tools/v456_build_art.py` to embed the original image SHA-256 and dimensions in the generated manifest. The original source must be retained without replacing it with card mockups.
+- Strengthened `tools/v456_real_art_acceptance.mjs`: actual 2D canvas drawImage calls must show **all four separate 120px rows** from the new 2112×480 battle animation atlas before the 52-card art acceptance passes. Merely loading the images is not sufficient. **This acceptance is pending the genuine source PNG and has not yet been run successfully.**
+
+### Creature-specific passive visual signatures
+- Gloam Bellkeeper: purple bell resonance, curved bell and spreading sound rings.
+- Cinderjaw Prowler: branching fire tracers and ember points after a successful burning-target propagation.
+- Oathmoss Devourer: green vine growth and leaves when a legitimate sacrifice heals it.
+- Tidebreak Herald: cyan wave crests and Aeth-spring flow after its first successful spring move each round.
+
+These effects are emitted by the same real authoritative ability triggers, drawn in both synchronized production and QA canvases, and **do not change card stats or mechanics**. The previous generic buff rings are no longer the only visual feedback for these four passives.
+
+### Verified testing
+- [Creature rules + persistent-storage + static release guard GitHub CI](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41390122861) **passed** on the latest synchronized gameplay source. Intermediate workflow failures during one-at-a-time source synchronization were superseded by this final successful pass.
+- [Actual 390px Chromium field/VFX and 320px menu regression](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41390527895) **passed**, with no JavaScript page exceptions. The 320px test checked bottom tabs, the normal 48-card Codex and Armory geometry. The effects screenshot test was tightened after review showed its initial image accidentally captured the home screen. The corrected screenshot **shows the active real battlefield** with generated feedback effects.
+- Evidence artifacts: `art/v456-staged-public-safety-390px.png`, `art/v456-320px-mobile-dock-qa.png`, and `art/v456-four-ability-fx-390px.png`, stored as downloadable artifacts of the latest isolated browser CI. These are staging QA screenshots, not shipped image assets.
+- Exact four-figure art direction, mandatory on-tile visual approval and no-premature-release rules are preserved in `V456_ART_DIRECTION_AND_RELEASE.md`.
+
+**Release hold remains mandatory:** Until genuine `art/sources/v456-original-characters.png` exists, builds, survives the four-image identity and on-field frame tests, and is visually approved, v4.5.6 is a staging candidate only, not a playable public 52-card release. Preserve all local browser saves and the post-v4.7 stop.
