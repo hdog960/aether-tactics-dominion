@@ -50,6 +50,9 @@ Added a complete three-stage **Rift Gauntlet**, accessible from the Commander's 
 ### v4.6.1 — Three Rift Paths (completed)
 Players can select **Wayfinder** (classic +4 recovery), **Stormbound** (+2 Core recovery, tougher enemies, +2 starting Aeth) or **Ironbound** (starts with 20 Core HP, +3 recovery, +1 opening shields, tougher enemies) before starting a new run. Distinct route clears and once-only 70/100-gold challenge trophies persist across reloads, preserve old Wayfinder runs, and never alter competitive PvP rules. The 60-card game and Forge mastery system are unchanged. See `V461_RIFT_PATHS_RELEASE_AND_QA.md`.
 
+### v4.6.2 — Full Mastery Codex & Career Contracts (completed)
+Forge now displays mastery progress for **all 60 cards** with PROGRESS, ALL 60 and GOLD filters, instead of only the six most-played cards. Six persistent one-time career contracts reward earning different Bronze/Silver/Gold masteries, winning with eight distinct cards, and clearing two or three Rift Paths. Contract payouts total a bounded 615 gold over the entire account and only claim on actual solo wins; no special multiplayer benefits or saved data reset. The `V462_MASTERY_CODEX_AND_CONTRACTS_QA.md` report covers gameplay, save and mobile browser checks. Physical iPhone and remote two-device play remain unverified.
+
 ### v4.6 — Further Replayability & Progression (in progress)
 Continue with more varied Gauntlet challenges, longer-term mastery objectives, progression pacing and anti-repeat safeguards. Never reset existing save keys or inflate stat power in private duels.
 
