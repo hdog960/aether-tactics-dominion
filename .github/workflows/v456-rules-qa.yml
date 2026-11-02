@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/v456-rules-qa.yml
       - tools/v456_rules_qa.mjs
+      - tools/v456_save_compatibility_qa.mjs
       - v45-engine.js
       - v30-campaign-data.js
 permissions: {contents: read}
@@ -17,3 +18,4 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: node tools/v456_rules_qa.mjs
+      - run: node tools/v456_save_compatibility_qa.mjs
