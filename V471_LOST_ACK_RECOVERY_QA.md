@@ -22,6 +22,18 @@ The host remains authoritative. This release addresses a real protocol hole in v
 - Prior v4.7.0 network/browser tests remain in the required CI gates with updated expected ACK contracts.
 - Earlier 60-card battle/progression (180 AI simulations), 7 bosses, 30 story plans, Gauntlet and Forge release gates remain mandatory. `tools/v471_release_guard.mjs` checks new asset versions, UI, save compatibility and idempotent recovery code.
 
+## Verified GitHub Actions evidence — November 2, 2026
+
+All six independent CI workflows passed, including the new lost-ACK watchdog and previous game regressions:
+- [v4.7.1 two-peer retries, replay ACKs, full old-game rules and strict release guards](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41536782326)
+- [v4.7.1 real 390px and 320px Chromium recovery, five-second timeout and manual SYNC](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41536782433)
+- [Existing v4.7.0 protocol and previous PvE safety suite](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41536782417)
+- [Existing v4.7.0 host-and-guest Chromium QA](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41536782314)
+- [Existing v4.6.4 rules and save-preservation guard](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41536782553)
+- [Existing v4.6.4 narrow-phone Forge, Flux and Chronicle QA](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41536782443)
+
+**All are automated or mock-peer tests, not live remote two-iPhone confirmation.**
+
 ## Limits and milestone boundary
 This is an **automated reliability enhancement**, not proof of successful real iPhone-to-iPhone cross-network WebRTC. Those tests must involve two actual devices on independent networks, reconnection, prolonged multi-turn play and realistic NAT constraints. WebRTC may need a TURN relay on restrictive cellular networks. Physical testing is still an acceptance gate for the **full** v4.7 milestone.
 
