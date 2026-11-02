@@ -32,5 +32,7 @@ jobs:
         if: always()
         with:
           name: dominion-v456-staged-safety
-          path: art/v456-staged-public-safety-390px.png
+          path: |
+            art/v456-staged-public-safety-390px.png
+            art/v456-320px-mobile-dock-qa.png
           if-no-files-found: ignore
