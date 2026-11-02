@@ -2780,6 +2780,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
    check('Two Gold mastered cards unlock Twin Legends only once',
      legends.contractRewards.some(c=>c.id==='gold-two'&&c.gold===150));
    profile.masteryContracts={};profile.mastery={};
+   profile.masteryVersatilityBest=0; // isolate Rift-contract assertions from prior versatility test
    profile.gauntlet.pathClears={stormbound:1,wayfinder:1};
    const two=enter(true,[]);
    check('Rift Explorer requires distinct route clears, not repeat wins on one path',
