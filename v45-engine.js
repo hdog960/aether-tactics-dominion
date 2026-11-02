@@ -81,7 +81,16 @@ Z:{name:'Cinderjaw Prowler',cost:3,hp:5,atk:2,range:1,move:3,
 aa:{name:'Oathmoss Devourer',cost:4,hp:7,atk:2,range:1,move:1,
  role:'Sacrifice Survivor',desc:'After a voluntary ally sacrifice, restore 2 HP once each round.'},
 ab:{name:'Tidebreak Herald',cost:3,hp:5,atk:1,range:2,move:3,
- role:'Spring Runner',desc:'First move onto a spring each round gains 1 shield and 1 Aeth.'}
+ role:'Spring Runner',desc:'First move onto a spring each round gains 1 shield and 1 Aeth.'},
+// v4.5.7: control, shield economy, burn setup and group recovery.
+ac:{name:'Gravemire Ring',cost:3,spell:'gravemire',role:'Gravity Hex',
+ desc:'Root up to two nearby non-champion enemies; no damage.'},
+ad:{name:'Prism Relay',cost:2,spell:'prismrelay',role:'Ward Transfer',
+ desc:'Move 2 existing shield from an ally to its nearest vulnerable ally.'},
+ae:{name:'Cinder Bloom',cost:3,spell:'cinderbloom',role:'Ember Hex',
+ desc:'Ignite a foe and one nearby unburned foe; no immediate damage.'},
+af:{name:'Tidal Reprieve',cost:3,spell:'tidalreprieve',role:'Group Restoration',
+ desc:'Restore 2 HP to an injured ally and 1 HP to two injured nearby allies.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
 const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"p":{"move":2},"o":{"hp":4,"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
@@ -119,12 +128,15 @@ const V455_SPELL_KEYS=['U','V','W','X'];
 const V455_ENABLED=V45_QA||window.DOMINION_V455_ART_RELEASE===true;
 const V456_UNIT_KEYS=['Y','Z','aa','ab'];
 const V456_ENABLED=V45_QA||window.DOMINION_V456_ART_RELEASE===true;
+const V457_SPELL_KEYS=['ac','ad','ae','af'];
+const V457_ENABLED=V45_QA||window.DOMINION_V457_ART_RELEASE===true;
 const CARD_KEYS=Object.keys(D).filter(k=>
  (V45_ENABLED||!V45_SPELL_KEYS.includes(k))&&
  (V453_ENABLED||!V453_UNIT_KEYS.includes(k))&&
  (V454_ENABLED||!V454_UNIT_KEYS.includes(k))&&
  (V455_ENABLED||!V455_SPELL_KEYS.includes(k))&&
- (V456_ENABLED||!V456_UNIT_KEYS.includes(k))),
+ (V456_ENABLED||!V456_UNIT_KEYS.includes(k))&&
+ (V457_ENABLED||!V457_SPELL_KEYS.includes(k))),
  DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
 // Two copies of each new spell leave room for 16 distinct existing creature
 // slots. The preset is invisible until artwork is explicitly available.
@@ -1016,6 +1028,30 @@ function galePassenger(t,x,y){
   u.id!==S.championId&&d(u,dest)===1);
  return eligible.length===1?eligible[0]:null;
 }
+// Stable eligibility helpers are shared by highlighting, the AI and execution.
+function prismReceiver(donor,t){
+ return S.units.filter(v=>v.team===t&&v.id!==donor.id&&v.hp>0&&
+  (v.shield||0)<=MAX_SHIELD-2&&d(v,donor)<=2)
+  .sort((a,b)=>(a.shield||0)-(b.shield||0)||d(a,donor)-d(b,donor)||a.id-b.id)[0]||null;
+}
+function gravemireVictims(target,t){
+ return S.units.filter(v=>v.team===1-t&&!v.boss&&v.hp>0&&
+  !v.rooted&&d(v,target)<=1)
+  .sort((a,b)=>d(a,target)-d(b,target)||a.id-b.id).slice(0,2);
+}
+function cinderBloomVictims(target,t){
+ if(!target||target.core||target.team===t||target.boss||target.burning)return[];
+ const other=S.units.filter(v=>v.team===1-t&&v.id!==target.id&&
+  v.hp>0&&!v.boss&&!v.burning&&d(v,target)<=2)
+  .sort((a,b)=>d(a,target)-d(b,target)||a.id-b.id)[0]||null;
+ return other?[target,other]:[target];
+}
+function tidalReprieveVictims(target,t){
+ if(!target||target.core||target.team!==t||target.hp>=target.max)return[];
+ return [target,...S.units.filter(v=>v.team===t&&v.id!==target.id&&
+  v.hp<v.max&&d(v,target)<=2)
+   .sort((a,b)=>(b.max-b.hp)-(a.max-a.hp)||d(a,target)-d(b,target)||a.id-b.id).slice(0,2)];
+}
 function validSpellSpot(q,t,x,y){
  const target=entity(x,y),type=q.spell;
  if(['shield','heal','dash','cleanse','rally','bond','exchange','recall','reprisal','edict'].includes(type)){
@@ -1033,6 +1069,14 @@ function validSpellSpot(q,t,x,y){
   if(type==='exchange'&&(S.exchangeRound?.[t]===S.round||S.units.filter(v=>v.team===t).length<2||target.id===S.championId))return false;
   return true;
  }
+ if(type==='gravemire')return !!target&&!target.core&&target.team===1-t&&!target.boss&&
+  S.units.some(v=>v.team===t&&d(v,target)<=3)&&gravemireVictims(target,t).length>0;
+ if(type==='prismrelay')return !!target&&!target.core&&target.team===t&&
+  (target.shield||0)>=2&&!!prismReceiver(target,t);
+ if(type==='cinderbloom')return !!target&&!target.core&&target.team===1-t&&!target.boss&&
+  S.units.some(v=>v.team===t&&d(v,target)<=3)&&cinderBloomVictims(target,t).length>0;
+ if(type==='tidalreprieve')return !!target&&!target.core&&target.team===t&&
+  tidalReprieveVictims(target,t).length>0;
  if(type==='gale')return !!galePassenger(t,x,y);
  if(type==='breach')return !!target&&!target.core&&target.team===1-t&&
   (target.shield||0)>0&&S.units.some(u=>u.team===t&&d(u,target)<=3);
@@ -1060,7 +1104,27 @@ function resolveSpell(q,t,x,y){
  const target=entity(x,y),type=q.spell;
  if(!validSpellSpot(q,t,x,y))return false;
  const power=powerFor(q,t),boost=spellBonus(CARD_KEYS.find(k=>D[k]===q),t);
- if(type==='breach'){
+ if(type==='gravemire'){
+  for(const victim of gravemireVictims(target,t)){
+   victim.rooted=true;abilityPulse(victim,'gravemire',0);
+  }
+ }else if(type==='prismrelay'){
+  const receiver=prismReceiver(target,t);
+  if(!receiver)return false;
+  target.shield-=2;
+  const gained=grantShield(receiver,2);
+  abilityPulse(target,'prismrelay',-2);abilityPulse(receiver,'prismrelay',gained);
+ }else if(type==='cinderbloom'){
+  for(const victim of cinderBloomVictims(target,t)){
+   victim.burning=true;abilityPulse(victim,'cinderbloom',0);
+  }
+ }else if(type==='tidalreprieve'){
+  const victims=tidalReprieveVictims(target,t);
+  for(let i=0;i<victims.length;i++){
+   const ally=victims[i],amount=Math.min(i===0?2:1,ally.max-ally.hp);
+   ally.hp+=amount;abilityPulse(ally,'tidalreprieve',amount);
+  }
+ }else if(type==='breach'){
   target.shield=Math.max(0,(target.shield||0)-2);
   const impact=mitigate(target,power,false);
   fxSpell(target,impact,'breach',x,y,t);applyDamage(target,impact);
@@ -1286,10 +1350,12 @@ function aiTurn(){
    let spot=null;
    const enemies=S.units.filter(u=>u.team===0);
    const friends=S.units.filter(u=>u.team===1);
-   if(['ignite','frost','bolt','silence','undertow','breach','refrain'].includes(q.spell)){
+   if(['ignite','frost','bolt','silence','undertow','breach','refrain','gravemire','cinderbloom'].includes(q.spell)){
     const opportunities=enemies.filter(u=>validSpellSpot(q,1,u.x,u.y))
      .sort((a,b)=>(a.hp-b.hp)||((b.k==='r'?1:0)-(a.k==='r'?1:0)));
-    spot=opportunities.find(u=>q.spell==='frost'?!u.rooted:
+    spot=opportunities.find(u=>q.spell==='gravemire'?gravemireVictims(u,1).length>=2:
+    q.spell==='cinderbloom'?cinderBloomVictims(u,1).length>=2:
+    q.spell==='frost'?!u.rooted:
     q.spell==='ignite'?!u.burning:
     q.spell==='refrain'?!!(u.rooted||u.burning):true);
    }else if(q.spell==='diagonal'){
@@ -1334,6 +1400,13 @@ function aiTurn(){
     }
     moves.sort((a,b)=>b.score-a.score||a.y-b.y||a.x-b.x);
     spot=moves[0];
+   }else if(q.spell==='prismrelay'){
+    spot=friends.filter(u=>(u.shield||0)>=3&&prismReceiver(u,1)&&
+     (prismReceiver(u,1).shield||0)<=1)
+     .sort((a,b)=>(b.shield||0)-(a.shield||0)||a.id-b.id)[0];
+   }else if(q.spell==='tidalreprieve'){
+    spot=friends.filter(u=>tidalReprieveVictims(u,1).length>=2)
+     .sort((a,b)=>tidalReprieveVictims(b,1).length-tidalReprieveVictims(a,1).length||a.id-b.id)[0];
    }else if(q.spell==='heal'){
     spot=friends.filter(u=>u.hp<=u.max-2).sort((a,b)=>(a.hp/a.max)-(b.hp/b.max))[0];
    }else if(q.spell==='reprisal'){
@@ -1483,7 +1556,9 @@ function chooseTile(vx,vy){
 
 // GRIMOIRE INFORMATION: matches current card definitions and actual rules.
 // Read-only UI; inspecting cards never submits a move or consumes Aeth.
-const SPELL_LABELS={"heal":"♥ HEAL","shield":"◇ SHIELD","dash":"➜ MOVE","frost":"❄ ROOT","ignite":"🔥 BURN","rally":"⚔ RALLY","cleanse":"◇ CLEANSE","bolt":"⚡ BARRAGE","cross":"☄ AREA","recall":"✦ RECALL","snare":"◇ TRAP 2","bond":"✦ FORMATION","exchange":"✧ RITUAL","silence":"◇ SILENCE","diagonal":"✧ DIAGONAL","reprisal":"♜ RIPOSTE","undertow":"≈ PULL","edict":"☼ PIERCE"};
+const SPELL_LABELS={"heal":"♥ HEAL","shield":"◇ SHIELD","dash":"➜ MOVE","frost":"❄ ROOT","ignite":"🔥 BURN","rally":"⚔ RALLY","cleanse":"◇ CLEANSE","bolt":"⚡ BARRAGE","cross":"☄ AREA","recall":"✦ RECALL","snare":"◇ TRAP 2","bond":"✦ FORMATION","exchange":"✧ RITUAL","silence":"◇ SILENCE","diagonal":"✧ DIAGONAL","reprisal":"♜ RIPOSTE","undertow":"≈ PULL","edict":"☼ PIERCE",
+ "gravemire":"◉ GRAVITY","prismrelay":"◇ RELAY","cinderbloom":"♨ EMBERS",
+ "tidalreprieve":"♥ TIDAL HEAL"};
 const GUIDE={
  o:{feature:'Spell-recycling specialist.',detail:'On summon, return the most recently spent spell to the top of your deck, once per round. If there is no spell to retrieve, gain 1 shield.',tip:'Cast a useful spell, then summon Echo Scribe to bring it back in the coming draw.'},
  y:{feature:'Defensive death-trigger.',detail:'When defeated, gives 2 shield to the nearest surviving allied unit within 2 tiles.',tip:'Position beside your carry to make its defeat still valuable.'},
@@ -1506,6 +1581,10 @@ const GUIDE={
  Y:{feature:'Close-range opening hex.',detail:'On summon, give the nearest enemy nonboss creature within 2 tiles -1 on its next basic strike. Can never overwrite a stronger weakening effect or suppress a champion.',tip:'Deploy by an opposing frontline attacker before it swings.'},
  Z:{feature:'Burn propagation via successful strike.',detail:'Once per round, a basic attack against an already burning enemy creature ignites one other non-burning enemy creature within 2 tiles of the first victim. Never spreads to a Core or boosts base strike damage.',tip:'Pair with Ember Sigil to pressure clustered creatures.'},
  aa:{feature:'Survive through voluntary sacrifice.',detail:'Whenever you voluntarily sacrifice a friendly unit to a mythic, Fateful Exchange or Ember Covenant, restore up to 2 missing HP to this Devourer once per round. Defeat of any creature never qualifies.',tip:'Keep this slow beast alive on a contested lane while using sacrifice cards.'},
+ ac:{feature:'Control a clustered enemy advance.',detail:'Select an opposing non-champion creature within three tiles of your army. Root up to two unrooted opposing non-champions within one tile of that target, nearest first. Deals no immediate damage, excludes Cores and never affects champions.',tip:'Interrupt a pair of advancing skirmishers before their next movement.'},
+ ad:{feature:'Redistribute shields, not create them.',detail:'Choose an allied creature holding at least two shields. Move exactly two of its shield points to the most weakly shielded different ally within two tiles who has space for both. Never exceeds the five-shield cap and cannot target a Core.',tip:'Transfer protection from a safe backliner to a front-line defender.'},
+ ae:{feature:'Set up an Ember combination.',detail:'Choose an unburned enemy non-champion creature within three tiles of your army. Ignite it and the nearest other unburned non-champion enemy within two tiles. Deals no immediate damage; existing burn is never stacked.',tip:'Set up Cinderjaw Prowler or force enemies to spend a cleanse.'},
+ af:{feature:'Recover a wounded squad.',detail:'Choose one injured allied creature. Restore up to two HP to it, plus one HP each to the two most injured different allies within two tiles. Healing never refreshes their movement or attack and cannot exceed maximum HP.',tip:'Best when several allied creatures survive a tough round together.'},
  ab:{feature:'Earn momentum from spring control.',detail:'The first time this Herald moves onto an Aeth spring each round, it gains 1 shield and restores 1 Aeth to its owner, capped at 10. Triggered after any hostile snare damage; summoning directly on a spring does not count.',tip:'Move from another tile onto a spring when your Aeth is below the cap.'},
  M:{feature:'Flying squad mobility support.',detail:'When summoned, restore movement to the nearest grounded, unrooted ally within two tiles that already moved. Once per round for your entire army; attacks are never refreshed.',tip:'Move your frontline, then summon the Cartographer close enough to dispatch it again.'},
  N:{feature:'Spring-based fortification.',detail:'If this defender is standing on an Aeth spring when your turn begins, grant one shield to a nearby ally within two tiles. If none qualifies, shield itself. Maximum five shield per creature.',tip:'Hold contested springs rather than using it as an ordinary slow bruiser.'},
