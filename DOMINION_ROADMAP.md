@@ -35,8 +35,11 @@ Expanded the collection **40 → 44** with Tideglass Oracle (spell-shield synerg
 ### v4.5.5 — Four Painted Tactical Spells (shipped)
 Added **Mirror Breach**, **Gale Step**, **Ember Covenant** and **Crescent Refrain**, expanding the collection **44 → 48**. Four distinct original narrative paintings and matching battlefield VFX support real shield breaking, safe one-tile relocation, team-strengthening voluntary sacrifice and status-based chain attacks. Tests passed 15 new spell cases (including ambiguous-target safety), every prior creature, spell, boss and deck-vault regression, 120 simulated campaigns with zero invalid states and the normal mobile-sized 48-card Grimoire. All prior saved player/deck/campaign keys remain unchanged. See `V455_RELEASE_AND_QA.md`.
 
-### v4.5.6–v4.5.8 — 12 more cards to reach 60 (planned)
-Expand the current **48-card** collection to **60** across three carefully integrated batches of creatures and spells. Continue requiring original painted assets, exact matching battlefield characters/animations for creatures, distinct spells/FX, robust testing and balanced archetype choice. Keep all three saved deck slots and progression keys fully backwards compatible.
+### v4.5.6 — Four Original Painted Creature Roles (shipped)
+Expanded **48 → 52** with Gloam Bellkeeper, Cinderjaw Prowler, Oathmoss Devourer, and Tidebreak Herald. Each uses a distinctive new painted character, original-source-matched full-body transparent battlefield sprite, 22 motion frames, unique triggered combat effect and a bounded real-engine ability. GitHub QA checked the 52-card real Grimoire, 88 actual on-board animation cells, saves/decks/upgrades, all existing mechanics and 120 legal battle simulations without invalid states. See `V456_RELEASE_AND_QA.md`. Physical iPhone and live remote duel tests remain open.
+
+### v4.5.7–v4.5.8 — Eight more original cards to reach 60 (planned)
+Expand the current **52-card** collection to the agreed **60** with two careful four-card batches. Every creature needs distinct painted source, cutout, animations and rules; spells need painted cards and dedicated effects. Keep three saved decks and all progression/save keys intact, and test real browser gameplay before release.
 
 ### v4.6 — Progression & Replayability
 Rift Gauntlet, milestone rewards, mastery challenges, progression pacing and long-run variety. Include challenge reset safeguards and migration tests.
