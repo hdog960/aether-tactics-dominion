@@ -8,6 +8,13 @@ on:
       - v45-engine.js
       - v45-qa-engine.js
       - DOMINION_ROADMAP.md
+      - README.md
+      - tools/v460_release_guard.mjs
+      - v46-gauntlet.js
+      - v46-gauntlet.css
+      - index.html
+      - v30.html
+      - sw.js
 permissions: {contents: read}
 jobs:
   gauntlet-rules:
@@ -18,6 +25,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: node tools/v460_rules_qa.mjs
+      - run: node tools/v460_release_guard.mjs
       - run: |
           cmp v45-engine.js v45-qa-engine.js
           cmp v45-scene.js v45-qa-scene.js
