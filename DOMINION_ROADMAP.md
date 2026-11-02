@@ -41,8 +41,8 @@ Expanded **48 → 52** with Gloam Bellkeeper, Cinderjaw Prowler, Oathmoss Devour
 ### v4.5.7 — Four Original Painted Tactical Spells (shipped)
 Expanded **52 → 56** with Gravemire Ring (two-target root), Prism Relay (transfer 2 shield plus once-round movement refresh), Cinder Bloom (bounded dual burn), and Tidal Reprieve (group healing). All are original painted spells with distinctive live battlefield FX, preserved save/Armory schemas and real-engine team-aware targeting. The 16 new rule tests, all prior regressions, 180 automated simulated battles and mobile-sized painted 56-card Grimoire/Armory tests passed. See `V457_RELEASE_AND_QA.md`. Physical iPhone and long-distance duel verification remain open.
 
-### v4.5.8 — Final four original cards to reach 60 (planned)
-Add four carefully balanced cards to the **56-card** collection, each with entirely new art and authentic battle integration. The user's established 60-card milestone, backwards-compatible decks and progression, on-field visual standard and hard stop after v4.7 remain non-negotiable.
+### v4.5.8 — Final Four Painted Creatures (60 cards, completed)
+Expanded **56 → 60** with Aether Lanternist (affliction cleanse), Vesper Kestrel (move-triggered debuff), Hollowroot Collector (status-dependent Aeth refund) and Rimeshard Sentinel (survival-triggered warding). All use original painted character images, matched full-body transparent field sprites, 22 pose-derived motion frames per creature and unique combat feedback. Real-engine regressions, 180 AI simulations, strict artwork provenance and 390px/320px browser visual acceptance are recorded in `V458_RELEASE_AND_QA.md`. Physical iPhone and cross-network two-device tests remain open.
 
 ### v4.6 — Progression & Replayability
 Rift Gauntlet, milestone rewards, mastery challenges, progression pacing and long-run variety. Include challenge reset safeguards and migration tests.
