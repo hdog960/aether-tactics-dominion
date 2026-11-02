@@ -33,7 +33,7 @@ try{
    battle:{pass:balance.pass,games:balance.games,wins:balance.wins,
     errors:balance.errors,usage:balance.v455SpellUsage.player}};
  });
- invariant(gameplay.spells.pass&&gameplay.spells.tests.length===14&&
+ invariant(gameplay.spells.pass&&gameplay.spells.tests.length===15&&
   gameplay.oldSpells.pass&&gameplay.oldSpells.total===12&&
   gameplay.creatures.first&&gameplay.creatures.second&&gameplay.vault&&
   gameplay.bosses.pass===7&&gameplay.plans.pass===30&&
