@@ -1,0 +1,79 @@
+import {chromium} from 'playwright';
+const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const issue=[];
+try{
+ const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+ page.on('pageerror',e=>issue.push(e.message));
+ await page.goto('http://127.0.0.1:8000/qa-v39.html',{waitUntil:'load',timeout:45000});
+ await page.waitForFunction(()=>window.AetherScene?.v456ArtInfo?.()?.framesReady&&
+  window.AetherArt?.v456ArtStatus?.()?.complete,null,{timeout:25000});
+ const result=await page.evaluate(()=>{
+  const art=window.AetherScene.v456ArtInfo(),status=art.cards,
+   portraits=['Y','Z','aa','ab'].map(k=>window.AetherArt.get(k)),
+   sprites=['Y','Z','aa','ab'].map(k=>window.AetherArt.sprite(k));
+  return{status,frameReady:art.framesReady,spriteReady:art.spriteReady,
+   frameDimensions:art.frameDimensions,spriteDimensions:art.spriteDimensions,
+   uniquePaintings:new Set(portraits).size,uniqueSprites:new Set(sprites).size,
+   cardsLoaded:portraits.every(v=>v.startsWith('data:image/png')),
+   spritesLoaded:sprites.every(v=>v.startsWith('data:image/png')),
+   rules:window.AetherGame.qaV456Creatures()};
+ });
+ if(!result.status.complete||!result.frameReady||!result.spriteReady||
+   result.uniquePaintings!==4||result.uniqueSprites!==4||
+   !result.cardsLoaded||!result.spritesLoaded||!result.rules.pass||
+   result.frameDimensions.join('x')!=='2112x480'||
+   result.spriteDimensions.join('x')!=='384x120')
+   throw Error('Failed real painted v4.5.6 artwork acceptance: '+JSON.stringify(result));
+ await page.evaluate(()=>{
+  const root=document.createElement('section');
+  root.id='v456-review';
+  root.style.cssText='position:fixed;inset:0;background:#171d30;z-index:999999;padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;color:white;font:700 13px system-ui';
+  ['Y','Z','aa','ab'].forEach((k,i)=>{
+   const cell=document.createElement('div');
+   cell.style.cssText='border:1px solid #bbaa85;border-radius:8px;padding:6px;background:#27354c;text-align:center';
+   const title=document.createElement('p');
+   title.textContent=['Gloam Bellkeeper','Cinderjaw Prowler','Oathmoss Devourer','Tidebreak Herald'][i];
+   const card=document.createElement('img');card.src=window.AetherArt.get(k);
+   card.style.cssText='width:100%;aspect-ratio:4/3;object-fit:cover';
+   const sprite=document.createElement('img');sprite.src=window.AetherArt.sprite(k);
+   sprite.style.cssText='width:96px;height:120px;object-fit:contain;margin:auto;display:block';
+   cell.append(title,card,sprite);root.append(cell);
+  });
+  document.body.append(root);
+ });
+ await page.screenshot({path:'art/v456-card-sprite-identity-390px.png'});
+ await page.evaluate(()=>document.getElementById('v456-review')?.remove());
+ await page.evaluate(()=>{
+  const g=window.AetherGame.get();
+  g.phase='playing';g.turn=0;g.round=1;
+  g.units=['Y','Z','aa','ab'].map((k,i)=>({
+   id:920+i,k,team:0,x:i*2,y:5,hp:5,max:5,atk:2,range:2,move:2,
+   shield:0,fly:false,moved:false,attacked:false
+  }));
+  window.AetherScene.sync(g,0,{unit:null,card:-1,tributes:[]});
+  const panel=document.querySelector('#qa-panel');if(panel)panel.style.display='none';
+ });
+ await page.waitForTimeout(550);
+ await page.screenshot({path:'art/v456-battlefield-four-creatures-390px.png'});
+ const game=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ game.on('pageerror',e=>issue.push(e.message));
+ await game.addInitScript(()=>{window.DOMINION_V456_ART_RELEASE=true});
+ await game.goto('http://127.0.0.1:8000/index.html',{waitUntil:'load',timeout:45000});
+ await game.waitForFunction(()=>window.AetherGame&&window.AetherArt?.v456ArtStatus?.()?.complete,null,{timeout:25000});
+ await game.locator('button[data-page="cards"]').click();
+ await game.locator('#codex-tabs button[data-tab="deck"]').click();
+ const count=await game.evaluate(()=>({
+  total:Number(document.querySelector('#codex-deck-count')?.textContent),
+  names:[...document.querySelectorAll('#codex-list button[data-inspect] strong')].map(e=>e.textContent),
+  deck:window.AetherGame.deckInfo().cards,slots:window.AetherGame.loadouts().slots.length
+ }));
+ if(count.total!==52||count.deck!==24||count.slots!==3||
+  ['Gloam Bellkeeper','Cinderjaw Prowler','Oathmoss Devourer','Tidebreak Herald']
+    .some(n=>!count.names.includes(n))||issue.length)
+  throw Error('52-card painted release-candidate collection failed: '+JSON.stringify({count,issue}));
+ await game.screenshot({path:'art/v456-future-52-card-grimoire-390px.png'});
+ console.log(JSON.stringify({pass:true,painted:result.status.complete,
+  distinctPaintingCount:result.uniquePaintings,distinctSpriteCount:result.uniqueSprites,
+  frameAtlas:result.frameDimensions,mechanicChecks:result.rules.checks.length,
+  candidateCards:count.total,preservedDeck:count.deck,slots:count.slots,errors:issue},null,2));
+}finally{await browser.close()}
