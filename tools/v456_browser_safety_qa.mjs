@@ -1,4 +1,9 @@
 import {chromium} from 'playwright';
+import fs from 'node:fs';
+const BUILT_ART=fs.existsSync('art/v456-art-manifest.json')&&
+  fs.existsSync('art/battlefield-frames-v456.webp')&&
+  fs.existsSync('art/units-creatures-v456.png')&&
+  fs.existsSync('art/cards-creatures-v456.webp');
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const qa=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
 const problems=[];
@@ -8,6 +13,8 @@ try{
  await qa.goto('http://127.0.0.1:8000/qa-v39.html',{waitUntil:'load',timeout:40000});
  await qa.waitForFunction(()=>window.AetherGame?.qaV456Creatures&&
   window.AetherScene?.v456ArtInfo&&window.AetherArt?.v456ArtStatus,null,{timeout:25000});
+ if(BUILT_ART)await qa.waitForFunction(()=>window.AetherScene?.v456ArtInfo?.()?.framesReady&&
+   window.AetherArt?.v456ArtStatus?.()?.complete,null,{timeout:20000});
  const report=await qa.evaluate(()=>{
   const g=window.AetherGame,sp=g.qaV455Spells(),newUnits=g.qaV456Creatures(),
    previous=g.qaV454Creatures(),first=g.qaV453Creatures(),oldSpell=g.qaV45Spells(),
@@ -27,8 +34,9 @@ try{
  assert(report.prior.v455&&report.prior.v454&&report.prior.v453&&
   report.prior.spells&&report.prior.vault&&report.prior.bosses===report.prior.bossTotal&&
   report.prior.plans===report.prior.plansTotal,'Previous combat regression failed');
- // Until actual source images are committed, the art gate MUST remain closed.
- assert(!report.art.ready,'Unreviewed v4.5.6 artwork silently marked ready');
+ // Source images may now be approved in staging. Only the production RELEASE FLAG
+ // controls whether a real player sees the extra cards.
+ assert(report.art.ready===BUILT_ART,'Staged four-creature asset readiness disagrees with actual files');
 
  // The battle scene MUST be the active visible page before visual QA.
  // Earlier screenshots accidentally captured the Hall beneath the debug overlay.
@@ -75,6 +83,7 @@ try{
  real.on('pageerror',e=>problems.push('Regular game: '+e.message));
  await real.goto('http://127.0.0.1:8000/index.html',{waitUntil:'load',timeout:40000});
  await real.waitForFunction(()=>window.AetherGame&&window.AetherArt?.v455ArtStatus?.()?.complete,null,{timeout:30000});
+ if(BUILT_ART)await real.waitForFunction(()=>window.AetherArt?.v456ArtStatus?.()?.complete,null,{timeout:20000});
  await real.locator('button[data-page="cards"]').click();
  await real.locator('#codex-tabs button[data-tab="deck"]').click();
  const cards=await real.evaluate(()=>({
@@ -84,15 +93,14 @@ try{
   art:window.AetherArt.v456ArtStatus().complete
  }));
  assert(cards.count===48&&cards.deck.cards===24&&cards.slots===3&&
-  !cards.art&&
+  cards.art===BUILT_ART&&
   !['Gloam Bellkeeper','Cinderjaw Prowler','Oathmoss Devourer','Tidebreak Herald']
    .some(name=>cards.names.includes(name)),
-  'Public 48-card collection unexpectedly exposed unpainted v4.5.6 creatures');
+  'Production gate exposed four staging creatures before public release');
  await real.screenshot({path:'art/v456-staged-public-safety-390px.png',fullPage:false});
 
- // Simulate the future 52-card flag ONLY inside a disposable test browser.
- // The original art is still missing, so this is an interaction/key-routing QA
- // and must never be interpreted as visual approval or a public release.
+ // Preview 52-card flag ONLY in disposable browser storage. Source artwork may
+ // now exist, but this test does not flip the released game on its own.
  const future=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
  future.on('pageerror',e=>problems.push('52-card UI-only preview: '+e.message));
  await future.addInitScript(()=>{window.DOMINION_V456_ART_RELEASE=true});
