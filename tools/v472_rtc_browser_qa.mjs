@@ -93,8 +93,8 @@ async function peer(width,role){
  await page.locator('#duel-launch').click();
  return page;
 }
-async function awaitValue(page,expr,msg,timeout=20000){
- try{await page.waitForFunction(expr,null,{timeout})}
+async function awaitValue(page,expr,msg,timeout=20000,arg=null){
+ try{await page.waitForFunction(expr,arg,{timeout})}
  catch(e){throw Error(msg+' — '+e.message)}
 }
 async function bridge(host,guest){
@@ -128,8 +128,8 @@ try{
    'Guest did not receive host move '+round);
   await guest.locator('#end').click();
   try{
-   await awaitValue(host,()=>window.AetherGame.get().round===round+1,
-    'Host did not accept guest move '+round);
+   await awaitValue(host,target=>window.AetherGame.get().round===target,
+    'Host did not accept guest move '+round,20000,round+1);
   }catch(e){
    const inspect=await Promise.all([host,guest].map(p=>p.evaluate(()=>({
     phase:window.AetherGame.get()?.phase,turn:window.AetherGame.get()?.turn,
@@ -142,8 +142,8 @@ try{
    console.error('RTC TURN DIAGNOSTICS',JSON.stringify({round,inspect,errors}));
    throw e;
   }
-  await awaitValue(guest,()=>window.AetherGame.get().round===round+1,
-   'Guest did not receive ACK after guest move '+round);
+  await awaitValue(guest,target=>window.AetherGame.get().round===target,
+   'Guest did not receive ACK after guest move '+round,20000,round+1);
   const states=await Promise.all([host,guest].map(p=>p.evaluate(()=>{
    const s=window.AetherGame.get();
    return {round:s.round,turn:s.turn,hp:s.hp,energy:s.energy,phase:s.phase,units:s.units.length};
