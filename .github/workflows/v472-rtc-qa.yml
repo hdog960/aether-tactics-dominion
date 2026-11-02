@@ -27,6 +27,12 @@ jobs:
       - run: npm install --no-save playwright@1.58.2
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-v472.log 2>&1 &
+      - run: node tools/v472_release_guard.mjs
+      - run: node tools/v471_release_guard.mjs
+      - run: node tools/v470_release_guard.mjs
+      - run: node tools/v464_release_guard.mjs
+      - run: node tools/v464_rules_qa.mjs
+      - run: node tools/v471_network_qa.mjs
       - run: node tools/v472_rtc_browser_qa.mjs
       - run: node tools/v472_handshake_browser_qa.mjs
       - run: node tools/v471_browser_qa.mjs
