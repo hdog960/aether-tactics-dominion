@@ -41,7 +41,7 @@ const vault=G.qaDeckVault();
 const bosses=G.missions.all.filter(z=>z.bossKit).map(z=>G.qaBoss(z.id));
 const plans=G.missions.all.flatMap(z=>z.storyScene.choices.map(p=>G.qaPlan(z.id,p.kind)));
 const original=G.qaBalance(2);
-const deck=['v','v','b','b','r','r','s','f','c','p','k','M','N','O','P','U','V','W','X','a','a','h','H','J'];
+const deck=['v','v','b','b','r','r','s','f','c','j','k','M','N','O','P','U','V','W','X','a','a','h','e','J'];
 const experiment=G.qaBalance(2,null,{testDeck:deck});
 const report={
  rules:{pass:v455.pass,count:v455.tests.length,fail:v455.tests.filter(x=>!x.pass)},
