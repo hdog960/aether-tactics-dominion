@@ -1,0 +1,41 @@
+{
+  "version": "4.5.6",
+  "characters": [
+    "Y",
+    "Z",
+    "aa",
+    "ab"
+  ],
+  "frames_per_character": 22,
+  "source": {
+    "file": "v456-original-characters.png",
+    "sha256": "65463e737897c07d439402da5a2ddf0e350e1de1c96548b9d410fe5b8798b8ba",
+    "dimensions": [
+      2048,
+      2048
+    ]
+  },
+  "atlases": {
+    "cards-creatures-v456.webp": {
+      "dimensions": [
+        512,
+        96
+      ],
+      "bytes": 13386
+    },
+    "units-creatures-v456.png": {
+      "dimensions": [
+        384,
+        120
+      ],
+      "bytes": 64991
+    },
+    "battlefield-frames-v456.webp": {
+      "dimensions": [
+        2112,
+        480
+      ],
+      "bytes": 424860
+    }
+  }
+}
