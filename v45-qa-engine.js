@@ -237,6 +237,9 @@ if(!profile.mastery||typeof profile.mastery!=='object')profile.mastery={};
 if(!profile.achievements||typeof profile.achievements!=='object')profile.achievements={};
 // v4.6: additive only. Do not migrate or erase saved v21 profiles.
 if(!profile.masteryClaims||typeof profile.masteryClaims!=='object')profile.masteryClaims={};
+// v4.6.2: additional career contracts; older profile keys are preserved.
+if(!profile.masteryContracts||typeof profile.masteryContracts!=='object')profile.masteryContracts={};
+if(!Number.isFinite(profile.masteryVersatilityBest))profile.masteryVersatilityBest=0;
 if(!profile.gauntlet||profile.gauntlet.version!==1)profile.gauntlet={
  version:1,attempts:0,clears:0,bestStage:0,firstClearRewarded:false,current:null
 };
@@ -260,6 +263,25 @@ function upgradeCard(k){
 function combatLevel(k,t){return mode==='ai'?(t===0?(S?.cardRanks?.[k]||1):(S?.aiTier||1)):1}
 function unitBonuses(k,t){const lv=combatLevel(k,t);return{hp:Math.floor(lv/2),atk:Math.floor((lv-1)/4)}}
 function spellBonus(k,t){return Math.min(2,Math.floor(combatLevel(k,t)/2))}
+// One-time, cosmetic/progression-economy-only contracts.
+// These never modify stats and do not affect online PvP resolution.
+const MASTERY_CONTRACTS=[
+ {id:'bronze-five',name:'Broad Foundations',detail:'Earn Bronze on 5 different cards.',goal:5,gold:50},
+ {id:'silver-three',name:'Specialist Corps',detail:'Earn Silver on 3 different cards.',goal:3,gold:90},
+ {id:'gold-two',name:'Twin Legends',detail:'Earn Gold on 2 different cards.',goal:2,gold:150},
+ {id:'versatile-eight',name:'Versatile Victory',detail:'Win a solo match using 8 different cards.',goal:8,gold:75},
+ {id:'rift-two',name:'Rift Explorer',detail:'Clear 2 different Rift Paths.',goal:2,gold:90},
+ {id:'rift-three',name:'Master of the Rift',detail:'Clear all 3 Rift Paths.',goal:3,gold:160}
+];
+function masteryContractsStatus(){
+ const bronze=CARD_KEYS.filter(k=>Number(profile.mastery[k]||0)>=4).length;
+ const silver=CARD_KEYS.filter(k=>Number(profile.mastery[k]||0)>=12).length;
+ const gold=CARD_KEYS.filter(k=>Number(profile.mastery[k]||0)>=30).length;
+ const routes=Object.values(profile.gauntlet.pathClears||{}).filter(n=>Number(n)>0).length;
+ const scores=[bronze,silver,gold,profile.masteryVersatilityBest||0,routes,routes];
+ return MASTERY_CONTRACTS.map((c,i)=>({...c,progress:Math.min(c.goal,scores[i]),
+  claimed:!!profile.masteryContracts[c.id]}));
+}
 function awardMatch(){
  if(!S||mode!=='ai'||S.mode!=='ai'||S.phase!=='over'||![0,1,-1].includes(S.winner))return null;
  if(profile.claimed[S.matchId])return typeof profile.claimed[S.matchId]==='object'?profile.claimed[S.matchId]:profile.last||null;
@@ -346,6 +368,19 @@ function awardMatch(){
   }
  }
 
+ // Contract progress is based on earned card usage, actual completed Rift
+ // routes and victories. Claimed rewards are stamped persistently by ID.
+ const contractRewards=[];
+ if(victory)profile.masteryVersatilityBest=Math.max(
+  Number(profile.masteryVersatilityBest)||0,
+  new Set(played.filter(k=>CARD_KEYS.includes(k))).size);
+ if(victory)for(const contract of masteryContractsStatus()){
+  if(!contract.claimed&&contract.progress>=contract.goal){
+   profile.masteryContracts[contract.id]=true;
+   profile.gold+=contract.gold;coins+=contract.gold;
+   contractRewards.push({id:contract.id,name:contract.name,gold:contract.gold});
+  }
+ }
  const achievementChecks={
   firstVictory:profile.wins>=1,fieldTactician:new Set(played).size>=5,
   pathfinder:profile.campaign.completed.length>=4,
@@ -358,7 +393,7 @@ function awardMatch(){
   if(unlocked&&!profile.achievements[key]){profile.achievements[key]=1;newlyEarned.push(key)}
  while(profile.xp>=xpNeeded(profile.level)&&profile.level<100){profile.xp-=xpNeeded(profile.level);profile.level++}
  const record={matchId:S.matchId,victory,drawn,xp,gold:coins,rewards,
-   missionTitle,storyClear,stars,newlyEarned,gauntlet:gauntletResult,masteryRewards,
+   missionTitle,storyClear,stars,newlyEarned,gauntlet:gauntletResult,masteryRewards,contractRewards,
    levelUp:profile.level>oldLevel,level:profile.level};
  profile.claimed[S.matchId]=record;profile.last=record;
  // Keep a limited anti-duplicate history across reloads.
@@ -388,7 +423,8 @@ function gauntletStatus(){
 function profileSummary(){
  return {level:profile.level,xp:profile.xp,xpNext:xpNeeded(profile.level),gold:profile.gold,
  wins:profile.wins,matches:profile.matches,last:profile.last,achievements:{...profile.achievements},
- gauntlet:gauntletStatus(),masteryTop:masteryStatus().slice(0,8)}
+ gauntlet:gauntletStatus(),masteryTop:masteryStatus().slice(0,8),
+ masteryContracts:masteryContractsStatus()}
 }
 
 const rocks=new Set(['0,3','6,3','2,3','4,4']),springs=['1,3','5,4'],high=new Set(['2,2','4,2','3,3','3,4','2,5','4,5']);
@@ -2402,7 +2438,7 @@ window.addEventListener('aether-card-art-ready',()=>{
  if(!$('deck-builder').classList.contains('hidden'))deckStatus();
  render();
 });
-window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,startGauntlet,continueGauntlet,gauntletStatus,masteryStatus,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
+window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,startGauntlet,continueGauntlet,gauntletStatus,masteryStatus,masteryContractsStatus,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
  campaignCounsel,
  loadouts:()=>({active:deckSlots.active,selected:selectedSlot,
   slots:deckSlots.slots.map(slot=>slot?
@@ -2681,6 +2717,102 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
   }catch(e){checks.push({name:'Runtime exception',pass:false,detail:String(e)})}
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
+ },
+ // v4.6.2: real solo-victory contract and old-profile regression coverage.
+ qaV462MasteryContracts:()=>{
+  const checks=[],check=(name,pass)=>checks.push({name,pass:!!pass});
+  const before=JSON.stringify(profile),beforeState=S,beforeMode=mode,beforeSeat=localSeat;
+  const keys=[PROFILE_STORE,'aether-dominion-v04'],
+   storage=keys.map(k=>localStorage.getItem(k));
+  const enter=(victory,played=[])=>{
+   startQuickMatch();S.usedCards=[played,[]];
+   S.phase='over';S.winner=victory?0:1;S.hp[0]=victory?15:0;
+   return awardMatch();
+  };
+  try{
+   profile.mastery={};profile.masteryClaims={};profile.masteryContracts={};
+   profile.masteryVersatilityBest=0;profile.claimed={};profile.last=null;
+   profile.gold=0;profile.xp=0;profile.level=1;profile.gauntlet.pathClears={};
+   const all=masteryStatus(),initial=masteryContractsStatus();
+   check('Every original card appears in Mastery Codex, not only top six',
+     all.length===60&&new Set(all.map(c=>c.key)).size===60);
+   check('Six independent contracts start with no gratuitous progress',
+     initial.length===6&&initial.every(c=>c.progress===0&&!c.claimed));
+   for(const k of CARD_KEYS.slice(0,5))profile.mastery[k]=4;
+   check('Existing v4.6 mastery history counts toward five-Bronze contract',
+     masteryContractsStatus().find(c=>c.id==='bronze-five')?.progress===5);
+   const goldBefore=profile.gold,bronze=enter(true,['v']);
+   check('First qualifying solo victory claims 50 gold once for Bronze breadth',
+     bronze.contractRewards?.some(c=>c.id==='bronze-five'&&c.gold===50)&&
+     profile.masteryContracts['bronze-five']&&profile.gold-goldBefore===bronze.gold);
+   const balance=profile.gold,repeat=awardMatch();
+   check('Re-rendering match results cannot pay mastery contract twice',
+     repeat?.matchId===bronze.matchId&&profile.gold===balance);
+   profile.masteryContracts={};
+   const defeat=enter(false,['v']);
+   check('A defeat never pays a ready career mastery contract',
+     defeat?.victory===false&&defeat.contractRewards.length===0&&
+     !profile.masteryContracts['bronze-five']);
+   const winAfterLoss=enter(true,[]);
+   check('A later qualifying victory can claim progress earned on a defeat',
+     winAfterLoss.contractRewards.some(c=>c.id==='bronze-five'));
+   profile.masteryContracts={};
+   profile.mastery={};profile.masteryVersatilityBest=0;
+   const eight=CARD_KEYS.slice(0,8),versatile=enter(true,[...eight,eight[0],eight[1]]);
+   check('Versatile Victory recognizes eight unique cards, not duplicate plays',
+     profile.masteryVersatilityBest===8&&
+     versatile.contractRewards.some(c=>c.id==='versatile-eight'&&c.gold===75));
+   const versatileMoney=profile.gold;
+   enter(true,['v','v','v']);
+   check('Versatile contract best mark persists and its gold cannot repeat',
+     profile.masteryVersatilityBest===8&&profile.gold>versatileMoney&&
+     profile.masteryContracts['versatile-eight']);
+   profile.masteryContracts={};
+   profile.mastery={};
+   for(const k of CARD_KEYS.slice(0,3))profile.mastery[k]=12;
+   const specialist=enter(true,[]);
+   check('Three Silver cards unlock only the Specialist Corps reward',
+     specialist.contractRewards.some(c=>c.id==='silver-three'&&c.gold===90)&&
+     !specialist.contractRewards.some(c=>c.id==='gold-two'));
+   profile.masteryContracts={};
+   for(const k of CARD_KEYS.slice(0,2))profile.mastery[k]=30;
+   const legends=enter(true,[]);
+   check('Two Gold mastered cards unlock Twin Legends only once',
+     legends.contractRewards.some(c=>c.id==='gold-two'&&c.gold===150));
+   profile.masteryContracts={};profile.mastery={};
+   profile.gauntlet.pathClears={stormbound:1,wayfinder:1};
+   const two=enter(true,[]);
+   check('Rift Explorer requires distinct route clears, not repeat wins on one path',
+     two.contractRewards.some(c=>c.id==='rift-two'&&c.gold===90)&&
+     !two.contractRewards.some(c=>c.id==='rift-three'));
+   profile.gauntlet.pathClears.ironbound=1;
+   const three=enter(true,[]);
+   check('Master of Rift pays a single 160-gold bonus after all three paths',
+     three.contractRewards.some(c=>c.id==='rift-three'&&c.gold===160)&&
+     masteryContractsStatus().find(c=>c.id==='rift-three')?.claimed);
+   const saved=profile.gold;saveProfile();
+   const persisted=loadProfile();
+   check('All new contract claims persist under existing v21 profile save key',
+     persisted.masteryContracts['rift-three']&&
+     persisted.masteryContracts['rift-two']&&
+     persisted.masteryContracts['versatile-eight']===undefined&&
+     Number.isFinite(persisted.masteryVersatilityBest));
+   enter(true,[]);
+   check('Repeat route mastery cannot award the final contract again',
+     profile.gold>saved&&profile.masteryContracts['rift-three']);
+   const beforeOnline=JSON.stringify(profile.masteryContracts);
+   mode='online';
+   check('Private duels cannot mint mastery contract rewards',
+     awardMatch()===null&&JSON.stringify(profile.masteryContracts)===beforeOnline);
+   check('Original 24-card deck and all 60 original card IDs remain available',
+     chosenDeck.length===24&&CARD_KEYS.length===60);
+  }catch(e){checks.push({name:'Unhandled mastery-contract exception',pass:false,detail:String(e.stack||e)})}
+  finally{
+   profile=JSON.parse(before);S=beforeState;mode=beforeMode;localSeat=beforeSeat;
+   keys.forEach((k,i)=>{if(storage[i]===null)localStorage.removeItem(k);
+    else localStorage.setItem(k,storage[i])});
+  }
+  return{pass:checks.length===17&&checks.every(c=>c.pass),checks};
  },
  // v4.6.1: three independent Rift Paths with no save-schema migration.
  qaV461Paths:()=>{
