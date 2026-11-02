@@ -13,3 +13,5 @@
 .rift-path-grid em{font-size:9px;color:#dbb3e9;font-style:normal;font-weight:700}
 #rift-path-detail{margin:10px 0 0;color:#d5d0eb;font-size:11px;line-height:1.5}
 @media(max-width:370px){.rift-paths{padding:9px 8px}.rift-path-grid{gap:4px}.rift-path-grid b{font-size:9px}.rift-path-grid small{font-size:9px}.rift-path-grid em{font-size:8px}}
+
+@media(max-width:370px){.rift-path-grid button b{font-size:8.5px!important;letter-spacing:-.03em!important;white-space:nowrap!important;overflow-wrap:normal!important}}
