@@ -480,12 +480,52 @@ function signatureFX(e,p,to,from){
   cross:'#ffc38e',aftershock:'#ffa371',silence:'#caa4ff',
   exchange:'#f7b0df',heal:'#9cf7ce',shield:'#b9d6ff',
   cleanse:'#c4ffe5',dash:'#a6dfff',rally:'#ffdaa4',bond:'#e2c4ff',
-  snare:'#cdaaff',recall:'#dbbaff',diagonal:'#ffedb3',reprisal:'#ff916e',undertow:'#83e3fa',edict:'#ffeb98',breach:'#c4f5ff',gale:'#a5f2d5',covenant:'#ffbd83',refrain:'#d6b3ff',bellkeeper:'#d4adff',cinderwake:'#ff9b57',oathmoss:'#9bdb7e',tidebreak:'#80ecff'};
+  snare:'#cdaaff',recall:'#dbbaff',diagonal:'#ffedb3',reprisal:'#ff916e',undertow:'#83e3fa',edict:'#ffeb98',breach:'#c4f5ff',gale:'#a5f2d5',covenant:'#ffbd83',refrain:'#d6b3ff',bellkeeper:'#d4adff',cinderwake:'#ff9b57',oathmoss:'#9bdb7e',tidebreak:'#80ecff',gravemire:'#a0a2ff',prismrelay:'#9ef8e5',cinderbloom:'#ff8750',tidalreprieve:'#92e6ef'};
  const color=palette[kind]||'#dfd2ff';
  c.save();c.globalAlpha=.85*f;c.strokeStyle=color;c.fillStyle=color;
  c.lineCap='round';c.lineJoin='round';c.lineWidth=3;
  const line=(a,b,z,w)=>{c.beginPath();c.moveTo(a,b);c.lineTo(z,w);c.stroke()};
- if(kind==='bellkeeper'){
+ if(kind==='gravemire'){
+  // Dark-violet restraint rings grip the feet, with crossed gravity arcs.
+  for(let i=0;i<3;i++){
+   const r=15+i*11+p*9;
+   c.beginPath();c.ellipse(x,y+17,r,r*.35,0,0,Math.PI*2);c.stroke();
+  }
+  for(let i=0;i<4;i++){
+   const a=i*Math.PI/2+p*.6;
+   const rx=x+Math.cos(a)*(20+18*p),ry=y+12+Math.sin(a)*(7+6*p);
+   line(rx,ry,rx-Math.cos(a)*12,ry-29*f);
+  }
+ }else if(kind==='prismrelay'){
+  // An authentic faceted prism with sweeping turquoise energy.
+  for(let i=0;i<2;i++){
+   const w=17+i*12+p*10;
+   c.beginPath();c.moveTo(x,y-31-w);c.lineTo(x+w,y-31);
+   c.lineTo(x,y-31+w);c.lineTo(x-w,y-31);c.closePath();c.stroke();
+  }
+  for(let i=0;i<5;i++){
+   const a=i*Math.PI*2/5+p*1.6;
+   line(x,y-31,x+Math.cos(a)*42*f,y-31+Math.sin(a)*29*f);
+  }
+ }else if(kind==='cinderbloom'){
+  // Five ember-flower petals rather than the ordinary burn tracer.
+  for(let i=0;i<5;i++){
+   const a=i*Math.PI*2/5-p*.65,rad=12+27*p;
+   const xx=x+Math.cos(a)*rad,yy=y+Math.sin(a)*rad*.63;
+   c.beginPath();c.ellipse(xx,yy,8*f+2,4*f+2,a,0,Math.PI*2);c.stroke();
+   line(x,y,xx,yy);
+  }
+ }else if(kind==='tidalreprieve'){
+  // Interlocking cresting water circles and droplets for group recovery.
+  for(let i=0;i<3;i++){
+   const r=16+i*12+p*9;
+   c.beginPath();c.ellipse(x,y+4,r,r*.34,0,Math.PI*1.15,Math.PI*2.92);c.stroke();
+  }
+  for(let i=0;i<5;i++){
+   const a=i*Math.PI*2/5+p,xx=x+Math.cos(a)*(18+26*p),yy=y-22+Math.sin(a)*15;
+   c.beginPath();c.ellipse(xx,yy,3.2,6.5,0,0,Math.PI*2);c.stroke();
+  }
+ }else if(kind==='bellkeeper'){
   // Bell resonance: three expanding sound waves and a suspended clapper.
   for(let i=0;i<3;i++){
    const rad=13+i*15+p*19;
@@ -683,6 +723,8 @@ function renderBattleFX(t){
   signatureFX(e,p,to,from);
   if(e.type==='buff'){
    const color=e.kind==='heal'||e.kind==='oathmoss'?'#93ffc3':
+    e.kind==='gravemire'?'#a0a2ff':e.kind==='prismrelay'?'#9ef8e5':
+    e.kind==='cinderbloom'?'#ff8750':e.kind==='tidalreprieve'?'#92e6ef':
     e.kind==='cinderwake'?'#ff9b57':e.kind==='bellkeeper'?'#d4adff':
     e.kind==='tidebreak'?'#80ecff':e.kind==='rally'?'#ffd997':
     e.kind==='dash'?'#98caff':'#b6dfff';
