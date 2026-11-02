@@ -180,3 +180,7 @@ The Rift Gauntlet now offers three selectable, differentiated rulesets in the Co
 ## v4.6.2 — Full Mastery Codex and Career Contracts
 
 Forge now exposes the entire **60-card** mastery catalogue with Progress, All 60 and Gold filters. Six independent career contracts reward breadth of card usage, deeper specialization, eight different cards in a single winning match, and clearing multiple Rift Gauntlet routes. Each bonus is **one-time gold only**; no competitive stats or paid power. Prior saves, card copies, decks, all three Rift Paths and mastery participation history remain compatible. See `V462_MASTERY_CODEX_AND_CONTRACTS_QA.md`. The next milestone remains further v4.6 replayability/pacing, followed by v4.7 multiplayer reliability, then the creator's mandatory roadmap review.
+
+## v4.6.3 — Optional Rotating Rift Flux
+
+The Rift Gauntlet now offers an optional **Rift Flux** switch in the Commander's Hall, revealing three unique and deliberately varied combat omens for each run. Aeth Tide, Warden Patrol, Siege Lines and Veil of Wards create different tactical openings; the run's three-event schedule is saved and locked across reloads. A first full Flux clear earns 60 gold only once; repeat clears count toward a saved stat. Flux defaults OFF, preserving existing matches, 60 painted cards, original Gauntlet routes, 24-card decks, career contracts, and equalized private duels. See `V463_RIFT_FLUX_RELEASE_AND_QA.md`. Finish v4.6 polish, then v4.7 real-device multiplayer reliability, and **STOP after v4.7** for the creator's roadmap review.
