@@ -480,12 +480,48 @@ function signatureFX(e,p,to,from){
   cross:'#ffc38e',aftershock:'#ffa371',silence:'#caa4ff',
   exchange:'#f7b0df',heal:'#9cf7ce',shield:'#b9d6ff',
   cleanse:'#c4ffe5',dash:'#a6dfff',rally:'#ffdaa4',bond:'#e2c4ff',
-  snare:'#cdaaff',recall:'#dbbaff',diagonal:'#ffedb3',reprisal:'#ff916e',undertow:'#83e3fa',edict:'#ffeb98',breach:'#c4f5ff',gale:'#a5f2d5',covenant:'#ffbd83',refrain:'#d6b3ff'};
+  snare:'#cdaaff',recall:'#dbbaff',diagonal:'#ffedb3',reprisal:'#ff916e',undertow:'#83e3fa',edict:'#ffeb98',breach:'#c4f5ff',gale:'#a5f2d5',covenant:'#ffbd83',refrain:'#d6b3ff',bellkeeper:'#d4adff',cinderwake:'#ff9b57',oathmoss:'#9bdb7e',tidebreak:'#80ecff'};
  const color=palette[kind]||'#dfd2ff';
  c.save();c.globalAlpha=.85*f;c.strokeStyle=color;c.fillStyle=color;
  c.lineCap='round';c.lineJoin='round';c.lineWidth=3;
  const line=(a,b,z,w)=>{c.beginPath();c.moveTo(a,b);c.lineTo(z,w);c.stroke()};
- if(kind==='bolt'){
+ if(kind==='bellkeeper'){
+  // Bell resonance: three expanding sound waves and a suspended clapper.
+  for(let i=0;i<3;i++){
+   const rad=13+i*15+p*19;
+   c.beginPath();c.ellipse(x,y,rad,rad*.63,0,Math.PI*.2,Math.PI*1.9);c.stroke();
+  }
+  c.beginPath();c.moveTo(x-11,y-20);c.quadraticCurveTo(x,y-36,x+11,y-20);
+  c.lineTo(x+14,y-7);c.quadraticCurveTo(x,y-1,x-14,y-7);c.closePath();c.stroke();
+  c.beginPath();c.arc(x,y-3,3+p*2,0,Math.PI*2);c.fill();
+ }else if(kind==='cinderwake'){
+  // Tracer sparks branch away from the struck, already-burning foe.
+  for(let i=0;i<6;i++){
+   const a=-Math.PI*.94+i*Math.PI*.38,reach=22+p*34;
+   const xx=x+Math.cos(a)*reach,yy=y+Math.sin(a)*reach*.68;
+   line(x,y,xx,yy);
+   c.beginPath();c.arc(xx,yy,2.4+3*f,0,Math.PI*2);c.fill();
+  }
+ }else if(kind==='oathmoss'){
+  // Organic growth, not the generic green healing ring.
+  for(const dir of [-1,1]){
+   c.beginPath();c.moveTo(x+dir*3,y+28);
+   c.bezierCurveTo(x+dir*26,y+16,x+dir*(15+8*p),y-6,x+dir*(28+12*p),y-34);
+   c.stroke();
+   for(let i=0;i<3;i++){
+    const xx=x+dir*(10+i*8),yy=y+17-i*17-p*11;
+    c.beginPath();c.ellipse(xx,yy,7,3,dir*(.6+i*.3),0,Math.PI*2);c.fill();
+   }
+  }
+ }else if(kind==='tidebreak'){
+  // Blue double-wave crest communicates spring-sourced Aeth and shielding.
+  for(let i=0;i<3;i++){
+   const yy=y+20-i*14-p*16;
+   c.beginPath();c.moveTo(x-41,yy);
+   c.bezierCurveTo(x-25,yy-25,x-9,yy+22,x+6,yy-2);
+   c.bezierCurveTo(x+21,yy-23,x+31,yy+7,x+42,yy-5);c.stroke();
+  }
+ }else if(kind==='bolt'){
   const q=Math.min(1,p*2.4),sx=from[0],sy=from[1]-45;
   c.beginPath();c.moveTo(sx,sy);
   for(let i=1;i<=7;i++){let t=i/7;c.lineTo(sx+(x-sx)*q*t+(i%2?7:-7),sy+(y-sy)*q*t)}
@@ -646,7 +682,10 @@ function renderBattleFX(t){
   }
   signatureFX(e,p,to,from);
   if(e.type==='buff'){
-   const color=e.kind==='heal'?'#93ffc3':e.kind==='rally'?'#ffd997':e.kind==='dash'?'#98caff':'#b6dfff';
+   const color=e.kind==='heal'||e.kind==='oathmoss'?'#93ffc3':
+    e.kind==='cinderwake'?'#ff9b57':e.kind==='bellkeeper'?'#d4adff':
+    e.kind==='tidebreak'?'#80ecff':e.kind==='rally'?'#ffd997':
+    e.kind==='dash'?'#98caff':'#b6dfff';
    const ring=clamp01(p/.85);
    drawMagicRing(to,8+ring*37,color,(1-ring)*.95);
    if(e.kind==='heal'&&paintedAtlas.complete&&paintedAtlas.naturalWidth){
