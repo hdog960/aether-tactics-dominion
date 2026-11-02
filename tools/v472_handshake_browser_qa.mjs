@@ -55,7 +55,7 @@ try{
  assert(await guest.evaluate(n=>window.__handshakeProbe.cards.length===n,fixed),
   'Guest must cancel deck retries after the match has started');
  await guest.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
- assert(await guest.evaluate(()=>window.__handshakeProbe.cards.length===fixed),
+ assert(await guest.evaluate(n=>window.__handshakeProbe.cards.length===n,fixed),
   'Safari resume cannot resend deck once it is confirmed');
  await guest.screenshot({path:'art/v472-guest-handshake-320px.png',fullPage:true});
  await guest.close();
