@@ -33,7 +33,7 @@ check('Guest submissions carry the host revision and are locked until ACK',
  engine.includes('duelOrderPending=true;')&&
  engine.includes("net?.intent({rev:revision,cmd:a})")&&
  engine.includes("const ordersLocked=S.mode==='online'")&&
- (v471?engine.includes('S=p.s;revision=p.rev;clearDuelAck();'):
+ ((v471||v472)?engine.includes('S=p.s;revision=p.rev;clearDuelAck();'):
  engine.includes('S=p.s;revision=p.rev;duelOrderPending=false;')));
 check('Host rejects stale revision then sends an authoritative snapshot',
  engine.includes("order?.rev===revision&&apply(1,order.cmd)")&&
