@@ -1,0 +1,19 @@
+name: Dominion v4.5.6 creature engine CI
+on:
+  push:
+    branches: [dev/v456-four-creatures]
+    paths:
+      - .github/workflows/v456-rules-qa.yml
+      - tools/v456_rules_qa.mjs
+      - v45-engine.js
+      - v30-campaign-data.js
+permissions: {contents: read}
+jobs:
+  creatures-and-saves:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/v456_rules_qa.mjs
