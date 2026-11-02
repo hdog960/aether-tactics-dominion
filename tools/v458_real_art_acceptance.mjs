@@ -92,6 +92,18 @@ try{
   [0,120,240,360].every(row=>window.__dominionV458DrawRows?.includes(row)),
   null,{timeout:15000});
  const paintedRows=await page.evaluate(()=>window.__dominionV458DrawRows.slice());
+ await page.waitForTimeout(280);
+ const nativeCanvas=await page.evaluate(()=>{
+  const units=window.AetherGame.get().units.map(u=>u.k);
+  const labels=[...document.querySelectorAll('#board button[aria-label]')]
+   .filter(e=>e.querySelector('img.unitimg')).map(e=>e.getAttribute('aria-label'));
+  return{units,labels,canvas:document.querySelector('#battle-canvas').toDataURL('image/png')};
+ });
+ if(JSON.stringify(nativeCanvas.units)!==JSON.stringify(['ag','ah','ai','aj'])||
+  nativeCanvas.labels.length!==4)throw Error('Actual rendered units did not match new team');
+ const fs=await import('node:fs');
+ fs.writeFileSync('art/v458-raw-battle-canvas-720px.png',
+  Buffer.from(nativeCanvas.canvas.split(',')[1],'base64'));
  await page.screenshot({path:'art/v458-battlefield-four-creatures-390px.png'});
  const game=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
  game.on('pageerror',e=>issue.push(e.message));
