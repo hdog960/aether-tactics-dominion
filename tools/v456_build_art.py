@@ -1,7 +1,7 @@
 """Dominion v4.5.6: convert a four-character image into painted game atlases."""
 from pathlib import Path
 from PIL import Image
-import json, math, os
+import json, math, os, hashlib
 import cv2
 import numpy as np
 
@@ -113,6 +113,8 @@ for i,tile in enumerate(tiles):
     distinct={hash(frames.crop((j*96,i*120,(j+1)*96,(i+1)*120)).tobytes()) for j in range(22)}
     if len(distinct)<18: raise RuntimeError('Repeated animation poses')
 manifest={'version':'4.5.6','characters':['Y','Z','aa','ab'],'frames_per_character':22,
+ 'source':{'file':source_path.name,'sha256':hashlib.sha256(source_path.read_bytes()).hexdigest(),
+           'dimensions':[W,H]},
  'atlases':{p.name:{'dimensions':Image.open(p).size,'bytes':p.stat().st_size}
            for p in (out/'cards-creatures-v456.webp',out/'units-creatures-v456.png',out/'battlefield-frames-v456.webp')}}
 (out/'v456-art-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
