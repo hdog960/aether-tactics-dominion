@@ -47,7 +47,7 @@ try{
  await qa.goto('http://127.0.0.1:8000/qa-v39.html',{waitUntil:'load',timeout:45000});
  await qa.waitForFunction(()=>window.AetherGame?.qaV46Gauntlet,null,{timeout:30000});
  const suite=await qa.evaluate(()=>window.AetherGame.qaV46Gauntlet());
- assert(suite.pass&&suite.checks.length===16,'One-time reward and stage regression failed: '+JSON.stringify(suite));
+ assert(suite.pass&&suite.checks.length===18,'One-time reward and stage regression failed: '+JSON.stringify(suite));
  await qa.close();
  const narrow=await browser.newPage({viewport:{width:320,height:720},deviceScaleFactor:2,isMobile:true,hasTouch:true});
  narrow.on('pageerror',e=>errors.push('320px '+e.message));
