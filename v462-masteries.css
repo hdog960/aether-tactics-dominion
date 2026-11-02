@@ -1,0 +1,19 @@
+/* Dominion v4.6.2: complete 60-card Mastery Codex + career contracts */
+.v462-mastery-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 9px}
+.v462-mastery-controls button{font:800 10px/1.25 system-ui,sans-serif;letter-spacing:.035em;border-radius:8px;background:#1d2c47;color:#dad5ed;border:1px solid #56617e;min-height:37px;padding:7px 3px}
+.v462-mastery-controls button[aria-pressed="true"]{border-color:#d6b6f3;background:linear-gradient(110deg,#5b417d,#343f67);color:#fff2ff;box-shadow:0 0 7px #9a79d73c}
+.v462-mastery-controls button:focus-visible{outline:2px solid #f0d7ff;outline-offset:2px}
+.v462-mastery-count{font:700 10px system-ui;letter-spacing:.07em;color:#bac6d9;margin:2px 0 10px}
+.v462-empty{padding:10px;border:1px solid #4a5674;border-radius:8px}
+.v462-contracts-heading{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px;margin-top:18px;margin-bottom:10px;padding-top:13px;border-top:1px solid #635c8a}
+.v462-contracts-heading span{font:bold 12px/1.4 system-ui;letter-spacing:.07em;color:#f1d8ff}
+.v462-contracts-heading small{font:600 10px system-ui;color:#bac5dc}
+.v462-contract-list{display:grid;gap:7px}
+.v462-contract{border:1px solid #64607a;border-radius:10px;background:linear-gradient(125deg,#2a294b,#233348);padding:11px}
+.v462-contract.complete{border-color:#567f79;background:linear-gradient(125deg,#20413f,#27364a)}
+.v462-contract-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font:700 12px system-ui;color:#f5e8ff}
+.v462-contract-top span{font:800 10px system-ui;color:#e9cb8f;white-space:nowrap}
+.v462-contract.complete .v462-contract-top span{color:#a3ead3}
+.v462-contract-description{font:400 11px/1.5 system-ui;color:#c5cce0;margin:6px 0 8px}
+.v462-contract small{font:700 10px system-ui;color:#becfdf}
+@media(max-width:370px){.v462-mastery-controls button{font-size:9px;letter-spacing:0}.v462-contract{padding:9px}.v462-contract-top b{font-size:11px}}
