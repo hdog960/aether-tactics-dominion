@@ -134,6 +134,7 @@ try{
  assert(fit,'Mastery controls or contracts overflow a narrow 320px phone');
  assert(await narrow.locator('#v46-masteries .rift-mastery-row').count()===60,
   '320px phone cannot browse every card mastery');
+ await narrow.locator('#profile-done').click();
  await narrow.locator('#home-gauntlet').click();
  const iron=await narrow.evaluate(()=>({match:window.AetherGame.get(),
    run:window.AetherGame.gauntletStatus()}));
