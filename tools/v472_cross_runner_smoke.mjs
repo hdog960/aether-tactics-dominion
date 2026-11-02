@@ -47,9 +47,33 @@ try{
    const hand=await page.evaluate(seat=>window.AetherGame.get().hands[seat][0],seat);
    if(hand!=='v')throw Error(role+' expected the starting Vanguard card, saw '+hand);
    await page.locator('#hand button[data-card="0"]').click();
-   await page.locator('#board button[data-x="0"][data-y="7"]').click();
-   await page.waitForFunction(n=>window.AetherGame.get().units.length===n+1,
-    before,{timeout:35000});
+   // The 32-bit battlefield is interactive via its visible painted canvas,
+   // not via the hidden semantic grid. Tap the projected center of tile (1,6).
+   const touch=await page.evaluate(()=>{
+    const c=document.getElementById('battle-canvas'),r=c.getBoundingClientRect();
+    const fit=getComputedStyle(c).objectFit;
+    const scale=(fit==='contain'?Math.min:Math.max)(r.width/720,r.height/960);
+    const px=1+.5,row=6+.72,t=row/8,width=430+t*270;
+    const wx=360+(t-.5)*29+(px/7-.5)*width;
+    const wy=237+Math.pow(t,1.21)*518;
+    return{x:r.left+(r.width-720*scale)/2+wx*scale,
+     y:r.top+(r.height-960*scale)/2+wy*scale,
+     rect:[r.x,r.y,r.width,r.height],fit,
+     legal:document.querySelector('#board button[data-x="1"][data-y="6"]')?.className};
+   });
+   await page.touchscreen.tap(touch.x,touch.y);
+   try{
+    await page.waitForFunction(n=>window.AetherGame.get().units.length===n+1,
+     before,{timeout:22000});
+   }catch(e){
+    info.touchFailure={touch,after:await page.evaluate(()=>({
+     units:window.AetherGame.get().units.length,
+     notice:document.getElementById('instruction')?.textContent,
+     status:document.getElementById('roomstatus')?.textContent,
+     clicked:document.elementFromPoint(touch.x,touch.y)?.id
+    }))};
+    throw e;
+   }
    info.cardPlayed=true;
   }
   await page.locator('#end').click();
