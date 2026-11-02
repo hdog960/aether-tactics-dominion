@@ -62,7 +62,7 @@ try{
  // Public v4.5.5 must never show v4.5.6 cards or unexpectedly rewrite a save.
  const baseline=boot();
  const pub=baseline.game.loadouts();
- check('Live 48-card gate hides all four unreleased keys',
+ check('Unreleased v4.5.6 IDs do not contaminate public selected deck',
   !keys.some(k=>pub.currentDeck.includes(k))&&pub.currentDeck.length===24);
  check('Three preexisting Armory slots are still present',pub.slots.length===3);
  check('Merely opening the game does not create or rewrite save keys',
@@ -122,4 +122,4 @@ try{
 }catch(e){checks.push({name:'Unhandled save compatibility exception',pass:false,detail:String(e.stack||e)})}
 const report={pass:checks.every(x=>x.pass),count:checks.length,checks};
 console.log(JSON.stringify(report,null,2));
-if(!report.pass||report.count!==14)process.exitCode=1;
+if(!report.pass||report.count!==15)process.exitCode=1;
