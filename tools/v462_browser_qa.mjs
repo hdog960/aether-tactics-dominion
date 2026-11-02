@@ -20,7 +20,7 @@ try{
   'Stormbound path selection did not persist in UI');
  assert((await page.locator('#rift-path-detail').textContent()).includes('2 Core HP'),
   'Stormbound risk/reward explanation missing');
- await page.locator('#v462-paths').scrollIntoViewIfNeeded();
+ await page.locator('#v461-paths').scrollIntoViewIfNeeded();
  await page.screenshot({path:'art/v462-gauntlet-commander-hall-390px.png',fullPage:true});
  await page.locator('#home-gauntlet').click();
  const stage1=await page.evaluate(()=>({
