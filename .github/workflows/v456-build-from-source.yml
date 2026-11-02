@@ -21,6 +21,22 @@ jobs:
         run: test -s art/sources/v456-original-characters.png
       - name: Validate real four-figure artwork and build in-game atlases
         run: python tools/v456_build_art.py
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-v456-local.log 2>&1 &
+      - name: Confirm four genuine character paintings and future 52-card release in Chromium
+        run: node tools/v456_real_art_acceptance.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dominion-v456-identity-and-battlefield-review
+          path: |
+            art/v456-card-sprite-identity-390px.png
+            art/v456-battlefield-four-creatures-390px.png
+            art/v456-future-52-card-grimoire-390px.png
+          if-no-files-found: ignore
       - name: Commit validated painted assets to staging only
         run: |
           git config user.name "github-actions[bot]"
