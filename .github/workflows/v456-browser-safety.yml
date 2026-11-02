@@ -35,4 +35,5 @@ jobs:
           path: |
             art/v456-staged-public-safety-390px.png
             art/v456-320px-mobile-dock-qa.png
+            art/v456-four-ability-fx-390px.png
           if-no-files-found: ignore
