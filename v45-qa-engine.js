@@ -486,6 +486,31 @@ let S=null,localSeat=0,mode='ai',net=null,room='',chosenUnit=null,chosenCard=-1,
 // Reconnect safety: never accept callbacks from a departed room or permit
 // guest orders while an earlier order awaits host confirmation.
 let networkEpoch=0,duelStarted=false,duelOrderPending=false;
+let duelPendingOrder=null,duelAckTimer=null,duelAckRetries=0,lastDuelAckSeq=0;
+function clearDuelAck(){
+ if(duelAckTimer!==null){clearTimeout(duelAckTimer);duelAckTimer=null}
+ duelOrderPending=false;duelPendingOrder=null;duelAckRetries=0;
+}
+function armDuelAck(){
+ if(duelAckTimer!==null)clearTimeout(duelAckTimer);
+ if(!duelOrderPending||!duelPendingOrder)return;
+ const ticket=networkEpoch,seq=duelPendingOrder.seq;
+ duelAckTimer=setTimeout(()=>{
+  duelAckTimer=null;
+  if(ticket!==networkEpoch||mode!=='online'||localSeat!==1||
+     !connected||!duelOrderPending||duelPendingOrder?.seq!==seq)return;
+  duelAckRetries++;
+  // Retransmit the identical sequence; host dedupes it and ACKs its state.
+  // Never create a new order that could apply the same move twice.
+  net?.retryIntent?.(duelPendingOrder);
+  net?.requestState?.();
+  $('roomstatus').textContent=duelAckRetries>=3?
+   'Still awaiting host. Use SYNC to request the current battlefield.':
+   'Checking host confirmation · retry '+duelAckRetries+'/3';
+  if(duelAckRetries<3)armDuelAck();
+ },5000);
+}
+
 let victoryDelay=null,victoryVisible=false;
 const K=(x,y)=>x+','+y,P=(x,y)=>({x,y}),d=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y),bounds=(x,y)=>x>=0&&x<7&&y>=0&&y<8;
 const entity=(x,y)=>S.units.find(u=>u.x===x&&u.y===y),core=t=>({core:true,team:t,x:3,y:t===0?7:0});
@@ -1657,10 +1682,14 @@ function intent(a){if(!S||S.phase!=='playing'||S.turn!==localSeat){message('<b>N
   message('<b>Orders paused.</b>',!connected?'Reconnect to your friend first.':'Waiting for the host to confirm your previous move.');return;
  }
  if(mode==='online'&&localSeat===1){
-  duelOrderPending=true;
-  if(!net?.intent({rev:revision,cmd:a})){
-   duelOrderPending=false;message('<b>Order not sent.</b>','Check the connection, then try again.');
-  }else message('<b>Order sent.</b>','Waiting for host confirmation.');
+  const seq=net?.intent({rev:revision,cmd:a});
+  if(!Number.isSafeInteger(seq)||seq<1){
+   message('<b>Order not sent.</b>','Check the connection, then try again.');
+  }else{
+   duelOrderPending=true;duelPendingOrder={seq,rev:revision,cmd:a};
+   duelAckRetries=0;armDuelAck();
+   message('<b>Order sent.</b>','Waiting for host confirmation.');
+  }
   render();return;
  }
  if(!apply(localSeat,a)){message('<b>That action is not valid.</b>','Choose a legal highlighted tile.');return}
@@ -2374,7 +2403,14 @@ function render(){
  }
  if(window.DominionRift?.render)window.DominionRift.render();
 }
-function publish(){if(net&&mode==='online'&&localSeat===0){net.state({s:S,rev:revision});}}
+function publish(ackSeq=null){
+ if(Number.isSafeInteger(ackSeq)&&ackSeq>0)lastDuelAckSeq=ackSeq;
+ if(net&&mode==='online'&&localSeat===0){
+  const packet={s:S,rev:revision};
+  if(lastDuelAckSeq>0)packet.ackSeq=lastDuelAckSeq;
+  net.state(packet);
+ }
+}
 function startQuickMatch(){
  abandonGauntletOnMatchReplace();
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
@@ -2396,7 +2432,7 @@ function startAI(){
  message('<b>Single Player</b> · Rune Valley','Tap a card to summon, or tap an ally to command it.');render();
 }
 function disconnect(){
- networkEpoch++;duelOrderPending=false;duelStarted=false;
+ networkEpoch++;clearDuelAck();duelStarted=false;lastDuelAckSeq=0;
  if(net){try{net.leave()}catch(e){}net=null}
  room='';connected=false;
 }
@@ -2411,12 +2447,12 @@ function join(code,host){
  if(!window.AetherNet?.ready){$('roomstatus').textContent='Network module is still loading, or unavailable. Try again with internet access.';return}
  disconnect();code=code.replace(/[^A-Z0-9]/g,'').toUpperCase().slice(0,8);if(code.length<5){$('roomstatus').textContent='Enter a room code of at least five characters.';return}
  const ticket=networkEpoch;
- room=code;localSeat=host?0:1;clearSelection();seed('online');revision=0;duelOrderPending=false;
+ room=code;localSeat=host?0:1;clearSelection();seed('online');revision=0;clearDuelAck();lastDuelAckSeq=0;
  $('roomid').value=code;$('roomstatus').textContent='Connecting to public signaling relays…';$('invite').classList.toggle('hidden',!host);
  try{net=window.AetherNet.connect(code,host,{
   join:peer=>{
    if(ticket!==networkEpoch)return;
-   connected=true;duelOrderPending=false;$('lobby').classList.add('hidden');
+   connected=true;clearDuelAck();$('lobby').classList.add('hidden');
    if(host){
     if(duelStarted){
      if(S.phase!=='over')S.phase='playing';
@@ -2430,6 +2466,7 @@ function join(code,host){
     $('roomstatus').textContent='Connected. Sending your deck and requesting the latest match.';
     if(!net?.sendLoadout(chosenDeck.slice()))
      $('roomstatus').textContent='Could not send deck. Rejoin the room to retry.';
+    net?.requestState?.();
    }
    render();
   },
@@ -2449,7 +2486,7 @@ function join(code,host){
   },
   leave:()=>{
    if(ticket!==networkEpoch)return;
-   connected=false;duelOrderPending=false;
+   connected=false;clearDuelAck();lastDuelAckSeq=0;
    $('roomstatus').textContent='Friend disconnected. Orders paused until reconnection.';
    if(S.phase==='playing'){
     S.phase='waiting';
@@ -2466,8 +2503,13 @@ function join(code,host){
       !['playing','waiting','over'].includes(p.s.phase)||
       ![0,1].includes(p.s.turn))return;
    if(!Number.isSafeInteger(p.rev)||p.rev<revision)return;
-   const rejected=duelOrderPending&&p.rev===revision;
-   S=p.s;revision=p.rev;duelOrderPending=false;clearSelection();
+   const sameRevision=p.rev===revision;
+   const matchingAck=duelOrderPending&&
+    Number.isSafeInteger(p.ackSeq)&&p.ackSeq===duelPendingOrder?.seq;
+   // An unrelated same-revision snapshot is not proof that our order was handled.
+   if(duelOrderPending&&sameRevision&&!matchingAck)return;
+   const rejected=duelOrderPending&&sameRevision&&matchingAck;
+   S=p.s;revision=p.rev;clearDuelAck();clearSelection();
    $('roomstatus').textContent=rejected?
     'Host did not accept that action. Review the current battlefield.':
     S.phase==='playing'?'Connected. '+(S.turn===1?'Your turn.':'Waiting for your friend.'):
@@ -2480,13 +2522,24 @@ function join(code,host){
    const accepted=duelStarted&&S.phase==='playing'&&S.turn===1&&
     order?.rev===revision&&apply(1,order.cmd);
    if(accepted){clearSelection();revision++;}
-   // Even a rejected action gets the current authoritative snapshot as ACK.
-   publish();render();
+   // Carry the action sequence in every ACK, including rejected orders.
+   publish(order.seq);render();
   },
   error:e=>{
    if(ticket!==networkEpoch)return;
-   if(!host)duelOrderPending=false;
+   // A failed send might still have reached the host: keep the pending order
+   // until we receive a matching ACK or a newer host snapshot.
    $('roomstatus').textContent='Connection issue: '+String(e).slice(0,140);render();
+  },
+  duplicate:seq=>{
+   if(ticket!==networkEpoch||!host||!connected)return;
+   // A retry of an accepted/rejected command gets the original state ACK,
+   // never a second application.
+   publish();
+  },
+  syncRequest:()=>{
+   if(ticket!==networkEpoch||!host||!connected)return;
+   if(duelStarted)publish();
   },
   quality:ms=>{
    if(ticket!==networkEpoch||!connected)return;
@@ -2494,6 +2547,21 @@ function join(code,host){
   }
  });}catch(error){$('roomstatus').textContent='Could not open room: '+String(error.message||error);return}message('<b>Private room '+code+'</b>',host?'Waiting for your friend to join.':'Waiting to receive the battlefield from your friend.');render();
 }
+$('duel-refresh-link')?.addEventListener('click',()=>{
+ if(mode!=='online'||!connected)return;
+ if(localSeat===0){publish();$('roomstatus').textContent='Current duel state sent to your friend.'}
+ else{
+  if(duelOrderPending&&duelPendingOrder)net?.retryIntent?.(duelPendingOrder);
+  net?.requestState?.();
+  $('roomstatus').textContent='Requesting the latest host state…';
+ }
+});
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden||mode!=='online'||localSeat!==1||!connected)return;
+ // iPhone Safari can suspend web timers and rendering while backgrounded.
+ if(duelOrderPending&&duelPendingOrder)net?.retryIntent?.(duelPendingOrder);
+ net?.requestState?.();
+});
 const board=$('board');board.innerHTML='';for(let y=0;y<8;y++)for(let x=0;x<7;x++){let b=document.createElement('button');b.type='button';b.dataset.x=x;b.dataset.y=y;board.appendChild(b)}
 board.addEventListener('click',e=>{let b=e.target.closest('button[data-x]');if(b)chooseTile(+b.dataset.x,+b.dataset.y)});
 $('hand').addEventListener('click',e=>{
