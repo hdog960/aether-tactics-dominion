@@ -1,0 +1,37 @@
+name: Dominion v4.6.1 selectable Rift Paths iPhone-sized browser QA
+on:
+  push:
+    branches: [dev/v461-rift-paths]
+    paths:
+      - .github/workflows/v461-browser-qa.yml
+      - tools/v461_browser_qa.mjs
+      - v45-engine.js
+      - v45-qa-engine.js
+      - v46-gauntlet.js
+      - v461-rift-paths.css
+      - index.html
+      - v30.html
+permissions: {contents: read}
+jobs:
+  rift-paths-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-v461-local.log 2>&1 &
+      - run: node tools/v461_browser_qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dominion-v461-three-rift-paths-mobile-review
+          path: |
+            art/v461-gauntlet-commander-hall-390px.png
+            art/v461-gauntlet-first-encounter-390px.png
+            art/v461-mastery-forge-390px.png
+            art/v461-gauntlet-narrow-320px.png
+          if-no-files-found: ignore
+          retention-days: 7
