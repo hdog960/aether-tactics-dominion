@@ -6,6 +6,11 @@ const eng=read('v45-engine.js'),qa=read('v45-qa-engine.js'),
  sw=read('sw.js'),ui=read('v46-gauntlet.js'),
  road=read('DOMINION_ROADMAP.md'),css=read('v464-chronicle.css');
 const results=[],check=(name,pass)=>results.push({name,pass:!!pass});
+// Preserve the historic Chronicle checks when later versioned network releases
+// update the engine and PWA cache without changing Chronicle's own assets.
+const modern=index.includes('v45-engine.js?v=470')&&secondary.includes('v45-engine.js?v=470');
+const engineAsset=modern?'v45-engine.js?v=470':'v45-engine.js?v=464';
+const cacheName=modern?'aether-dominion-v470-duel-reliability':'aether-dominion-v464-rift-chronicle';
 check('Authoritative and isolated engines stay byte-identical',eng===qa);
 check('Battle renderers stay byte-identical',
  read('v45-scene.js')===read('v45-qa-scene.js'));
@@ -13,12 +18,12 @@ check('All production entrypoints contain Chronicle and versioned assets',
  [index,secondary].every(h=>[
   'id="v464-stage-forecast"','id="v464-run-best"','id="v464-run-history"',
   'v464-chronicle.css?v=464','v46-gauntlet.js?v=464',
-  'v45-engine.js?v=464','id="v463-flux-toggle"',
+  engineAsset,'id="v463-flux-toggle"',
   'data-rift-path="wayfinder"','data-rift-path="stormbound"',
   'data-rift-path="ironbound"'].every(token=>h.includes(token))));
 check('iPhone offline cache version and all new references updated',
- ['aether-dominion-v464-rift-chronicle','v464-chronicle.css?v=464',
-  'v46-gauntlet.js?v=464','v45-engine.js?v=464'].every(x=>sw.includes(x)));
+ [cacheName,'v464-chronicle.css?v=464',
+  'v46-gauntlet.js?v=464',engineAsset].every(x=>sw.includes(x)));
 check('No player saves migrated, renamed or erased',
  ["const PROFILE_STORE='aether-dominion-profile-v21'",
   "DECK_STORE='aether-dominion-deck-v20'",
