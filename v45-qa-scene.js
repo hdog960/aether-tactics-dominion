@@ -67,6 +67,14 @@ const v456FrameReady=()=>v456Frames.complete&&v456Frames.naturalWidth===2112&&
  v456Frames.naturalHeight===480;
 const v456SpriteReady=()=>v456Units.complete&&v456Units.naturalWidth===384&&
  v456Units.naturalHeight===120;
+// v4.5.8: four final original creature identities, never substitute prior art.
+const v458Rows={ag:0,ah:1,ai:2,aj:3};
+const v458Frames=new Image();v458Frames.decoding='async';
+v458Frames.src='./art/battlefield-frames-v458.webp?v=458';
+const v458Units=new Image();v458Units.decoding='async';
+v458Units.src='./art/units-creatures-v458.png?v=458';
+const v458FrameReady=()=>v458Frames.complete&&v458Frames.naturalWidth===2112&&v458Frames.naturalHeight===480;
+const v458SpriteReady=()=>v458Units.complete&&v458Units.naturalWidth===384&&v458Units.naturalHeight===120;
 // v4.3.3 — Six original monsters receive real, cached pixel frame sequences.
 // Built once after the existing monster PNG loads, not every game frame.
 // Separately animated torso and legs, with damage and collapse poses; never
@@ -149,14 +157,15 @@ const defeated=new Map();
 function frameForUnit(u,t,walking){
  const classic=classicRows[u.k]!==undefined;
  const newer=v453Rows[u.k]!==undefined,latest=v454Rows[u.k]!==undefined,
-  future=v456Rows[u.k]!==undefined;
- const row=future?v456Rows[u.k]:latest?v454Rows[u.k]:newer?v453Rows[u.k]:classic?classicRows[u.k]:animationRows[u.k];
+  future=v456Rows[u.k]!==undefined,final=v458Rows[u.k]!==undefined;
+ const row=final?v458Rows[u.k]:future?v456Rows[u.k]:latest?v454Rows[u.k]:newer?v453Rows[u.k]:classic?classicRows[u.k]:animationRows[u.k];
  if(row===undefined)return null;
+ if(final&&!v458FrameReady())return null;
  if(future&&!v456FrameReady())return null;
  if(latest&&!v454FrameReady())return null;
  if(newer&&!v453FrameReady())return null;
  if(classic&&!classicFrameReady)return null;
- if(!future&&!latest&&!newer&&!classic&&(!rasterFrames.complete||rasterFrames.naturalWidth!==2112))return null;
+ if(!final&&!future&&!latest&&!newer&&!classic&&(!rasterFrames.complete||rasterFrames.naturalWidth!==2112))return null;
  let idx=Math.floor((t+u.id*91)/250)%4;
  if(walking)idx=4+Math.floor(t/90)%6;
  const atk=[...activeFx].reverse().find(f=>f.data.type==='strike'&&f.data.from?.id===u.id&&
@@ -168,7 +177,7 @@ function frameForUnit(u,t,walking){
  else if(hit)idx=14+Math.min(2,Math.floor((fxProg(hit,t)-fxImpact(hit))/
   Math.max(.01,.92-fxImpact(hit))*3));
  const w=classic?CW:FRAME_W,h=classic?CH:FRAME_H;
- return{img:future?v456Frames:latest?v454Frames:newer?v453Frames:classic?classicFrameAtlas:rasterFrames,x:idx*w,y:row*h,
+ return{img:final?v458Frames:future?v456Frames:latest?v454Frames:newer?v453Frames:classic?classicFrameAtlas:rasterFrames,x:idx*w,y:row*h,
   sourceW:w,sourceH:h,tone:'none',boss:u.k==='t'||u.k==='l',frame:idx};
 }
 function drawDefeated(t){
@@ -177,9 +186,9 @@ function drawDefeated(t){
   if(dt>850){defeated.delete(id);continue}
   const u=death.unit,classic=classicRows[u.k]!==undefined,
    newer=v453Rows[u.k]!==undefined,latest=v454Rows[u.k]!==undefined,
-   future=v456Rows[u.k]!==undefined,
-   row=future?v456Rows[u.k]:latest?v454Rows[u.k]:newer?v453Rows[u.k]:classic?classicRows[u.k]:animationRows[u.k];
-  if(row===undefined||(future?!v456FrameReady():
+   future=v456Rows[u.k]!==undefined,final=v458Rows[u.k]!==undefined,
+   row=final?v458Rows[u.k]:future?v456Rows[u.k]:latest?v454Rows[u.k]:newer?v453Rows[u.k]:classic?classicRows[u.k]:animationRows[u.k];
+  if(row===undefined||(final?!v458FrameReady():future?!v456FrameReady():
     latest?!v454FrameReady():
     newer?!v453FrameReady():classic?!classicFrameReady:!rasterFrames.complete)){
    defeated.delete(id);continue;
@@ -190,12 +199,17 @@ function drawDefeated(t){
   c.save();c.imageSmoothingEnabled=false;
   c.globalAlpha=dt>550?Math.max(0,1-(dt-550)/300):1;
   const w=classic?CW:FRAME_W,h=classic?CH:FRAME_H;
-  c.drawImage(future?v456Frames:latest?v454Frames:newer?v453Frames:classic?classicFrameAtlas:rasterFrames,idx*w,row*h,w,h,
+  c.drawImage(final?v458Frames:future?v456Frames:latest?v454Frames:newer?v453Frames:classic?classicFrameAtlas:rasterFrames,idx*w,row*h,w,h,
    view.z[0]-vw/2,view.z[1]-vh+4*view.scale,vw,vh);
   c.restore();
  }
 }
 function unitSprite(k){
+ if(v458Rows[k]!==undefined){
+  if(!v458SpriteReady())return null;
+  return{img:v458Units,x:v458Rows[k]*96,y:0,sourceW:96,
+   sourceH:120,tone:'none',boss:false};
+ }
  if(v456Rows[k]!==undefined){
   if(!v456SpriteReady())return null;
   return{img:v456Units,x:v456Rows[k]*96,y:0,sourceW:96,
@@ -480,12 +494,38 @@ function signatureFX(e,p,to,from){
   cross:'#ffc38e',aftershock:'#ffa371',silence:'#caa4ff',
   exchange:'#f7b0df',heal:'#9cf7ce',shield:'#b9d6ff',
   cleanse:'#c4ffe5',dash:'#a6dfff',rally:'#ffdaa4',bond:'#e2c4ff',
-  snare:'#cdaaff',recall:'#dbbaff',diagonal:'#ffedb3',reprisal:'#ff916e',undertow:'#83e3fa',edict:'#ffeb98',breach:'#c4f5ff',gale:'#a5f2d5',covenant:'#ffbd83',refrain:'#d6b3ff',bellkeeper:'#d4adff',cinderwake:'#ff9b57',oathmoss:'#9bdb7e',tidebreak:'#80ecff',gravemire:'#a0a2ff',prismrelay:'#9ef8e5',cinderbloom:'#ff8750',tidalreprieve:'#92e6ef'};
+  snare:'#cdaaff',recall:'#dbbaff',diagonal:'#ffedb3',reprisal:'#ff916e',undertow:'#83e3fa',edict:'#ffeb98',breach:'#c4f5ff',gale:'#a5f2d5',covenant:'#ffbd83',refrain:'#d6b3ff',bellkeeper:'#d4adff',cinderwake:'#ff9b57',oathmoss:'#9bdb7e',tidebreak:'#80ecff',gravemire:'#a0a2ff',prismrelay:'#9ef8e5',cinderbloom:'#ff8750',tidalreprieve:'#92e6ef',lanternist:'#ffe6a0',kestrel:'#aab7ff',hollowroot:'#8ce7a2',rimeshard:'#9aeafa'};
  const color=palette[kind]||'#dfd2ff';
  c.save();c.globalAlpha=.85*f;c.strokeStyle=color;c.fillStyle=color;
  c.lineCap='round';c.lineJoin='round';c.lineWidth=3;
  const line=(a,b,z,w)=>{c.beginPath();c.moveTo(a,b);c.lineTo(z,w);c.stroke()};
- if(kind==='gravemire'){
+ if(kind==='lanternist'){
+  for(let i=0;i<4;i++){
+   const r=14+i*10+p*12;
+   c.beginPath();c.ellipse(x,y,r,r*.44,0,0,Math.PI*2);c.stroke();
+  }
+  c.beginPath();c.moveTo(x,y-46);c.lineTo(x+14,y-30);c.lineTo(x,y-14);
+  c.lineTo(x-14,y-30);c.closePath();c.stroke();
+ }else if(kind==='kestrel'){
+  for(const side of [-1,1]){
+   for(let i=0;i<3;i++){
+    const yy=y-35+i*13,reach=(20+i*15+p*14)*side;
+    line(x,yy,x+reach,yy-10-8*f);
+   }
+  }
+ }else if(kind==='hollowroot'){
+  for(let i=0;i<6;i++){
+   const a=i*Math.PI/3+p*.6,r=16+26*p;
+   c.beginPath();c.arc(x+Math.cos(a)*r,y+Math.sin(a)*r*.55,4*f+2,0,Math.PI*2);c.stroke();
+  }
+ }else if(kind==='rimeshard'){
+  for(let i=0;i<5;i++){
+   const a=i*Math.PI*2/5,r=17+24*p;
+   const xx=x+Math.cos(a)*r,yy=y+Math.sin(a)*r*.65;
+   c.beginPath();c.moveTo(xx,yy-8);c.lineTo(xx+8,yy);c.lineTo(xx,yy+8);
+   c.lineTo(xx-8,yy);c.closePath();c.stroke();
+  }
+ }else if(kind==='gravemire'){
   // Dark-violet restraint rings grip the feet, with crossed gravity arcs.
   for(let i=0;i<3;i++){
    const r=15+i*11+p*9;
@@ -723,6 +763,8 @@ function renderBattleFX(t){
   signatureFX(e,p,to,from);
   if(e.type==='buff'){
    const color=e.kind==='heal'||e.kind==='oathmoss'?'#93ffc3':
+    e.kind==='lanternist'?'#ffe6a0':e.kind==='kestrel'?'#aab7ff':
+    e.kind==='hollowroot'?'#8ce7a2':e.kind==='rimeshard'?'#9aeafa':
     e.kind==='gravemire'?'#a0a2ff':e.kind==='prismrelay'?'#9ef8e5':
     e.kind==='cinderbloom'?'#ff8750':e.kind==='tidalreprieve'?'#92e6ef':
     e.kind==='cinderwake'?'#ff9b57':e.kind==='bellkeeper'?'#d4adff':
@@ -1180,6 +1222,13 @@ window.AetherScene={sync(s,my,choice){
   width:rasterFrames.naturalWidth,height:rasterFrames.naturalHeight,keys:Object.keys(animationRows),
   framesPerUnit:22,defeated:defeated.size}),
  frameSample:(k,t=0,walking=false)=>frameForUnit({k,id:19},t,walking)?.frame??-1,
+ v458ArtInfo:()=>({
+  cards:window.AetherArt.v458ArtStatus?.()||null,
+  spriteReady:v458SpriteReady(),framesReady:v458FrameReady(),
+  spriteDimensions:[v458Units.naturalWidth||0,v458Units.naturalHeight||0],
+  frameDimensions:[v458Frames.naturalWidth||0,v458Frames.naturalHeight||0],
+  characterIds:Object.keys(v458Rows),framesPerUnit:22
+ }),
  v456ArtInfo:()=>({
   cards:window.AetherArt.v456ArtStatus?.()||null,
   spriteReady:v456SpriteReady(),framesReady:v456FrameReady(),
