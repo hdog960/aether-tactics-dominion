@@ -181,7 +181,7 @@ The Rift Gauntlet now offers three selectable, differentiated rulesets in the Co
 
 Forge now exposes the entire **60-card** mastery catalogue with Progress, All 60 and Gold filters. Six independent career contracts reward breadth of card usage, deeper specialization, eight different cards in a single winning match, and clearing multiple Rift Gauntlet routes. Each bonus is **one-time gold only**; no competitive stats or paid power. Prior saves, card copies, decks, all three Rift Paths and mastery participation history remain compatible. See `V462_MASTERY_CODEX_AND_CONTRACTS_QA.md`. The next milestone remains further v4.6 replayability/pacing, followed by v4.7 multiplayer reliability, then the creator's mandatory roadmap review.
 
-## v4.6.4 — Rift Chronicle (release candidate)
+## v4.6.4 — Rift Chronicle (shipped)
 
 The Commander’s Hall now previews actual enemy Core HP along every Gauntlet route, records the last 12 terminal attempts, and tracks best surviving Core HP for standard and Flux clears separately. On the result screen, replaying a challenge keeps its original path and Flux mode. Switching from a Gauntlet to another battle archives the previous run as abandoned rather than stranding it. No extra currency, cards or competitive power; old saves remain compatible. See `V464_CHRONICLE_RELEASE_AND_QA.md`.
 
