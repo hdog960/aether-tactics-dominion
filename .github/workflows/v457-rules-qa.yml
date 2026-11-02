@@ -8,6 +8,15 @@ on:
       - v45-engine.js
       - v45-qa-engine.js
       - DOMINION_ROADMAP.md
+      - tools/v457_release_guard.mjs
+      - art/v457-spell-manifest.json
+      - art/cards-spells-v457.webp
+      - art/sources/v457-original-spells.png
+      - index.html
+      - v30.html
+      - qa-v39.html
+      - sw.js
+      - v457-spell-art.js
 permissions: {contents: read}
 jobs:
   four-spell-regressions:
@@ -18,6 +27,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: node tools/v457_rules_qa.mjs
+      - run: node tools/v457_release_guard.mjs
       - run: |
           cmp v45-engine.js v45-qa-engine.js
           cmp v45-scene.js v45-qa-scene.js
