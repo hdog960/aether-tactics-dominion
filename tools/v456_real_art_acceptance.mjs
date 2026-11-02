@@ -63,6 +63,13 @@ try{
  await page.screenshot({path:'art/v456-card-sprite-identity-390px.png'});
  await page.evaluate(()=>document.getElementById('v456-review')?.remove());
  await page.evaluate(()=>{
+  // Canvas shots must show actual deployed battle, not the Hall behind it.
+  document.querySelector('#qa-panel')?.style.setProperty('display','none');
+  window.DominionNav?.showTab('battle');
+ });
+ await page.waitForFunction(()=>document.querySelector('#game')?.dataset.tab==='battle'&&
+  document.querySelector('#battle-canvas')?.getBoundingClientRect().width>100,null,{timeout:15000});
+ await page.evaluate(()=>{
   const g=window.AetherGame.get();
   g.phase='playing';g.turn=0;g.round=1;
   g.units=['Y','Z','aa','ab'].map((k,i)=>({
