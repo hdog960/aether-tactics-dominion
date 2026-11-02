@@ -21,6 +21,12 @@ Open in Safari; Share → Add to Home Screen. Updates to `main` publish through 
 ## Saves
 Commander progression, card upgrades, and campaign completion are stored in the device's local browser storage. Saved solo match snapshots retain the existing v4 format. Private tabs, clearing website data, or changing devices can lose progress. There is no cloud account synchronization yet.
 
+## v4.7.3 — Remote multiplayer card-action verification (QA milestone)
+
+Two independently hosted Chromium game clients connected through live Trystero signaling, **each summoned a creature by tapping the illustrated battlefield**, completed five full rounds, and recovered after the guest reloaded and rejoined after round three. Both clients kept six battlefield units and reached round six without a browser error. This now runs as a hard cross-host release gate. See `V473_REMOTE_CARD_PLAY_QA.md`.
+
+This is **not** a claim of physical iPhone Safari or universal Wi-Fi/cellular reliability. The two-device iPhone acceptance checklist remains open.
+
 ## v4.7.2 — First-join reliability and true browser-to-browser RTC (shipped)
 
 A private duel host now announces that it is ready for a guest deck, while the guest retries the same 24-card loadout a limited number of times until an actual battle snapshot arrives. Duplicate deck deliveries cannot reshuffle an active match. New QA includes five-round real Chromium RTCDataChannel gameplay between two mobile-size browser sessions, separate from the prior mocked protocol. **Real iPhone Safari and independent Wi-Fi/cellular pair verification remains required; this local RTC test cannot establish NAT/TURN support.** See `V472_PEER_HANDSHAKE_AND_RTC_QA.md`.

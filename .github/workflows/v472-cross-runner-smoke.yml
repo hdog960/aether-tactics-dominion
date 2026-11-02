@@ -1,7 +1,7 @@
-name: Dominion diagnostic — independent cloud host WebRTC public relay
+name: Dominion v4.7.3 real remote card-play and reconnect QA
 on:
   push:
-    branches: [dev/v472-peer-handshake, main]
+    branches: [dev/v472-peer-handshake, dev/v473-remote-card-qa, main]
     paths:
       - tools/v472_cross_runner_smoke.mjs
       - .github/workflows/v472-cross-runner-smoke.yml
@@ -22,6 +22,5 @@ jobs:
       - run: npm install --no-save playwright@1.58.2
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-cross-runner.log 2>&1 &
-      - name: Attempt cross-runner public-relay duel
-        continue-on-error: true
+      - name: Verify five-round remote card plays and guest reconnect
         run: node tools/v472_cross_runner_smoke.mjs ${{ matrix.role }}
