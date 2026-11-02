@@ -1,0 +1,15 @@
+/* Dominion v4.6.1 — selectable Gauntlet paths */
+.rift-paths{margin:0 3px 12px;padding:12px 12px 10px;border-radius:12px;border:1px solid rgba(166,140,217,.34);background:linear-gradient(135deg,rgba(31,43,73,.96),rgba(34,31,62,.98))}
+.rift-paths-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-bottom:9px}
+.rift-paths-heading span{font-weight:850;letter-spacing:.09em;color:#e6c9ff;font-size:11px}
+.rift-paths-heading small{color:#acb9d1;font-size:10px}
+.rift-path-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.rift-path-grid button{min-width:0;border:1px solid #58647e;border-radius:9px;padding:9px 5px 8px;background:linear-gradient(165deg,#233d51,#22223f);display:flex;align-items:center;flex-direction:column;gap:4px;color:#f2e8ff;transition:border-color .12s,background .12s}
+.rift-path-grid button[aria-pressed="true"]{background:linear-gradient(165deg,#644588,#33466c);border:2px solid #ebc8ff;box-shadow:0 0 11px #9d65bd44;padding:8px 4px 7px}
+.rift-path-grid button:focus-visible{outline:2px solid #eac2ff;outline-offset:2px}
+.rift-path-grid button:disabled{opacity:.7}
+.rift-path-grid b{font-size:10px;letter-spacing:.03em;overflow-wrap:anywhere;text-align:center}
+.rift-path-grid small{font-size:10px;color:#d0cbdc;text-align:center}
+.rift-path-grid em{font-size:9px;color:#dbb3e9;font-style:normal;font-weight:700}
+#rift-path-detail{margin:10px 0 0;color:#d5d0eb;font-size:11px;line-height:1.5}
+@media(max-width:370px){.rift-paths{padding:9px 8px}.rift-path-grid{gap:4px}.rift-path-grid b{font-size:9px}.rift-path-grid small{font-size:9px}.rift-path-grid em{font-size:8px}}
