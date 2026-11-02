@@ -1,8 +1,10 @@
-# Dominion v4.5.6 — Four Creature Roles (staging; not publicly released)
+# Dominion v4.5.6 — Four Painted Creature Roles (historical staging log)
 
-## Current release boundary
+## Original staging release boundary (historical)
 
-The public game remains **v4.5.5 with 48 cards**. The four new creatures are implemented and their targeting rules are tested, but their original painted character source art has **not yet been transferred into GitHub**. Do not activate `DOMINION_V456_ART_RELEASE`, merge this development branch to `main`, publish dummy images, or claim the collection is 52 cards until that artwork is genuinely uploaded, processed, and visually inspected.
+**November 2 update:** Source art, all three atlases, real browser QA and a 52-card release candidate have now passed. See `V456_RELEASE_AND_QA.md` for the completed release evidence. The following paragraph describes the *former* art-blocked stage, before this update:
+
+At that earlier time, the public game remained **v4.5.5 with 48 cards**. The four new creatures are implemented and their targeting rules are tested, but their original painted character source art has **not yet been transferred into GitHub**. Do not activate `DOMINION_V456_ART_RELEASE`, merge this development branch to `main`, publish dummy images, or claim the collection is 52 cards until that artwork is genuinely uploaded, processed, and visually inspected.
 
 ## Implemented creatures and combat rules
 
