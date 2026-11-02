@@ -248,6 +248,8 @@ if(!profile.gauntlet.pathClears||typeof profile.gauntlet.pathClears!=='object')
  profile.gauntlet.pathClears={};
 if(!profile.gauntlet.pathFirstRewards||typeof profile.gauntlet.pathFirstRewards!=='object')
  profile.gauntlet.pathFirstRewards={};
+if(!Number.isFinite(profile.gauntlet.fluxClears))profile.gauntlet.fluxClears=0;
+if(typeof profile.gauntlet.fluxFirstRewarded!=='boolean')profile.gauntlet.fluxFirstRewarded=false;
 function saveProfile(){try{localStorage.setItem(PROFILE_STORE,JSON.stringify(profile))}catch(e){}}
 function xpNeeded(level){return 90+(level-1)*45}
 function cardLevel(k){return Math.max(1,Math.min(MAX_CARD_LEVEL,profile.levels[k]||1))}
@@ -361,6 +363,14 @@ function awardMatch(){
      gauntletResult.pathBonusGold=bonus;
     }
     gauntletResult.path=path.id;
+    if(run.flux===true&&Array.isArray(run.omens)&&run.omens.length===3){
+     profile.gauntlet.fluxClears=(profile.gauntlet.fluxClears||0)+1;
+     gauntletResult.fluxClear=true;
+     if(!profile.gauntlet.fluxFirstRewarded){
+      profile.gauntlet.fluxFirstRewarded=true;
+      profile.gold+=60;coins+=60;gauntletResult.fluxFirstBonus=60;
+     }
+    }
    }else gauntletResult={status:'ready',stage:run.stage};
   }else{
    run.status='failed';
@@ -414,11 +424,15 @@ function gauntletStatus(){
  const g=profile.gauntlet,run=g.current;
  return{attempts:g.attempts,clears:g.clears,bestStage:g.bestStage,
    firstClearRewarded:g.firstClearRewarded,
+   fluxClears:g.fluxClears||0,fluxFirstRewarded:!!g.fluxFirstRewarded,
+   nextOmens:riftOmenSchedule(g.attempts).map(id=>({id,name:RIFT_OMENS[id].name,detail:RIFT_OMENS[id].detail})),
    pathClears:{...(g.pathClears||{})},pathFirstRewards:{...(g.pathFirstRewards||{})},
    paths:Object.values(GAUNTLET_PATHS).map(v=>({id:v.id,name:v.name,description:v.description,
     firstGold:v.firstGold,clears:g.pathClears?.[v.id]||0})),
    current:run?{id:run.id,stage:run.stage,wins:run.wins,core:run.core,
-    status:run.status,deckSize:run.deck?.length||0,path:run.path||'wayfinder'}:null};
+    status:run.status,deckSize:run.deck?.length||0,path:run.path||'wayfinder',
+    flux:run.flux===true,omens:run.omens||[],currentOmen:run.flux===true?
+     RIFT_OMENS[run.omens?.[run.stage-1]]?.name||'':null}:null};
 }
 function profileSummary(){
  return {level:profile.level,xp:profile.xp,xpNext:xpNeeded(profile.level),gold:profile.gold,
@@ -719,6 +733,42 @@ const GAUNTLET_PATHS={
  ironbound:{id:'ironbound',name:'Ironbound',description:'Start at 20 Core HP; restore 3 between battles. Enemy Cores gain 2 HP; your two starters gain 1 shield.',heal:3,
   startHP:20,enemyHP:2,bonusAeth:0,shield:1,firstGold:100}
 };
+// Optional Rift Flux. Every full flux run has three *different* tactical
+// omens, in a predictable rotation which changes across successive attempts.
+// Default OFF preserves original v4.6.2 difficulty and old saved runs.
+const RIFT_OMENS={
+ aethTide:{id:'aethTide',name:'Aeth Tide',detail:'Both commanders start with +2 Aeth.'},
+ patrol:{id:'patrol',name:'Warden Patrol',detail:'An enemy soldier starts shielded; gain +1 opening Aeth.'},
+ siege:{id:'siege',name:'Siege Lines',detail:'Enemy Core +4 HP; gain +1 opening Aeth and draw 1 card.'},
+ veil:{id:'veil',name:'Veil of Wards',detail:'Both teams’ summons gain +1 shield in rounds 1–2.'}
+};
+const RIFT_OMEN_IDS=Object.keys(RIFT_OMENS);
+function riftOmenSchedule(attempts=0){
+ const offset=Math.max(0,Math.floor(Number(attempts)||0))%RIFT_OMEN_IDS.length;
+ return [0,1,2].map(i=>RIFT_OMEN_IDS[(offset+i)%RIFT_OMEN_IDS.length]);
+}
+function applyRiftOmen(run){
+ const id=run.flux===true?run.omens?.[run.stage-1]:null;
+ if(!id||!RIFT_OMENS[id])return false;
+ S.gauntletOmen=id;S.gauntletOmenDetail=RIFT_OMENS[id].detail;
+ if(id==='aethTide'){
+  S.energy[0]=Math.min(10,S.energy[0]+2);
+  S.energy[1]=Math.min(10,S.energy[1]+2);
+ }else if(id==='patrol'){
+  const spots=[[2,2],[4,2],[1,2],[5,2],[3,1]];
+  const spot=spots.find(([x,y])=>!rocks.has(K(x,y))&&!entity(x,y));
+  if(spot){
+   const guard=unit('v',1,spot[0],spot[1],true);
+   grantShield(guard,1);S.units.push(guard);
+  }
+  S.energy[0]=Math.min(10,S.energy[0]+1);
+ }else if(id==='siege'){
+  S.hp[1]+=4;S.coreMax[1]+=4;
+  S.energy[0]=Math.min(10,S.energy[0]+1);
+  draw(0,1);
+ }
+ return true;
+}
 const GAUNTLET_STAGES=[
  {name:'Whispering Gate',region:'verdant',style:'Skirmish',enemyHP:24,tier:1,
   detail:'The green breach tests the mobility of your 24-card deck.'},
@@ -756,6 +806,7 @@ function buildGauntletStage(run){
  if(path.bonusAeth)S.energy[0]=Math.min(10,S.energy[0]+path.bonusAeth);
  if(path.shield)for(const u of S.units.filter(u=>u.team===0).slice(0,2))grantShield(u,path.shield);
  setArena(stage.region);
+ applyRiftOmen(run);
  if(run.stage===3){
   const guard=unit('aj',1,3,2,true);
   guard.hp=guard.max=11;guard.atk=2;guard.boss=true;
@@ -764,10 +815,11 @@ function buildGauntletStage(run){
  $('mode-ai').classList.add('active');$('mode-online').classList.remove('active');
  $('lobby').classList.add('hidden');
  message('<b>RIFT GAUNTLET · '+path.name.toUpperCase()+' · '+run.stage+'/3 · '+stage.name+'</b>',
-  stage.detail+' · CORE '+S.hp[0]+'/24 · '+path.description);
+  stage.detail+' · CORE '+S.hp[0]+'/24 · '+path.description+
+  (S.gauntletOmen?' · OMEN: '+RIFT_OMENS[S.gauntletOmen].name+' — '+S.gauntletOmenDetail:''));
  save();render();return true;
 }
-function startGauntlet(chosenPath='wayfinder'){
+function startGauntlet(chosenPath='wayfinder',enableFlux=false){
  if(!Object.prototype.hasOwnProperty.call(GAUNTLET_PATHS,chosenPath))return false;
  const current=profile.gauntlet.current;
  if(current?.status==='active'&&S?.gauntletRunId===current.id&&
@@ -780,7 +832,9 @@ function startGauntlet(chosenPath='wayfinder'){
  if(current?.status==='active')current.status='abandoned';
  const run={id:'rift-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
   stage:1,wins:0,core:GAUNTLET_PATHS[chosenPath].startHP,
-  path:chosenPath,status:'active',deck:chosenDeck.slice(),
+  path:chosenPath,status:'active',flux:enableFlux===true,
+  omens:enableFlux===true?riftOmenSchedule(profile.gauntlet.attempts):[],
+  deck:chosenDeck.slice(),
   ranks:Object.fromEntries(chosenDeck.map(k=>[k,cardLevel(k)])),
   tier:Math.max(1,Math.min(5,Math.floor(chosenDeck.reduce((n,k)=>n+cardLevel(k),0)/24)))};
  profile.gauntlet.attempts++;profile.gauntlet.current=run;
@@ -815,6 +869,10 @@ function nearestAlly(u,radius=2){
 // On-summon movement assistance does not create a new attack, affect flyers
 // or ignore roots. Its round quota is shared between cards of the same team.
 function onCreatureSummoned(u){
+ if(S?.mode==='ai'&&S.gauntletOmen==='veil'&&S.round<=2){
+  const shield=grantShield(u,1);
+  if(shield)abilityPulse(u,'shield',shield);
+ }
  if(u.k==='ag'){
   const ally=S.units.filter(v=>v.team===u.team&&v.id!==u.id&&v.hp>0&&
    (v.rooted||v.burning)&&d(v,u)<=2)
@@ -2148,7 +2206,8 @@ function render(){
   mission.objective==='hunt'? 'SLAY CHAMPION · '+(S.units.find(u=>u.id===S.championId)?.hp||0)+'/'+(S.units.find(u=>u.id===S.championId)?.max||0)+' HP':
   'BREAK ENEMY CORE · '+S.hp[1]+' HP LEFT':'BLUE MOVE · RED ATTACK · VIOLET SPELL';
  if(S.gauntletRunId&&$('arena-details'))
-  $('arena-details').textContent='GAUNTLET '+S.gauntletStage+'/3 · CORE '+S.hp[0]+'/24 · '+S.gauntletDetail;
+  $('arena-details').textContent='GAUNTLET '+S.gauntletStage+'/3 · CORE '+S.hp[0]+'/24 · '+S.gauntletDetail+
+  (S.gauntletOmen?' · OMEN: '+RIFT_OMENS[S.gauntletOmen].name+' · '+S.gauntletOmenDetail:'');
  if(mission?.encounter&&$('arena-details')){
   const event=S.encounterState;
   $('arena-details').textContent+=' · '+mission.encounter.name.toUpperCase()+
@@ -2719,6 +2778,102 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
   }catch(e){checks.push({name:'Runtime exception',pass:false,detail:String(e)})}
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
+ },
+ // v4.6.3: actual battlefield omens and legacy-saves remain independent.
+ qaV463Flux:()=>{
+  const checks=[],check=(name,pass,details='')=>checks.push({name,pass:!!pass,details});
+  const savedProfile=JSON.stringify(profile),savedS=S,savedMode=mode,savedSeat=localSeat;
+  const keys=[PROFILE_STORE,'aether-dominion-v04'],storage=keys.map(k=>localStorage.getItem(k));
+  const win=(hp=12)=>{S.phase='over';S.winner=0;S.hp[0]=hp;return awardMatch()};
+  try{
+   profile.gauntlet={version:1,attempts:0,clears:0,bestStage:0,
+    firstClearRewarded:false,fluxClears:0,fluxFirstRewarded:false,current:null,
+    pathClears:{},pathFirstRewards:{}};
+   profile.mastery={};profile.masteryClaims={};profile.masteryContracts={};
+   profile.masteryVersatilityBest=0;profile.claimed={};profile.last=null;
+   profile.gold=0;profile.xp=0;profile.level=1;profile.copies={};
+   const order=riftOmenSchedule(0);
+   check('Every optional run has three distinct recognized omens',
+    order.length===3&&new Set(order).size===3&&order.every(k=>RIFT_OMENS[k]));
+   check('Next attempt rotates its forecast without random save desynchronization',
+    riftOmenSchedule(1).join(',')!==order.join(',')&&
+    riftOmenSchedule(4).join(',')===order.join(','));
+   startGauntlet('wayfinder');
+   const legacy=profile.gauntlet.current;
+   check('Ordinary Wayfinder remains unchanged and never applies Flux by default',
+    !legacy.flux&&legacy.omens.length===0&&!S.gauntletOmen&&
+    S.hp[0]===24&&S.hp[1]===24&&S.energy[0]===3&&S.energy[1]===3);
+   profile.gauntlet.attempts=0;
+   startGauntlet('wayfinder',true);
+   const run=profile.gauntlet.current;
+   check('Enabling Flux saves a locked three-omen schedule on the run',
+    run.flux===true&&run.omens.join(',')===order.join(',')&&
+    S.gauntletOmen===order[0]&&S.gauntletStage===1);
+   check('Aeth Tide is symmetric and restores correct starting 5 Aeth',
+    S.energy[0]===5&&S.energy[1]===5&&S.hp[1]===24);
+   const oldId=S.matchId;save();S=null;const loaded=load();
+   check('Reload retains the current omen, stage, run ID and v4 snapshot',
+    loaded&&S.version===4&&S.matchId===oldId&&S.gauntletOmen===order[0]&&
+    S.gauntletRunId===run.id&&S.gauntletStage===1);
+   win(19);
+   check('Completing stage 1 with Flux never pays premature first-clear bonus',
+    run.status==='ready'&&profile.gauntlet.fluxClears===0&&!profile.gauntlet.fluxFirstRewarded);
+   const stage2=continueGauntlet();
+   const soldier=S.units.find(u=>u.team===1&&u.k==='v'&&u.shield===1);
+   check('Warden Patrol starts only one shielded enemy and offsets it with player Aeth',
+    stage2&&S.gauntletOmen==='patrol'&&!!soldier&&S.energy[0]===4&&S.hp[1]===27);
+   win(15);
+   continueGauntlet();
+   check('Siege Lines increases enemy Core, grants Aeth and one opening card',
+    S.gauntletOmen==='siege'&&S.hp[1]===34&&S.energy[0]===4&&
+    S.hands[0].length===5&&S.units.some(u=>u.boss&&u.team===1));
+   const first=win(10);
+   check('First full Flux clear awards exactly 60 extra gold once',
+    first.gauntlet?.fluxFirstBonus===60&&first.gauntlet?.fluxClear===true&&
+    profile.gauntlet.fluxClears===1&&profile.gauntlet.fluxFirstRewarded===true);
+   const gold=profile.gold,clears=profile.gauntlet.fluxClears;
+   awardMatch();
+   check('Re-rendering final stage never pays another Flux bonus or clear',
+    profile.gold===gold&&profile.gauntlet.fluxClears===clears);
+   startGauntlet('stormbound',true);
+   const second=profile.gauntlet.current;
+   check('New attempt rotates omens and keeps existing path difficulty modifiers',
+    second.flux&&second.omens.join(',')===riftOmenSchedule(1).join(',')&&
+    second.path==='stormbound'&&S.gauntletOmen==='patrol'&&S.hp[1]===27);
+   win(20);continueGauntlet();win(18);continueGauntlet();
+   const ally=unit('v',0,3,5,true),enemy=unit('v',1,2,2,true);
+   S.units.push(ally,enemy);
+   onCreatureSummoned(ally);onCreatureSummoned(enemy);
+   check('Veil of Wards shields both sides for first two rounds',
+    S.gauntletOmen==='veil'&&ally.shield===1&&enemy.shield===1);
+   S.round=3;const late=unit('v',0,2,5,true);S.units.push(late);onCreatureSummoned(late);
+   check('Veil stops shielding new summons after the second round',
+    late.shield===0);
+   const secondResult=win(4);
+   check('Repeat Flux clear records progress without repeating the first clear bonus',
+    secondResult.gauntlet.fluxClear===true&&!secondResult.gauntlet.fluxFirstBonus&&
+    profile.gauntlet.fluxClears===2);
+   // An older v4.6.2 run lacking all new Flux fields must still continue.
+   const oldRun=profile.gauntlet.current;
+   profile.gauntlet.current={id:'old-gauntlet',stage:1,wins:0,core:24,
+    status:'active',deck:chosenDeck.slice(),ranks:{},tier:1,path:'wayfinder'};
+   buildGauntletStage(profile.gauntlet.current);
+   check('Old saved Gauntlet run without Flux fields preserves classic mechanics',
+    !S.gauntletOmen&&S.energy[0]===3&&S.hp[1]===24&&
+    !profile.gauntlet.current.flux);
+   profile.gauntlet.current=oldRun;
+   S.mode='online';S.gauntletOmen='veil';S.round=1;
+   const pvpUnit=unit('v',0,2,5,true);
+   S.units.push(pvpUnit);onCreatureSummoned(pvpUnit);
+   check('Flux summon shielding does not apply in competitive online state',pvpUnit.shield===0);
+   check('The exact 60-card roster and original match version remain intact',
+    CARD_KEYS.length===60&&S.version===4);
+  }catch(e){checks.push({name:'Unhandled Flux regression exception',pass:false,details:String(e.stack||e)})}
+  finally{
+   profile=JSON.parse(savedProfile);S=savedS;mode=savedMode;localSeat=savedSeat;
+   keys.forEach((k,i)=>{if(storage[i]===null)localStorage.removeItem(k);else localStorage.setItem(k,storage[i])});
+  }
+  return{pass:checks.length===18&&checks.every(x=>x.pass),checks};
  },
  // v4.6.2: real solo-victory contract and old-profile regression coverage.
  qaV462MasteryContracts:()=>{
