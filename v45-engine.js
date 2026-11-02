@@ -478,7 +478,9 @@ function missionCheck(t){
  if(t===1&&mission.objective==='defend'&&S.round>=mission.needed)missionWin();
 }
 function terrainTurn(team){
- if(!S?.missionId||S.phase!=='playing')return;
+ // Rift Gauntlet uses the existing safe campaign terrain effects; quick
+ // battles and competitive duels remain unchanged.
+ if((!S?.missionId&&!S?.gauntletRunId)||S.phase!=='playing')return;
  const region=CONQUEST.regions.find(v=>v.id===S.arenaId);
  if(!region||region.hazard==='none')return;
  for(const u of [...S.units].filter(v=>v.team===team&&(S.hazards||[]).includes(K(v.x,v.y)))){
@@ -1976,7 +1978,9 @@ function renderProfile(){
  const m=profile.last;
  $('profile-reward-text').textContent=m?
    (m.drawn?'DRAW':m.victory?'VICTORY':'DEFEAT')+' · +'+m.xp+' XP · +'+m.gold+' gold · '+
-    m.rewards.map(k=>D[k]?.name||k).join(', ')+(m.missionTitle?' · '+m.missionTitle+(m.storyClear?' FIRST CLEAR':'')+' · '+m.stars+' SIGILS':'')+(m.levelUp?' · LEVEL UP!':''):
+    m.rewards.map(k=>D[k]?.name||k).join(', ')+(m.missionTitle?' · '+m.missionTitle+(m.storyClear?' FIRST CLEAR':'')+' · '+m.stars+' SIGILS':'')+(m.levelUp?' · LEVEL UP!':'')+
+    (m.gauntlet?' · GAUNTLET '+m.gauntlet.stage+'/3 '+m.gauntlet.status.toUpperCase():'')+
+    (m.masteryRewards?.length?' · '+m.masteryRewards.length+' NEW MASTERIES':''):
     'Finish a match to earn XP, gold and copies of cards from your deck.';
  if($('profile-achievements')){
   const earned=Object.keys(profile.achievements).filter(k=>profile.achievements[k]);
@@ -2124,7 +2128,9 @@ function render(){
   $('resultdesc').textContent=(S.winner===-1?'Both armies remain evenly matched.':S.winner===my?'Your army captured the Riftfront.':'Your army was defeated.')+' Round '+S.round+'.'+(mode==='ai'&&reward?
   '  ✦ +'+reward.xp+' XP · +'+reward.gold+' gold · '+reward.rewards.length+' card copies'+
   (reward.missionTitle?' · '+reward.missionTitle+(reward.storyClear?' FIRST CLEAR':'')+' · '+reward.stars+'★':'')+
-  (reward.levelUp?' · LEVEL UP!':''):'');
+  (reward.levelUp?' · LEVEL UP!':'')+
+  (reward.gauntlet?' · RIFT GAUNTLET '+reward.gauntlet.stage+'/3 · '+reward.gauntlet.status.toUpperCase():'')+
+  (reward.masteryRewards?.length?' · '+reward.masteryRewards.length+' MASTERY REWARD(S)':''):'');
   // Authored campaign result, grounded in this actual match and settled rewards.
   // Avoid modifying match outcomes, progression, or already-claimed rewards.
   const epilogue=$('campaign-epilogue'),tale=mission?.epilogue;
@@ -2677,12 +2683,27 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
    test('Stage two keeps original deck and frozen rank snapshot',
      S.rewardPool.length===24&&deck.every((k,i)=>S.rewardPool[i]===k)&&
      deck.every(k=>S.cardRanks[k]===one.ranks[k]));
+   {
+    const scout=S.units.find(u=>u.team===0),old={x:scout.x,y:scout.y};
+    scout.x=0;scout.y=4;scout.frosted=false;terrainTurn(0);
+    test('Frost Gauntlet terrain imposes its actual slowing hazard',
+      scout.frosted===true&&S.arenaId==='frost');
+    scout.x=old.x;scout.y=old.y;scout.frosted=false;
+   }
    const second=settle(true,7);
    test('Stage two updates wounded Core and unlocks only stage three',
      second?.gauntlet?.stage===2&&one.status==='ready'&&one.core===7&&one.wins===2);
    test('Third stage starts on ruins with capped carry heal and a guarded Core',
      continueGauntlet()&&S.arenaId==='ruins'&&S.gauntletStage===3&&
      S.hp[0]===11&&S.hp[1]===30&&S.units.some(u=>u.boss&&u.team===1));
+   {
+    const scout=S.units.find(u=>u.team===0),old={x:scout.x,y:scout.y};
+    scout.x=0;scout.y=4;scout.shield=0;
+    const originalHP=scout.hp;terrainTurn(0);
+    test('Crownfall Gauntlet uses real damaging arcane hazard tiles',
+      scout.hp===originalHP-1&&S.arenaId==='ruins');
+    scout.x=old.x;scout.y=old.y;
+   }
    const third=settle(true,3);
    test('Full Gauntlet clear yields one-time first-clear rewards',
      third.gauntlet?.status==='cleared'&&third.gauntlet?.firstClear===true&&
@@ -2710,7 +2731,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
    keys.forEach((k,i)=>{if(storage[i]===null)localStorage.removeItem(k);
     else localStorage.setItem(k,storage[i])});
   }
-  return{pass:checks.length===16&&checks.every(c=>c.pass),checks};
+  return{pass:checks.length===18&&checks.every(c=>c.pass),checks};
  },
  // v4.5.8 final four creatures. Exercises actual unit and combat state.
  qaV458Creatures:()=>{
