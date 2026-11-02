@@ -38,8 +38,11 @@ Added **Mirror Breach**, **Gale Step**, **Ember Covenant** and **Crescent Refrai
 ### v4.5.6 — Four Original Painted Creature Roles (shipped)
 Expanded **48 → 52** with Gloam Bellkeeper, Cinderjaw Prowler, Oathmoss Devourer, and Tidebreak Herald. Each uses a distinctive new painted character, original-source-matched full-body transparent battlefield sprite, 22 motion frames, unique triggered combat effect and a bounded real-engine ability. GitHub QA checked the 52-card real Grimoire, 88 actual on-board animation cells, saves/decks/upgrades, all existing mechanics and 120 legal battle simulations without invalid states. See `V456_RELEASE_AND_QA.md`. Physical iPhone and live remote duel tests remain open.
 
-### v4.5.7–v4.5.8 — Eight more original cards to reach 60 (planned)
-Expand the current **52-card** collection to the agreed **60** with two careful four-card batches. Every creature needs distinct painted source, cutout, animations and rules; spells need painted cards and dedicated effects. Keep three saved decks and all progression/save keys intact, and test real browser gameplay before release.
+### v4.5.7 — Four Original Painted Tactical Spells (shipped)
+Expanded **52 → 56** with Gravemire Ring (two-target root), Prism Relay (transfer 2 shield plus once-round movement refresh), Cinder Bloom (bounded dual burn), and Tidal Reprieve (group healing). All are original painted spells with distinctive live battlefield FX, preserved save/Armory schemas and real-engine team-aware targeting. The 16 new rule tests, all prior regressions, 180 automated simulated battles and mobile-sized painted 56-card Grimoire/Armory tests passed. See `V457_RELEASE_AND_QA.md`. Physical iPhone and long-distance duel verification remain open.
+
+### v4.5.8 — Final four original cards to reach 60 (planned)
+Add four carefully balanced cards to the **56-card** collection, each with entirely new art and authentic battle integration. The user's established 60-card milestone, backwards-compatible decks and progression, on-field visual standard and hard stop after v4.7 remain non-negotiable.
 
 ### v4.6 — Progression & Replayability
 Rift Gauntlet, milestone rewards, mastery challenges, progression pacing and long-run variety. Include challenge reset safeguards and migration tests.
