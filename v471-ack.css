@@ -1,0 +1,6 @@
+/* v4.7.1 — small touch-safe resync control, visually subordinate to battle. */
+.duel-refresh-link{display:block;margin:0 auto 8px;border:1px solid rgba(141,177,209,.55);border-radius:8px;padding:7px 16px;min-height:34px;background:linear-gradient(115deg,#243c59,#2e385a);color:#dceeff;font:800 10px/1.25 system-ui;letter-spacing:.075em;box-shadow:inset 0 1px rgba(255,255,255,.1)}
+.duel-refresh-link.hidden{display:none!important}
+.duel-refresh-link:focus-visible{outline:2px solid #e2cdff;outline-offset:2px}
+.duel-refresh-link:disabled{opacity:.52;filter:saturate(.7)}
+@media(max-width:370px){.duel-refresh-link{font-size:9px;padding:6px 12px;min-height:32px}}
