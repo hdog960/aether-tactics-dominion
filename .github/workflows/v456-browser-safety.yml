@@ -1,0 +1,32 @@
+name: Dominion v4.5.6 isolated browser art gate
+on:
+  push:
+    branches: [dev/v456-four-creatures]
+    paths:
+      - .github/workflows/v456-browser-safety.yml
+      - tools/v456_browser_safety_qa.mjs
+      - v456-creature-art.js
+      - v45-qa.js
+      - index.html
+      - qa-v39.html
+      - sw.js
+permissions: {contents: read}
+jobs:
+  protect-live-collection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: dev/v456-four-creatures}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-v456-http.log 2>&1 &
+      - run: node tools/v456_browser_safety_qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dominion-v456-staged-safety
+          path: art/v456-staged-public-safety-390px.png
+          if-no-files-found: ignore
