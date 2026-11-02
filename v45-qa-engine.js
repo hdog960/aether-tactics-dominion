@@ -90,7 +90,15 @@ ad:{name:'Prism Relay',cost:2,spell:'prismrelay',role:'Ward Transfer',
 ae:{name:'Cinder Bloom',cost:3,spell:'cinderbloom',role:'Ember Hex',
  desc:'Ignite a foe and one nearby unburned foe; no immediate damage.'},
 af:{name:'Tidal Reprieve',cost:3,spell:'tidalreprieve',role:'Group Restoration',
- desc:'Restore 2 HP to an injured ally and 1 HP to two injured nearby allies.'}
+ desc:'Restore 2 HP to an injured ally and 1 HP to two injured nearby allies.'},
+ag:{name:'Aether Lanternist',cost:3,hp:4,atk:1,range:2,move:2,
+ role:'Purifier',desc:'On summon, cleanse a nearby afflicted ally and grant 1 shield.'},
+ah:{name:'Vesper Kestrel',cost:3,hp:4,atk:2,range:1,move:3,fly:true,
+ role:'Skirmish Hexer',desc:'First move near a foe each round weakens its next attack.'},
+ai:{name:'Hollowroot Collector',cost:4,hp:6,atk:2,range:1,move:2,
+ role:'Status Harvester',desc:'First attack on a rooted or burning foe each round refunds 1 Aeth.'},
+aj:{name:'Rimeshard Sentinel',cost:4,hp:8,atk:1,range:1,move:1,shield:1,
+ role:'Ward Guardian',desc:'First basic attack survived each round cleanses self and gains 1 shield.'}
 };
 // Core and stat revisions; existing v4 match snapshots remain loadable.
 const BALANCE_PATCH={"t":{"tribute":1,"hp":14},"h":{"cost":3,"desc":"Restore 3 HP and refresh actions once per round."},"w":{"desc":"Give up to 4 shield, maximum 5 total."},"z":{"hp":5,"atk":2},"y":{"hp":7,"move":2},"A":{"hp":8},"B":{"hp":7,"move":2},"F":{"cost":3,"desc":"Sacrifice one ally, draw up to two and regain 2 Aeth."},"D":{"desc":"Place a concealed 3-damage snare lasting four rounds."},"G":{"desc":"Remove 3 shield and reduce the next strike by 2."},"f":{"hp":3},"d":{"range":1},"p":{"move":2},"o":{"hp":4,"desc":"On summon, return your last spent spell to the top of your deck, or gain 1 shield."}};
@@ -130,13 +138,16 @@ const V456_UNIT_KEYS=['Y','Z','aa','ab'];
 const V456_ENABLED=V45_QA||window.DOMINION_V456_ART_RELEASE===true;
 const V457_SPELL_KEYS=['ac','ad','ae','af'];
 const V457_ENABLED=V45_QA||window.DOMINION_V457_ART_RELEASE===true;
+const V458_UNIT_KEYS=['ag','ah','ai','aj'];
+const V458_ENABLED=V45_QA||window.DOMINION_V458_ART_RELEASE===true;
 const CARD_KEYS=Object.keys(D).filter(k=>
  (V45_ENABLED||!V45_SPELL_KEYS.includes(k))&&
  (V453_ENABLED||!V453_UNIT_KEYS.includes(k))&&
  (V454_ENABLED||!V454_UNIT_KEYS.includes(k))&&
  (V455_ENABLED||!V455_SPELL_KEYS.includes(k))&&
  (V456_ENABLED||!V456_UNIT_KEYS.includes(k))&&
- (V457_ENABLED||!V457_SPELL_KEYS.includes(k))),
+ (V457_ENABLED||!V457_SPELL_KEYS.includes(k))&&
+ (V458_ENABLED||!V458_UNIT_KEYS.includes(k))),
  DECK_SIZE=24,MAX_COPIES=3,DECK_STORE='aether-dominion-deck-v20';
 // Two copies of each new spell leave room for 16 distinct existing creature
 // slots. The preset is invisible until artwork is explicitly available.
@@ -597,6 +608,16 @@ function nearestAlly(u,radius=2){
 // On-summon movement assistance does not create a new attack, affect flyers
 // or ignore roots. Its round quota is shared between cards of the same team.
 function onCreatureSummoned(u){
+ if(u.k==='ag'){
+  const ally=S.units.filter(v=>v.team===u.team&&v.id!==u.id&&v.hp>0&&
+   (v.rooted||v.burning)&&d(v,u)<=2)
+   .sort((a,b)=>(a.hp/a.max)-(b.hp/b.max)||d(a,u)-d(b,u)||a.id-b.id)[0];
+  if(ally){
+   ally.rooted=false;ally.burning=false;
+   const shield=grantShield(ally,1);
+   abilityPulse(ally,'lanternist',shield);
+  }
+ }
  if(u.k==='Y'){
   const target=S.units.filter(v=>v.team!==u.team&&!v.boss&&v.hp>0&&d(v,u)<=2)
    .sort((a,b)=>d(a,u)-d(b,u)||a.id-b.id)[0];
@@ -807,6 +828,14 @@ function afterMove(u){
  // Entering a concealed snare resolves before arrival-based shield bonuses.
  trapImpact(u);
  if(!S.units.some(v=>v.id===u.id))return;
+ if(u.k==='ah'&&u.kestrelRound!==S.round){
+  const foe=S.units.filter(v=>v.team!==u.team&&!v.boss&&v.hp>0&&d(v,u)<=2)
+   .sort((a,b)=>d(a,u)-d(b,u)||a.id-b.id)[0];
+  if(foe){
+   u.kestrelRound=S.round;foe.weakened=Math.max(1,Number(foe.weakened)||0);
+   abilityPulse(foe,'kestrel',0);
+  }
+ }
  if(u.k==='ab'&&springs.includes(K(u.x,u.y))&&u.heraldRound!==S.round){
   u.heraldRound=S.round;
   const n=grantShield(u,1);
@@ -852,6 +881,8 @@ function mitigate(target,n,physical){
  return value;
 }
 function basicStrike(attacker,target){
+ const collectorHarvest=attacker.k==='ai'&&!target.core&&
+  (target.rooted||target.burning)&&attacker.collectRound!==S.round;
  // A burning target may pass its flame to ONE other unburned enemy
  // creature within 2 tiles, once per Prowler per round. Never to a Core.
  const flameTarget=attacker.k==='Z'&&!target.core&&!!target.burning&&
@@ -895,6 +926,17 @@ function basicStrike(attacker,target){
  fxStrike(attacker,target,actual);
  const wasUnit=!target.core&&S.units.some(v=>v.id===target.id);
  applyDamage(target,actual);
+ if(collectorHarvest&&S.units.some(v=>v.id===attacker.id)){
+  attacker.collectRound=S.round;
+  S.energy[attacker.team]=Math.min(10,S.energy[attacker.team]+1);
+  abilityPulse(attacker,'hollowroot',1);
+ }
+ if(wasUnit&&target.k==='aj'&&target.hp>0&&
+  S.units.some(v=>v.id===target.id)&&target.rimeRound!==S.round){
+  target.rimeRound=S.round;target.burning=false;target.rooted=false;
+  const shield=grantShield(target,1);
+  abilityPulse(target,'rimeshard',shield);
+ }
  if(flameTarget&&S.units.some(v=>v.id===attacker.id)&&
     S.units.some(v=>v.id===flameTarget.id)){
   flameTarget.burning=true;
@@ -1591,6 +1633,10 @@ const GUIDE={
  ad:{feature:'Redistribute shields and movement tempo.',detail:'Choose an allied creature holding at least two shields. Move exactly two of its shield points to the most weakly shielded different ally within two tiles who has space for both. If that ally already moved, is unrooted and has not been refreshed by Prism Relay this round, it may move once more, but never gains another attack. Never exceeds the five-shield cap and cannot target a Core.',tip:'Transfer your backline protection to a fast spring runner after its first move.'},
  ae:{feature:'Set up an Ember combination.',detail:'Choose an unburned enemy non-champion creature within three tiles of your army. Ignite it and the nearest other unburned non-champion enemy within two tiles. Deals no immediate damage; existing burn is never stacked.',tip:'Set up Cinderjaw Prowler or force enemies to spend a cleanse.'},
  af:{feature:'Recover a wounded squad.',detail:'Choose one injured allied creature. Restore up to two HP to it, plus one HP each to the two most injured different allies within two tiles. Healing never refreshes their movement or attack and cannot exceed maximum HP.',tip:'Best when several allied creatures survive a tough round together.'},
+ ag:{feature:'Cleansing support on entry.',detail:'On summon, remove burn and root from the most injured afflicted friendly creature within two tiles other than the Lanternist, and grant it one shield if space remains. Never cleanses enemies or resurrects defeated units.',tip:'Summon after opposing control effects while keeping the fragile Lanternist safe.'},
+ ah:{feature:'Movement-triggered disruptive flight.',detail:'After its first successful move each round ending within two tiles of an enemy nonchampion, weaken the nearest eligible enemy next basic attack by one. Does not stack or trigger when summoned.',tip:'Fly toward a dangerous striker before its turn.'},
+ ai:{feature:'Harvest a status without extra damage.',detail:'Its first basic attack each round against a rooted or burning enemy creature restores one Aeth, capped at ten. Never activates on Cores or unmarked targets.',tip:'Follow Gravemire Ring or Cinder Bloom with a melee engagement.'},
+ aj:{feature:'Resilient reactive warding.',detail:'The first time this Sentinel survives an enemy basic attack each round, remove its burning and root, then grant one shield, capped at five. Cannot retaliate with extra attacks and cannot trigger when killed.',tip:'Anchor the frontline against repeated control attacks.'},
  ab:{feature:'Earn momentum from spring control.',detail:'The first time this Herald moves onto an Aeth spring each round, it gains 1 shield and restores 1 Aeth to its owner, capped at 10. Triggered after any hostile snare damage; summoning directly on a spring does not count.',tip:'Move from another tile onto a spring when your Aeth is below the cap.'},
  M:{feature:'Flying squad mobility support.',detail:'When summoned, restore movement to the nearest grounded, unrooted ally within two tiles that already moved. Once per round for your entire army; attacks are never refreshed.',tip:'Move your frontline, then summon the Cartographer close enough to dispatch it again.'},
  N:{feature:'Spring-based fortification.',detail:'If this defender is standing on an Aeth spring when your turn begins, grant one shield to a nearby ally within two tiles. If none qualifies, shield itself. Maximum five shield per creature.',tip:'Hold contested springs rather than using it as an ordinary slow bruiser.'},
