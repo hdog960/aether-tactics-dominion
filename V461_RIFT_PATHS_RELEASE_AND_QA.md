@@ -20,10 +20,10 @@ Existing profile and save keys remain unchanged: `aether-dominion-profile-v21`, 
 
 The old v4.6.0 Gauntlet's anti-repeat guards remain in place: stage 2 and stage 3 require a claimed win against the matching run ID and stage, first-clear rewards cannot be duplicated by re-rendering, and abandoning a run does not permit stage skipping.
 
-## Verification targets
+## Verified staging checks — passed
 
-- [v4.6.1 real-engine Rift Path tests](https://github.com/hdog960/aether-tactics-dominion/actions/workflows/v461-rules-qa.yml): new route behaviors, once-only bonuses, old profile compatibility, reload persistence and all older v4.6.0 stage/mastery scenarios; 180 simulated baseline and mixed matches; unchanged 60-card rules.
-- [v4.6.1 actual phone-sized Chromium tests](https://github.com/hdog960/aether-tactics-dominion/actions/workflows/v461-browser-qa.yml): 390px Hall and 320px Hall with three selectable button targets; Stormbound and Ironbound start correctly; a saved Stormbound run resumes locked to the right route; the Forge mastery section remains functional; no JS errors.
+- [v4.6.1 real-engine Rift Path tests](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41494586088) — **passed**: 14/14 new path cases, 20/20 existing Gauntlet/save/mastery cases, all earlier card/campaign regressions, 180 simulated baseline and mixed battles with no invalid action errors, and synchronized production and QA engines. The additional offline/save/release guard passed.
+- [v4.6.1 actual phone-sized Chromium tests](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41494642902) — **passed**: 390px and 320px Hall with three selectable routes, live Stormbound/Ironbound battle behavior, a saved Stormbound run resuming locked to its original route, unchanged Forge mastery, and no page JavaScript errors. A manually observed Stormbound word wrap at 320px was corrected; the final test explicitly verifies that route names occupy one line and do not overflow. Four actual game screenshots are available in that workflow's downloadable artifact.
 - `tools/v461_release_guard.mjs` prevents changes to the 60-card artwork release flags, saved-data keys, synchronized production/QA sources or missing versioned PWA assets.
 
 Real-device iPhone Safari and long-distance two-device WebRTC playtests still remain open. Browser and simulation QA cannot establish human multiplayer balance.
