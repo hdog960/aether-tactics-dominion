@@ -19,6 +19,7 @@ jobs:
           mkdir -p candidate
           curl -fsSL --retry 3 "$SOURCE_URL" -o candidate/v456-original-characters.png
           file candidate/v456-original-characters.png
+          python3 -m pip install --quiet pillow
           python3 - <<'PY'
           from PIL import Image
           from pathlib import Path
