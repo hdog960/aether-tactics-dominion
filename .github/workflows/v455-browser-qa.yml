@@ -27,7 +27,7 @@ jobs:
       - name: Verify painted card art, normal collection and actual engine
         run: node tools/v455_browser_qa.mjs
         env:
-          V455_RELEASE: ${{ contains(github.event.head_commit.message, 'Release candidate 48 cards') && '1' || '0' }}
+          V455_RELEASE: '1'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
