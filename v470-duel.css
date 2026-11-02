@@ -1,0 +1,8 @@
+/* Dominion v4.7.0 — legible private-duel transport feedback on narrow iPhones. */
+.duel-link-status{margin:0 8px 8px;border-radius:9px;border:1px solid #6b76a2;background:linear-gradient(115deg,#192c4c,#282b50);color:#e3e9fb;padding:8px 10px;font:700 10px/1.5 system-ui;letter-spacing:.025em;text-align:center;box-shadow:inset 0 1px rgba(255,255,255,.1)}
+.duel-link-status.hidden{display:none!important}
+.duel-link-status[data-link="offline"]{border-color:#a47e7e;background:linear-gradient(110deg,#3b2839,#352840);color:#ffe0dc}
+.duel-link-status[data-link="pending"]{border-color:#ba9c65;background:linear-gradient(110deg,#3e3543,#313454);color:#ffe8c1}
+.duel-link-status[data-link="linked"]{border-color:#789fa9;color:#d3f2f3}
+#roomstatus{line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:370px){.duel-link-status{padding:7px;font-size:9px;letter-spacing:0}}
