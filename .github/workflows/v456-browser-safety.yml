@@ -6,6 +6,10 @@ on:
       - .github/workflows/v456-browser-safety.yml
       - tools/v456_browser_safety_qa.mjs
       - v456-creature-art.js
+      - v45-engine.js
+      - v45-qa-engine.js
+      - v45-scene.js
+      - v45-qa-scene.js
       - v45-qa.js
       - index.html
       - qa-v39.html
