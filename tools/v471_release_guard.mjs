@@ -5,13 +5,16 @@ const eng=read('v45-engine.js'),qa=read('v45-qa-engine.js'),
  net=read('v30-net.js'),html=read('index.html'),alt=read('v30.html'),
  sw=read('sw.js'),css=read('v471-ack.css'),road=read('DOMINION_ROADMAP.md');
 const checks=[],check=(name,pass)=>checks.push({name,pass:!!pass});
+const v472=html.includes('v45-engine.js?v=472')&&alt.includes('v45-engine.js?v=472');
+const engineVersion=v472?'472':'471';
+const cacheName=v472?'aether-dominion-v472-peer-handshake':'aether-dominion-v471-duel-ack-recovery';
 check('Isolated and live engines are byte-identical',eng===qa);
 check('Painted battlefield renderer remains byte-identical',read('v45-scene.js')===read('v45-qa-scene.js'));
 check('Both playable entrypoints reference ACK-recovery assets',
- [html,alt].every(x=>['v45-engine.js?v=471','v30-net.js?v=471',
+ [html,alt].every(x=>['v45-engine.js?v='+engineVersion,'v30-net.js?v=471',
  'v471-ack.css?v=471','id="duel-refresh-link"','id="duel-link-status"'].every(y=>x.includes(y))));
 check('iPhone offline cache refreshes all changed network and UI assets',
- ['aether-dominion-v471-duel-ack-recovery','v45-engine.js?v=471',
+ [cacheName,'v45-engine.js?v='+engineVersion,
  'v30-net.js?v=471','v471-ack.css?v=471'].every(x=>sw.includes(x)));
 check('Original keys and v4 match format are not migrated or reset',
  ["const PROFILE_STORE='aether-dominion-profile-v21'",
