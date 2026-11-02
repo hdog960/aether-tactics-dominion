@@ -44,8 +44,11 @@ Expanded **52 → 56** with Gravemire Ring (two-target root), Prism Relay (trans
 ### v4.5.8 — Final Four Painted Creatures (60 cards, completed)
 Expanded **56 → 60** with Aether Lanternist (affliction cleanse), Vesper Kestrel (move-triggered debuff), Hollowroot Collector (status-dependent Aeth refund) and Rimeshard Sentinel (survival-triggered warding). All use original painted character images, matched full-body transparent field sprites, 22 pose-derived motion frames per creature and unique combat feedback. Real-engine regressions, 180 AI simulations, strict artwork provenance and 390px/320px browser visual acceptance are recorded in `V458_RELEASE_AND_QA.md`. Physical iPhone and cross-network two-device tests remain open.
 
-### v4.6 — Progression & Replayability
-Rift Gauntlet, milestone rewards, mastery challenges, progression pacing and long-run variety. Include challenge reset safeguards and migration tests.
+### v4.6.0 — Rift Gauntlet and Card Mastery (first replayability release)
+Added a complete three-stage **Rift Gauntlet**, accessible from the Commander's Hall: Whispering Gate (verdant), Frostbound Passage (real frost hazards) and Crownfall Reckoning (armored final guardian, real arcane hazards). The 24-card deck and ranks are locked for each run; the player's Core HP carries between victories with only +4 reprieve; failure ends an attempt. Resume and stage rewards use additive, replay-safe profile fields, with a once-only 180 gold/210 XP/Aether Lanternist first-clear reward. Card Mastery now awards Bronze/Silver/Gold at 4/12/30 distinct solo match participations, one-time gold rewards on winning matches, and visible Forge progression. Source of truth: `V460_GAUNTLET_AND_MASTERY_QA.md`. Physical iPhone Safari and long-distance two-device testing remain open.
+
+### v4.6 — Further Replayability & Progression (in progress)
+Continue with more varied Gauntlet challenges, longer-term mastery objectives, progression pacing and anti-repeat safeguards. Never reset existing save keys or inflate stat power in private duels.
 
 ### v4.7 — Multiplayer Reliability
 First prove private duel between actual devices and network configurations. Only then plan authoritative profiles, matchmaking/ranking, and seasonal rewards. Do not advertise ranked matchmaking as currently available.
