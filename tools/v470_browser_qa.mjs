@@ -53,9 +53,6 @@ try{
   'A valid private rival deck must begin a host-authoritative match');
  assert(await host.locator('#duel-link-status').getAttribute('data-link')==='linked',
   'Active duel should show connected indicator');
- const guestDeckBefore=await host.evaluate(()=>JSON.stringify([
-  window.AetherGame.get().decks[1],window.AetherGame.get().hands[1]
- ]));
  await host.screenshot({path:'art/v470-host-linked-390px.png',fullPage:true});
  await host.locator('#end').click();
  const awaiting=await host.evaluate(()=>({turn:window.AetherGame.get().turn,
@@ -71,6 +68,9 @@ try{
   rev:window.__duelProbe.snapshots.at(-1).rev}));
  assert(rejected.round===2&&rejected.rev===advanced.rev,
   'An old-revision guest action must not advance the match');
+ const guestDeckBefore=await host.evaluate(()=>JSON.stringify([
+  window.AetherGame.get().decks[1],window.AetherGame.get().hands[1]
+ ]));
  await host.evaluate(()=>window.__duelProbe.leavePeer());
  assert(await host.locator('#duel-link-status').getAttribute('data-link')==='offline',
   'Disconnection must show offline state');
