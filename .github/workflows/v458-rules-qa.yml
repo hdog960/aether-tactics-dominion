@@ -8,6 +8,19 @@ on:
       - v45-engine.js
       - v45-qa-engine.js
       - DOMINION_ROADMAP.md
+      - tools/v458_release_guard.mjs
+      - art/sources/v458-original-characters.png
+      - art/v458-art-manifest.json
+      - art/cards-creatures-v458.webp
+      - art/units-creatures-v458.png
+      - art/battlefield-frames-v458.webp
+      - sw.js
+      - index.html
+      - v30.html
+      - qa-v39.html
+      - v458-creature-art.js
+      - v45-scene.js
+      - v45-qa-scene.js
 permissions: {contents: read}
 jobs:
   rules:
@@ -18,6 +31,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: node tools/v458_rules_qa.mjs
+      - run: node tools/v458_release_guard.mjs
       - run: |
           cmp v45-engine.js v45-qa-engine.js
           cmp v45-scene.js v45-qa-scene.js
