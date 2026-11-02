@@ -24,6 +24,15 @@ An initial connection could be established successfully while the guest's first 
 
 These checks verify real browser peer transport and public signaling on the tested environment. They do not prove iOS Safari, long-distance cellular NAT, TURN or connection reliability on every network.
 
+## Verified independent GitHub Actions results — November 2, 2026
+
+- [v4.7.2 real RTCDataChannel, handshakes, complete legacy regressions](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41540233264): passed. Two Chromium browser sessions completed five rounds, both reached round six, and the nine initial-handshake checks passed.
+- [Live Trystero public relay smoke](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41540233422): passed. Two browsers using the actual published Trystero 0.26.0 import successfully paired and exchanged a complete round.
+- [Independent GitHub runner cross-host stress](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41541393784): **both separate cloud machines reported pass** after five complete rounds. The guest reloaded the page after round three, rejoined the same room, and continued through round six.
+- The earlier v4.6.4/v4.7.0/v4.7.1 mechanics, save, phone-sized Chromium and network regression workflows remained green on the candidate.
+
+Cloud runners are independent network hosts; neither is a physical iPhone Safari client. The cross-runner diagnostic is separate from the mandatory main release guard, and each peer's output was individually checked.
+
 ## Limits
 This is stronger evidence than a mock network queue, but two Chromium windows sharing a CI machine **do not prove** independent carrier NAT traversal, iOS Safari's lifecycle behavior, or reliability of Trystero's third-party Nostr signaling relays. It does not prove TURN availability (no production TURN credential service exists).
 
