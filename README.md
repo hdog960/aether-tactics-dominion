@@ -176,3 +176,7 @@ Dominion's full **60-card** collection now includes **Aether Lanternist**, **Ves
 ## v4.6.1 — Three Rift Paths
 
 The Rift Gauntlet now offers three selectable, differentiated rulesets in the Commander's Hall: **Wayfinder**, **Stormbound**, and **Ironbound**. Restore different Core health amounts between battles, face tougher enemy Cores, and manage either additional Aeth or protected starter units. Completed paths are recorded independently with small, once-only challenge rewards. Old v4.6.0 runs default safely to Wayfinder; all 60 cards, existing profile/deck saves, Forge mastery and equal-stat PvP remain intact. See `V461_RIFT_PATHS_RELEASE_AND_QA.md`. Further replayability work remains before v4.7, at which point development stops for the creator's review.
+
+## v4.6.2 — Full Mastery Codex and Career Contracts
+
+Forge now exposes the entire **60-card** mastery catalogue with Progress, All 60 and Gold filters. Six independent career contracts reward breadth of card usage, deeper specialization, eight different cards in a single winning match, and clearing multiple Rift Gauntlet routes. Each bonus is **one-time gold only**; no competitive stats or paid power. Prior saves, card copies, decks, all three Rift Paths and mastery participation history remain compatible. See `V462_MASTERY_CODEX_AND_CONTRACTS_QA.md`. The next milestone remains further v4.6 replayability/pacing, followed by v4.7 multiplayer reliability, then the creator's mandatory roadmap review.
