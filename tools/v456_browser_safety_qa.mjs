@@ -30,6 +30,19 @@ try{
  // Until actual source images are committed, the art gate MUST remain closed.
  assert(!report.art.ready,'Unreviewed v4.5.6 artwork silently marked ready');
 
+ // The battle scene MUST be the active visible page before visual QA.
+ // Earlier screenshots accidentally captured the Hall beneath the debug overlay.
+ await qa.evaluate(()=>{
+  document.querySelector('#qa-panel')?.style.setProperty('display','none');
+  window.DominionNav.showTab('battle');
+ });
+ await qa.waitForFunction(()=>{
+  const canvas=document.querySelector('#battle-canvas');
+  return document.querySelector('#game')?.dataset.tab==='battle'&&
+   !!canvas&&canvas.getBoundingClientRect().width>100&&
+   getComputedStyle(canvas).visibility!=='hidden';
+ },null,{timeout:10000});
+
  // Stage four genuine canvas spell-feedback signatures without requiring
  // missing character paintings. This exercises the 2D effect renderer itself.
  const fx=await qa.evaluate(()=>{
@@ -49,6 +62,13 @@ try{
  });
  assert(fx.queued>=4,'Four unique staged visual events did not reach the battlefield');
  await qa.waitForTimeout(130);
+ const battleVisible=await qa.evaluate(()=>{
+  const canvas=document.querySelector('#battle-canvas');
+  const rect=canvas.getBoundingClientRect();
+  return document.querySelector('#game')?.dataset.tab==='battle'&&
+   rect.width>100&&rect.height>150&&rect.left<390&&rect.right>0;
+ });
+ assert(battleVisible,'FX screenshot did not render a visible battlefield canvas');
  await qa.screenshot({path:'art/v456-four-ability-fx-390px.png',fullPage:false});
 
  const real=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
