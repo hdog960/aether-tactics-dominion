@@ -1,0 +1,23 @@
+name: Dominion v4.6.1 Rift Path gameplay and save regression
+on:
+  push:
+    branches: [dev/v461-rift-paths]
+    paths:
+      - .github/workflows/v461-rules-qa.yml
+      - tools/v461_rules_qa.mjs
+      - v45-engine.js
+      - v45-qa-engine.js
+      - DOMINION_ROADMAP.md
+permissions: {contents: read}
+jobs:
+  three-route-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/v461_rules_qa.mjs
+      - run: |
+          cmp v45-engine.js v45-qa-engine.js
+          cmp v45-scene.js v45-qa-scene.js
