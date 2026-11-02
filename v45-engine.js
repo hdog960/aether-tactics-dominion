@@ -2476,6 +2476,133 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
  },
+ // v4.5.8 final four creatures. Exercises actual unit and combat state.
+ qaV458Creatures:()=>{
+  const tests=[],check=(name,pass,detail='')=>tests.push({name,pass:!!pass,detail});
+  const setup=()=>{
+   if(!startMission('v1',true,'rush'))throw Error('Cannot start v458 isolated mission');
+   S.turn=0;S.round=1;S.energy=[7,7];S.hands=[[],[]];S.units=[];
+   return(k,t,x,y,options={})=>{
+    const u=unit(k,t,x,y,true);Object.assign(u,options);S.units.push(u);return u;
+   };
+  };
+  try{
+   {
+    const add=setup(),friend=add('v',0,2,5,{hp:2,rooted:true,burning:true}),
+     other=add('v',0,6,6,{rooted:true}),lantern=add('ag',0,3,5);
+    onCreatureSummoned(lantern);
+    check('Lanternist clears two statuses and provides only one shield on ally',
+     !friend.rooted&&!friend.burning&&friend.shield===1&&other.rooted&&lantern.shield===0);
+   }
+   {
+    const add=setup(),enemy=add('v',1,2,5,{rooted:true,burning:true}),
+     lantern=add('ag',0,3,5);
+    onCreatureSummoned(lantern);
+    check('Lanternist never cleanses enemy status or generates a shield on self',
+      enemy.rooted&&enemy.burning&&!lantern.shield);
+   }
+   {
+    const add=setup(),ally=add('v',0,2,5,{rooted:true,shield:5}),
+     lantern=add('ag',0,3,5);
+    onCreatureSummoned(lantern);
+    check('Lanternist cleanses capped ally without exceeding shield cap',
+      !ally.rooted&&ally.shield===5);
+   }
+   {
+    const add=setup(),kestrel=add('ah',0,2,4),enemy=add('r',1,4,4),
+     remote=add('r',1,6,6);
+    kestrel.x=3;kestrel.y=4;afterMove(kestrel);
+    check('Kestrel first movement weakens nearest enemy only',
+      enemy.weakened===1&&!remote.weakened&&kestrel.kestrelRound===1);
+   }
+   {
+    const add=setup(),kestrel=add('ah',0,2,4),enemy=add('r',1,4,4),
+     other=add('v',1,5,4);
+    kestrel.x=3;kestrel.y=4;afterMove(kestrel);
+    kestrel.x=4;kestrel.y=5;afterMove(kestrel);
+    check('Kestrel cannot apply another movement hex in same round',
+      enemy.weakened===1&&!other.weakened);
+   }
+   {
+    const add=setup(),kestrel=add('ah',0,2,4),boss=add('g',1,3,4,{boss:true});
+    kestrel.x=2;kestrel.y=5;afterMove(kestrel);
+    check('Kestrel never weakens protected champions',!boss.weakened);
+   }
+   {
+    const add=setup(),collector=add('ai',0,2,4),
+     enemy=add('g',1,3,4,{burning:true,hp:12,max:12});
+    const before=S.energy[0],hit=basicStrike(collector,enemy);
+    check('Hollowroot successful marked strike restores one Aeth',
+      hit>=1&&S.energy[0]===before+1&&collector.collectRound===1);
+   }
+   {
+    const add=setup(),collector=add('ai',0,2,4),
+     enemy=add('g',1,3,4,{rooted:true,hp:12,max:12});
+    S.energy[0]=10;basicStrike(collector,enemy);
+    check('Hollowroot energy recovery cannot exceed universal cap',S.energy[0]===10);
+   }
+   {
+    const add=setup(),collector=add('ai',0,2,4),
+     first=add('g',1,3,4,{burning:true,hp:12,max:12}),
+     second=add('g',1,2,5,{rooted:true,hp:12,max:12});
+    S.energy[0]=5;basicStrike(collector,first);basicStrike(collector,second);
+    check('Hollowroot recovers at most one energy per round',S.energy[0]===6);
+   }
+   {
+    const add=setup(),collector=add('ai',0,2,4),
+     enemy=add('v',1,3,4,{hp:12,max:12});
+    S.energy[0]=5;basicStrike(collector,enemy);
+    check('Hollowroot gains no Aeth from an unmarked creature',S.energy[0]===5);
+   }
+   {
+    const add=setup(),sentinel=add('aj',0,2,4,{hp:8,max:8,burning:true,rooted:true}),
+     enemy=add('v',1,3,4,{atk:2});
+    const hp=sentinel.hp;basicStrike(enemy,sentinel);
+    check('Rimeshard survives one strike, clears both statuses and gains one shield',
+      sentinel.hp<hp&&!sentinel.burning&&!sentinel.rooted&&sentinel.shield===2);
+   }
+   {
+    const add=setup(),sentinel=add('aj',0,2,4,{hp:8,max:8}),
+     enemy=add('v',1,3,4,{atk:1});
+    basicStrike(enemy,sentinel);const shield=sentinel.shield;
+    basicStrike(enemy,sentinel);
+    check('Rimeshard reactive shield is limited to once each round',
+      shield===2&&sentinel.shield<=shield&&sentinel.rimeRound===1);
+   }
+   {
+    const add=setup(),sentinel=add('aj',0,2,4,{hp:1,max:8,shield:0}),
+     enemy=add('v',1,3,4,{atk:4});
+    basicStrike(enemy,sentinel);
+    check('Defeated Rimeshard does not revive itself or gain reactive shield',
+      !S.units.some(u=>u.id===sentinel.id)&&sentinel.shield===0);
+   }
+   {
+    const add=setup(),sentinel=add('aj',0,2,4,{hp:8,max:8,shield:5}),
+     enemy=add('v',1,3,4,{atk:2});
+    basicStrike(enemy,sentinel);
+    check('Rimeshard cannot gain shield over the universal cap',
+      sentinel.shield<=5);
+   }
+   {
+    setup();S.energy[0]=7;S.hands[0]=['ag'];S.units=[];
+    const ally=unit('v',0,2,5,true);ally.rooted=true;
+    S.units.push(ally);
+    const cast=apply(0,{op:'card',idx:0,x:3,y:5,tributes:[]});
+    check('Casting an actual Lanternist card triggers cleanse and uses 3 Aeth',
+      cast&&!ally.rooted&&S.energy[0]===4);
+   }
+   {
+    const add=setup(),collector=add('ai',0,2,4),
+     enemy=add('v',1,3,4,{burning:true,hp:9,max:9});
+    S.energy[0]=5;basicStrike(collector,enemy);
+    save();S=null;const ok=load(),restored=S?.units.find(u=>u.id===collector.id);
+    check('Version-4 battle save retains per-round harvest quota',
+      ok&&restored?.collectRound===1&&S.energy[0]===6);
+   }
+  }catch(e){tests.push({name:'Unhandled regression exception',pass:false,detail:String(e.stack||e)})}
+  finally{startQuickMatch()}
+  return{pass:tests.length===16&&tests.every(v=>v.pass),checks:tests};
+ },
  // v4.5.7: actual card application, legal target, ownership, limits & persistence.
  qaV457Spells:()=>{
   const checks=[],check=(name,pass,detail='')=>checks.push({name,pass:!!pass,detail});
