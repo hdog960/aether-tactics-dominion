@@ -590,7 +590,7 @@ function onCreatureSummoned(u){
    .sort((a,b)=>d(a,u)-d(b,u)||a.id-b.id)[0];
   if(target){
    target.weakened=Math.max(Number(target.weakened)||0,1);
-   abilityPulse(target,'silence',0);
+   abilityPulse(target,'bellkeeper',0);
   }
  }
  if(u.k==='T'){
@@ -742,7 +742,7 @@ function onSacrifice(t){
   const healed=Math.min(2,devourer.max-devourer.hp);
   if(healed){
    devourer.hp+=healed;devourer.devourRound=S.round;
-   abilityPulse(devourer,'heal',healed);
+   abilityPulse(devourer,'oathmoss',healed);
   }
  }
  for(const u of S.units.filter(v=>v.team===t&&v.k==='B'&&v.oathRound!==S.round)){
@@ -799,7 +799,7 @@ function afterMove(u){
   u.heraldRound=S.round;
   const n=grantShield(u,1);
   S.energy[u.team]=Math.min(10,S.energy[u.team]+1);
-  if(n)abilityPulse(u,'shield',n);
+  abilityPulse(u,'tidebreak',n);
  }
  if(u.k==='v'&&u.braceRound!==S.round&&u.shield<1&&
     S.units.some(v=>v.team!==u.team&&d(v,u)===1)){
@@ -887,7 +887,7 @@ function basicStrike(attacker,target){
     S.units.some(v=>v.id===flameTarget.id)){
   flameTarget.burning=true;
   attacker.prowlerRound=S.round;
-  abilityPulse(flameTarget,'ignite',0);
+  abilityPulse(flameTarget,'cinderwake',0);
  }
  if(harrierFlank&&S.units.some(v=>v.id===attacker.id)){
   attacker.harrierRound=S.round;attacker.moved=false;attacker.stride=0;
