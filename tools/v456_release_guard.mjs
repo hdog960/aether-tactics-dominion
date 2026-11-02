@@ -44,6 +44,10 @@ if(outputs.some(Boolean)){
    check('Manifest names exact four distinct creature keys',
     JSON.stringify(m.characters)===JSON.stringify(['Y','Z','aa','ab']));
    check('Manifest has 22 frames per character',m.frames_per_character===22);
+   check('Original painting is a high-resolution square source',
+    Array.isArray(m.source?.dimensions)&&m.source.dimensions[0]>=1024&&
+    m.source.dimensions[1]>=1024&&Math.abs(m.source.dimensions[0]-m.source.dimensions[1])<
+    Math.max(...m.source.dimensions)*.09);
    check('Manifest contains genuine source SHA-256, not an empty sentinel',
     typeof m.source?.sha256==='string'&&/^[a-f0-9]{64}$/.test(m.source.sha256));
    if(sourceAvailable){
