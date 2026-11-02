@@ -37,19 +37,23 @@ try{
  info.joined=true;
  const completed=[];
  for(let step=1;step<=5;step++){
-  if(role==='host'){
-   await page.waitForFunction(n=>window.AetherGame.get().round===n&&
-    window.AetherGame.get().turn===0&&window.AetherGame.get().phase==='playing',
-    step,{timeout:65000});
-   await page.locator('#end').click();
-   await page.waitForFunction(n=>window.AetherGame.get().round===n+1,step,{timeout:65000});
-  }else{
-   await page.waitForFunction(n=>window.AetherGame.get().round===n&&
-    window.AetherGame.get().turn===1&&window.AetherGame.get().phase==='playing',
-    step,{timeout:65000});
-   await page.locator('#end').click();
-   await page.waitForFunction(n=>window.AetherGame.get().round===n+1,step,{timeout:65000});
+  const seat=role==='host'?0:1;
+  await page.waitForFunction(({step,seat})=>window.AetherGame.get().round===step&&
+   window.AetherGame.get().turn===seat&&window.AetherGame.get().phase==='playing',
+   {step,seat},{timeout:65000});
+  if(step===1){
+   // Exercise actual hand/tile UI, not only END TURN or direct state mutations.
+   const before=await page.evaluate(()=>window.AetherGame.get().units.length);
+   const hand=await page.evaluate(seat=>window.AetherGame.get().hands[seat][0],seat);
+   if(hand!=='v')throw Error(role+' expected the starting Vanguard card, saw '+hand);
+   await page.locator('#hand button[data-card="0"]').click();
+   await page.locator('#board button[data-x="0"][data-y="7"]').click();
+   await page.waitForFunction(n=>window.AetherGame.get().units.length===n+1,
+    before,{timeout:35000});
+   info.cardPlayed=true;
   }
+  await page.locator('#end').click();
+  await page.waitForFunction(n=>window.AetherGame.get().round===n+1,step,{timeout:65000});
   completed.push(await page.evaluate(()=>({round:window.AetherGame.get().round,
    turn:window.AetherGame.get().turn,hp:window.AetherGame.get().hp,
    units:window.AetherGame.get().units.length})));
