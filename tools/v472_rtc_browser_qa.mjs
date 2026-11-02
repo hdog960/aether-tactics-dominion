@@ -127,8 +127,21 @@ try{
   await awaitValue(guest,()=>window.AetherGame.get().turn===1,
    'Guest did not receive host move '+round);
   await guest.locator('#end').click();
-  await awaitValue(host,()=>window.AetherGame.get().round===round+1,
-   'Host did not accept guest move '+round);
+  try{
+   await awaitValue(host,()=>window.AetherGame.get().round===round+1,
+    'Host did not accept guest move '+round);
+  }catch(e){
+   const inspect=await Promise.all([host,guest].map(p=>p.evaluate(()=>({
+    phase:window.AetherGame.get()?.phase,turn:window.AetherGame.get()?.turn,
+    round:window.AetherGame.get()?.round,roomstatus:document.getElementById('roomstatus')?.textContent,
+    linked:document.getElementById('duel-link-status')?.textContent,
+    dataChannel:window.__rtcTest?.channel?.readyState,
+    inputDisabled:document.getElementById('end')?.disabled,
+    error:document.getElementById('instruction')?.textContent
+   }))));
+   console.error('RTC TURN DIAGNOSTICS',JSON.stringify({round,inspect,errors}));
+   throw e;
+  }
   await awaitValue(guest,()=>window.AetherGame.get().round===round+1,
    'Guest did not receive ACK after guest move '+round);
   const states=await Promise.all([host,guest].map(p=>p.evaluate(()=>{
