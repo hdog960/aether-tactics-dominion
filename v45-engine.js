@@ -2814,6 +2814,73 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
  },
+ // v4.6.4: every Chronicle entry is terminal, bounded, idempotent and PvE-only.
+ qaV464Chronicle:()=>{
+  const checks=[],check=(name,pass)=>checks.push({name,pass:!!pass});
+  const backup=JSON.stringify(profile),oldS=S,oldMode=mode,oldSeat=localSeat;
+  const storeKeys=[PROFILE_STORE,'aether-dominion-v04'];
+  const previous=storeKeys.map(key=>localStorage.getItem(key));
+  const win=hp=>{S.phase='over';S.winner=0;S.hp[0]=hp;return awardMatch()};
+  try{
+   profile.gauntlet={version:1,attempts:0,clears:0,bestStage:0,
+    firstClearRewarded:false,pathClears:{},pathFirstRewards:{},
+    fluxClears:0,fluxFirstRewarded:false,current:null};
+   profile.claimed={};profile.mastery={};profile.masteryClaims={};
+   profile.masteryContracts={};profile.masteryVersatilityBest=0;
+   startGauntlet('ironbound',true);
+   const first=profile.gauntlet.current,preview=gauntletStatus().stageForecast.ironbound;
+   check('Ironbound forecast displays real enemy Core and recovery',
+    preview.startCore===20&&preview.heal===3&&
+    preview.enemyCores.join(',')==='26,29,32');
+   S.hp[0]=11;
+   check('Hall shows live Core instead of starting Core',
+    gauntletStatus().current.liveCore===11&&gauntletStatus().current.core===20);
+   win(10);
+   check('A stage-one win does not archive an unfinished run',
+    first.status==='ready'&&gauntletStatus().chronicle.length===0);
+   startQuickMatch();
+   check('Leaving a ready run archives one abandonment',
+    first.status==='abandoned'&&gauntletStatus().chronicle[0].result==='abandoned'&&
+    gauntletStatus().chronicle[0].wins===1);
+   startGauntlet('ironbound',true);
+   const second=profile.gauntlet.current;
+   win(18);continueGauntlet();win(14);continueGauntlet();
+   const clear=win(9),after=gauntletStatus();
+   check('Completing three stages archives a single clear',
+    clear.gauntlet.status==='cleared'&&after.chronicle[0].id===second.id&&
+    after.chronicle[0].stage===3&&after.chronicle[0].core===9);
+   check('Flux and classic best-Core records stay separate',
+    after.bestFluxCoreByPath.ironbound===9&&!after.bestCoreByPath.ironbound);
+   const oldGold=profile.gold,history=JSON.stringify(after.chronicle);
+   awardMatch();archiveGauntletRun(second,'cleared');
+   check('Replay of a result gives neither another Chronicle entry nor gold',
+    JSON.stringify(gauntletStatus().chronicle)===history&&profile.gold===oldGold);
+   startGauntlet('ironbound',true);
+   win(20);continueGauntlet();win(17);continueGauntlet();win(6);
+   check('A weaker repeated clear does not replace the best Core record',
+    gauntletStatus().bestFluxCoreByPath.ironbound===9);
+   startGauntlet('wayfinder',false);
+   const ordinary=profile.gauntlet.current;
+   S.phase='over';S.winner=1;S.hp[0]=0;awardMatch();
+   check('Defeats record the actual path without a clear reward',
+    gauntletStatus().chronicle[0].id===ordinary.id&&
+    gauntletStatus().chronicle[0].result==='failed');
+   check('Chronicle order follows attempts and excludes active runs',
+    gauntletStatus().chronicle.length===4&&
+    gauntletStatus().chronicle[3].id===first.id);
+   check('Original match schema and sixty-card catalogue remain unchanged',
+    S.version===4&&CARD_KEYS.length===60);
+   check('Chronicle is read-only and adds no progression contracts',
+    MASTERY_CONTRACTS.length===6&&
+    !MASTERY_CONTRACTS.some(c=>c.id.includes('chronicle')));
+  }catch(e){checks.push({name:'Unhandled Chronicle exception',pass:false,detail:String(e.stack||e)})}
+  finally{
+   profile=JSON.parse(backup);S=oldS;mode=oldMode;localSeat=oldSeat;
+   storeKeys.forEach((key,i)=>previous[i]===null?localStorage.removeItem(key):
+    localStorage.setItem(key,previous[i]));
+  }
+  return{pass:checks.length===12&&checks.every(c=>c.pass),checks};
+ },
  // v4.6.3: actual battlefield omens and legacy-saves remain independent.
  qaV463Flux:()=>{
   const checks=[],check=(name,pass,details='')=>checks.push({name,pass:!!pass,details});
