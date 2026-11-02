@@ -2694,6 +2694,22 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    value=unit&&unit.team===1&&undertowLanding(unit,0)?
     Math.min(power,unit.hp+unit.shield)*1.5+
     (unit.range>=2?3:1)+(high.has(K(unit.x,unit.y))?1.5:0):0;
+  }else if(type==='breach'){
+   value=unit&&unit.team===1&&unit.shield>0?
+    Math.min(2,unit.shield)*1.75+Math.min(power,unit.hp+Math.max(0,unit.shield-2))*1.2+
+    (unit.atk||0)*.25:0;
+  }else if(type==='gale'){
+   const mover=galePassenger(0,x,y);
+   value=mover?(springs.includes(K(x,y))&&!springs.includes(K(mover.x,mover.y))?6.1:0)+
+    ((S.hazards||[]).includes(K(mover.x,mover.y))?3.6:0):0;
+  }else if(type==='covenant'){
+   const friendCount=self.filter(v=>v.id!==unit?.id&&unit&&d(v,unit)<=2).length;
+   value=unit&&unit.team===0&&unit.hp<=3&&friendCount>0?
+    Math.min(friendCount,2)*3.1+(unit.hp<=2?2.1:0):0;
+  }else if(type==='refrain'){
+   const chained=foes.some(v=>unit&&v.id!==unit.id&&d(v,unit)<=2);
+   value=unit&&unit.team===1&&(unit.rooted||unit.burning)?
+    Math.min(power,unit.hp+unit.shield)*1.75+(chained?3:0):0;
   }else if(type==='reprisal'){
    value=unit&&unit.team===0&&!unit.reprisal?
     Math.min(2,MAX_SHIELD-(unit.shield||0))*1.5+
