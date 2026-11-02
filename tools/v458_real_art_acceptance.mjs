@@ -83,7 +83,7 @@ try{
   window.AetherScene.sync(g,0,{unit:null,card:-1,tributes:[]});
   // Refresh the REAL board DOM. Old overlay <img> sprites otherwise cover
   // the new painted canvas units despite drawImage events being recorded.
-  document.querySelector('#board button[data-x="0"][data-y="4"]')?.click();
+  document.querySelector('#board button[data-x="3"][data-y="3"]')?.click();
   const panel=document.querySelector('#qa-panel');if(panel)panel.style.display='none';
  });
  await page.waitForFunction(()=>
