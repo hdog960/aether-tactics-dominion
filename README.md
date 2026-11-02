@@ -21,6 +21,10 @@ Open in Safari; Share → Add to Home Screen. Updates to `main` publish through 
 ## Saves
 Commander progression, card upgrades, and campaign completion are stored in the device's local browser storage. Saved solo match snapshots retain the existing v4 format. Private tabs, clearing website data, or changing devices can lose progress. There is no cloud account synchronization yet.
 
+## v4.7.2 — First-join reliability and true browser-to-browser RTC (candidate)
+
+A private duel host now announces that it is ready for a guest deck, while the guest retries the same 24-card loadout a limited number of times until an actual battle snapshot arrives. Duplicate deck deliveries cannot reshuffle an active match. New QA includes five-round real Chromium RTCDataChannel gameplay between two mobile-size browser sessions, separate from the prior mocked protocol. **Real iPhone Safari and independent Wi-Fi/cellular pair verification remains required; this local RTC test cannot establish NAT/TURN support.** See `V472_PEER_HANDSHAKE_AND_RTC_QA.md`.
+
 ## v4.7.1 — Safe Private Duel recovery (shipped)
 
 The host now includes an action-specific acknowledgment with each guest command result. A guest with an unconfirmed command retries **that exact command ID**, with a finite watchdog, rather than accidentally submitting a second move. A compact **SYNC DUEL** control and Safari background recovery request the latest host snapshot. The full 60-card game, save keys and combat rules stay intact. Real cross-network iPhone tests are still required. See `V471_LOST_ACK_RECOVERY_QA.md`.
