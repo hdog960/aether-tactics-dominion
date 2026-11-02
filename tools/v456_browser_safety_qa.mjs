@@ -89,6 +89,43 @@ try{
   'Future UI interaction failed to save distinct aa/ab card keys');
  await future.close();
 
+
+ // Small-phone layout pass catches controls blocked by bottom dock and
+ // horizontally clipped modals. Screens are disposable, saves are temporary.
+ const small=await browser.newPage({viewport:{width:320,height:720},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+ small.on('pageerror',e=>problems.push('320px mobile: '+e.message));
+ await small.goto('http://127.0.0.1:8000/index.html',{waitUntil:'load',timeout:40000});
+ await small.waitForFunction(()=>window.AetherGame&&document.querySelector('button[data-page="cards"]'),
+  null,{timeout:20000});
+ const nav=await small.evaluate(()=>{
+  const buttons=[...document.querySelectorAll('[data-page]')].filter(e=>e.closest('nav'));
+  return buttons.map(e=>{const b=e.getBoundingClientRect();
+   return{label:e.dataset.page,left:b.left,right:b.right,width:b.width,height:b.height}})
+ });
+ assert(nav.length===5&&nav.every(b=>b.width>=34&&b.height>=30&&b.left>=-2&&b.right<=322),
+  'Bottom game dock clipped at 320px: '+JSON.stringify(nav));
+ await small.locator('button[data-page="cards"]').click();
+ assert(await small.locator('#codex-list button[data-inspect]').count()>=48,
+  'Narrow phone cannot browse the complete 48-card Grimoire');
+ await small.locator('#open-builder').click();
+ const armory=await small.evaluate(()=>{
+  const panel=document.querySelector('.deck-panel')?.getBoundingClientRect();
+  const close=document.querySelector('#deck-close')?.getBoundingClientRect();
+  const vault=document.querySelector('#deck-slots')?.getBoundingClientRect();
+  const footer=document.querySelector('#deck-save')?.getBoundingClientRect();
+  return{panel:panel&&{left:panel.left,right:panel.right},
+   close:close&&{left:close.left,right:close.right},
+   vault:vault&&{left:vault.left,right:vault.right},
+   footer:footer&&{left:footer.left,right:footer.right}}
+ });
+ assert(armory.panel&&armory.panel.left>=-3&&armory.panel.right<=323&&
+  armory.close?.left>=0&&armory.close?.right<=322&&
+  armory.vault?.left>=-2&&armory.vault?.right<=322,
+  '320px Armory geometry is clipped: '+JSON.stringify(armory));
+ await small.locator('#deck-cancel').click();
+ await small.screenshot({path:'art/v456-320px-mobile-dock-qa.png'});
+ await small.close();
+
  assert(problems.length===0,'Browser exception: '+problems.join('; '));
  console.log(JSON.stringify({pass:true,qa:report,public:cards,errors:problems},null,2));
 }finally{await browser.close()}
