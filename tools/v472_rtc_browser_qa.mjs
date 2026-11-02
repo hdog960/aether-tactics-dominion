@@ -120,12 +120,27 @@ try{
   'Guest never received first host-authoritative RTC snapshot',35000);
  assert(await host.locator('#duel-link-status').getAttribute('data-link')==='linked',
   'Host private-link indicator is not connected');
+ // A real summoned card is stronger evidence than exchanging END TURN only.
+ await host.locator('#hand button[data-card="0"]').click();
+ const deployCount=await host.locator('#board button.showdeploy').count();
+ assert(deployCount>0,'Host cannot select legal vanguard deployment squares');
+ await host.locator('#board button.showdeploy').first().click();
+ await awaitValue(guest,()=>window.AetherGame.get().units.length===5,
+  'Guest did not receive host actual card deployment');
  const steps=[];
  for(let round=1;round<=5;round++){
   await awaitValue(host,()=>window.AetherGame.get().turn===0,'Host did not regain turn '+round);
   await host.locator('#end').click();
   await awaitValue(guest,()=>window.AetherGame.get().turn===1,
    'Guest did not receive host move '+round);
+  if(round===1){
+   await guest.locator('#hand button[data-card="0"]').click();
+   assert(await guest.locator('#board button.showdeploy').count()>0,
+    'Guest cannot select legal summoned creature deployment squares');
+   await guest.locator('#board button.showdeploy').first().click();
+   await awaitValue(host,()=>window.AetherGame.get().units.length===6,
+    'Host did not apply guest actual card deployment');
+  }
   await guest.locator('#end').click();
   try{
    await awaitValue(host,target=>window.AetherGame.get().round===target,
@@ -157,6 +172,6 @@ try{
  assert(!errors.length,'Browser errors: '+errors.join('; '));
  console.log(JSON.stringify({pass:true,transport:'real browser RTCDataChannel',
   signaling:'Playwright local SDP exchange; not internet/NAT',
-  rounds:steps.length,final:steps.at(-1),errors},null,2));
+  rounds:steps.length,cardDeployments:2,final:steps.at(-1),errors},null,2));
  await host.close();await guest.close();
 }finally{await browser.close()}
