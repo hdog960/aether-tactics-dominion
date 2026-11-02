@@ -75,6 +75,7 @@ try{
  info.completed=completed;
  info.link=await page.locator('#duel-link-status').getAttribute('data-link');
  info.pass=info.round===6&&completed.length===5&&
+  info.cardPlayed===true&&completed.every(x=>x.units===6)&&
   (role==='host'||info.rejoined===true)&&info.link==='linked'&&!errors.length;
  await page.close();
 }catch(e){info.error=String(e.stack||e).slice(0,700)}
