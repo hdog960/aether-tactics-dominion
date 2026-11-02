@@ -240,6 +240,11 @@ if(!profile.masteryClaims||typeof profile.masteryClaims!=='object')profile.maste
 if(!profile.gauntlet||profile.gauntlet.version!==1)profile.gauntlet={
  version:1,attempts:0,clears:0,bestStage:0,firstClearRewarded:false,current:null
 };
+// Optional v4.6.1 branches: preserve all old runs, counters and rewards.
+if(!profile.gauntlet.pathClears||typeof profile.gauntlet.pathClears!=='object')
+ profile.gauntlet.pathClears={};
+if(!profile.gauntlet.pathFirstRewards||typeof profile.gauntlet.pathFirstRewards!=='object')
+ profile.gauntlet.pathFirstRewards={};
 function saveProfile(){try{localStorage.setItem(PROFILE_STORE,JSON.stringify(profile))}catch(e){}}
 function xpNeeded(level){return 90+(level-1)*45}
 function cardLevel(k){return Math.max(1,Math.min(MAX_CARD_LEVEL,profile.levels[k]||1))}
@@ -323,6 +328,17 @@ function awardMatch(){
      profile.copies[copy]=(profile.copies[copy]||0)+1;rewards.push(copy);
      gauntletResult={status:'cleared',stage:3,firstClear:true,bonusGold:180,bonusXP:210,copy};
     }else gauntletResult={status:'cleared',stage:3,firstClear:false};
+    const path=GAUNTLET_PATHS[run.path]||GAUNTLET_PATHS.wayfinder;
+    profile.gauntlet.pathClears||={};profile.gauntlet.pathFirstRewards||={};
+    profile.gauntlet.pathClears[path.id]=(profile.gauntlet.pathClears[path.id]||0)+1;
+    // Only optional challenge paths award a small one-time trophy bonus.
+    const bonus=path.firstGold||0;
+    if(bonus&&!profile.gauntlet.pathFirstRewards[path.id]){
+     profile.gauntlet.pathFirstRewards[path.id]=true;
+     profile.gold+=bonus;coins+=bonus;
+     gauntletResult.pathBonusGold=bonus;
+    }
+    gauntletResult.path=path.id;
    }else gauntletResult={status:'ready',stage:run.stage};
   }else{
    run.status='failed';
@@ -363,8 +379,11 @@ function gauntletStatus(){
  const g=profile.gauntlet,run=g.current;
  return{attempts:g.attempts,clears:g.clears,bestStage:g.bestStage,
    firstClearRewarded:g.firstClearRewarded,
+   pathClears:{...(g.pathClears||{})},pathFirstRewards:{...(g.pathFirstRewards||{})},
+   paths:Object.values(GAUNTLET_PATHS).map(v=>({id:v.id,name:v.name,description:v.description,
+    firstGold:v.firstGold,clears:g.pathClears?.[v.id]||0})),
    current:run?{id:run.id,stage:run.stage,wins:run.wins,core:run.core,
-    status:run.status,deckSize:run.deck?.length||0}:null};
+    status:run.status,deckSize:run.deck?.length||0,path:run.path||'wayfinder'}:null};
 }
 function profileSummary(){
  return {level:profile.level,xp:profile.xp,xpNext:xpNeeded(profile.level),gold:profile.gold,
@@ -655,6 +674,15 @@ function startMission(id,qa=false,planKind=null){
 
 // Rift Gauntlet v4.6.0: three consecutive autonomous solo battles.
 // A run snapshots the deck and ranks and uses only additive profile fields.
+// Three genuinely different PvE routes. Pure stage modifiers, never PvP.
+const GAUNTLET_PATHS={
+ wayfinder:{id:'wayfinder',name:'Wayfinder',description:'Classic Gauntlet. Restore 4 Core HP between battles.',heal:4,
+  startHP:24,enemyHP:0,bonusAeth:0,shield:0,firstGold:0},
+ stormbound:{id:'stormbound',name:'Stormbound',description:'Restore only 2 Core HP. Enemy Cores gain 3 HP; begin each stage with 2 extra Aeth.',heal:2,
+  startHP:24,enemyHP:3,bonusAeth:2,shield:0,firstGold:70},
+ ironbound:{id:'ironbound',name:'Ironbound',description:'Start at 20 Core HP; restore 3 between battles. Enemy Cores gain 2 HP; your two starters gain 1 shield.',heal:3,
+  startHP:20,enemyHP:2,bonusAeth:0,shield:1,firstGold:100}
+};
 const GAUNTLET_STAGES=[
  {name:'Whispering Gate',region:'verdant',style:'Skirmish',enemyHP:24,tier:1,
   detail:'The green breach tests the mobility of your 24-card deck.'},
@@ -665,6 +693,7 @@ const GAUNTLET_STAGES=[
 ];
 function buildGauntletStage(run){
  const stage=GAUNTLET_STAGES[run.stage-1];
+ const path=GAUNTLET_PATHS[run.path]||GAUNTLET_PATHS.wayfinder;
  if(!stage||!checkDeck(run.deck)||run.status!=='active')return false;
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
  seed('ai');
@@ -684,9 +713,12 @@ function buildGauntletStage(run){
  }
  draw(1,Math.max(0,4-S.hands[1].length));
  S.gauntletRunId=run.id;S.gauntletStage=run.stage;S.gauntletName=stage.name;
+ S.gauntletPath=path.id;
  S.gauntletDetail=stage.detail;
- S.hp[0]=run.stage===1?24:Math.min(24,Math.max(1,run.core+4));
- S.hp[1]=stage.enemyHP;S.coreMax=[24,stage.enemyHP];
+ S.hp[0]=run.stage===1?path.startHP:Math.min(24,Math.max(1,run.core+path.heal));
+ S.hp[1]=stage.enemyHP+path.enemyHP;S.coreMax=[24,S.hp[1]];
+ if(path.bonusAeth)S.energy[0]=Math.min(10,S.energy[0]+path.bonusAeth);
+ if(path.shield)for(const u of S.units.filter(u=>u.team===0).slice(0,2))grantShield(u,path.shield);
  setArena(stage.region);
  if(run.stage===3){
   const guard=unit('aj',1,3,2,true);
@@ -695,11 +727,12 @@ function buildGauntletStage(run){
  }
  $('mode-ai').classList.add('active');$('mode-online').classList.remove('active');
  $('lobby').classList.add('hidden');
- message('<b>RIFT GAUNTLET · '+run.stage+'/3 · '+stage.name+'</b>',stage.detail+
-  ' · CORE '+S.hp[0]+'/24. Each victory restores only 4 health before the next stage.');
+ message('<b>RIFT GAUNTLET · '+path.name.toUpperCase()+' · '+run.stage+'/3 · '+stage.name+'</b>',
+  stage.detail+' · CORE '+S.hp[0]+'/24 · '+path.description);
  save();render();return true;
 }
-function startGauntlet(){
+function startGauntlet(chosenPath='wayfinder'){
+ if(!Object.prototype.hasOwnProperty.call(GAUNTLET_PATHS,chosenPath))return false;
  const current=profile.gauntlet.current;
  if(current?.status==='active'&&S?.gauntletRunId===current.id&&
   S.gauntletStage===current.stage&&S.phase==='playing')return true;
@@ -710,7 +743,8 @@ function startGauntlet(){
  }
  if(current?.status==='active')current.status='abandoned';
  const run={id:'rift-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
-  stage:1,wins:0,core:24,status:'active',deck:chosenDeck.slice(),
+  stage:1,wins:0,core:GAUNTLET_PATHS[chosenPath].startHP,
+  path:chosenPath,status:'active',deck:chosenDeck.slice(),
   ranks:Object.fromEntries(chosenDeck.map(k=>[k,cardLevel(k)])),
   tier:Math.max(1,Math.min(5,Math.floor(chosenDeck.reduce((n,k)=>n+cardLevel(k),0)/24)))};
  profile.gauntlet.attempts++;profile.gauntlet.current=run;
@@ -2052,7 +2086,7 @@ function renderLabels(){
 function render(){
  if(!S)return;
  const my=localSeat,enemy=1-my,mirror=my===1;
- if($('battle-mode-tag'))$('battle-mode-tag').textContent=S.mode==='online'?'♜ PRIVATE DUEL':S.gauntletRunId?'✦ RIFT GAUNTLET '+S.gauntletStage+'/3':S.missionId?'🗺 CAMPAIGN':'⚔ SOLO BATTLE';
+ if($('battle-mode-tag'))$('battle-mode-tag').textContent=S.mode==='online'?'♜ PRIVATE DUEL':S.gauntletRunId?'✦ RIFT '+(GAUNTLET_PATHS[S.gauntletPath]?.name||'Gauntlet')+' '+S.gauntletStage+'/3':S.missionId?'🗺 CAMPAIGN':'⚔ SOLO BATTLE';
  const coreMax=[Math.max(24,S.coreMax?.[0]||24),Math.max(24,S.coreMax?.[1]||24)];
  $('selfhp').innerHTML=S.hp[my]+' <small>/ '+coreMax[my]+'</small>';
  $('rivalhp').innerHTML=S.hp[enemy]+' <small>/ '+coreMax[enemy]+'</small>';
@@ -2647,6 +2681,79 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
   }catch(e){checks.push({name:'Runtime exception',pass:false,detail:String(e)})}
   finally{startQuickMatch()}
   return{pass:checks.length===13&&checks.every(q=>q.pass),checks};
+ },
+ // v4.6.1: three independent Rift Paths with no save-schema migration.
+ qaV461Paths:()=>{
+  const checks=[],test=(name,ok)=>checks.push({name,pass:!!ok});
+  const before=JSON.stringify(profile),state=S,savedMode=mode,seat=localSeat;
+  const keys=[PROFILE_STORE,'aether-dominion-v04'],stored=keys.map(k=>localStorage.getItem(k));
+  const win=hp=>{S.phase='over';S.winner=0;S.hp[0]=hp;return awardMatch()};
+  try{
+   profile.gauntlet={version:1,attempts:0,clears:0,bestStage:0,
+    firstClearRewarded:false,current:null,pathClears:{},pathFirstRewards:{}};
+   profile.claimed={};profile.mastery={};profile.masteryClaims={};
+   profile.gold=0;profile.xp=0;profile.level=1;profile.copies={};
+   test('Unknown path rejected without beginning or charging an attempt',
+    startGauntlet('invented')===false&&profile.gauntlet.attempts===0);
+   test('Stormbound begins with two bonus Aeth and a tougher enemy Core',
+    startGauntlet('stormbound')&&S.gauntletPath==='stormbound'&&
+    S.hp[0]===24&&S.hp[1]===27&&S.energy[0]===5);
+   const storm=profile.gauntlet.current;
+   test('Run snapshots exact chosen path and original 24-card deck',
+    storm.path==='stormbound'&&storm.deck.length===24&&storm.stage===1);
+   win(14);
+   test('Stormbound carry heal is two, rather than the classic four',
+    continueGauntlet()&&S.gauntletStage===2&&S.hp[0]===16&&
+    S.hp[1]===30&&S.energy[0]===5);
+   const stageID=S.matchId;save();S=null;const loaded=load();
+   test('Version-four saved match preserves path, stage and match ID across reload',
+    loaded&&S.gauntletPath==='stormbound'&&S.gauntletStage===2&&
+    S.matchId===stageID&&S.version===4);
+   win(8);continueGauntlet();
+   test('Stormbound final Core and restore remain route-specific',
+    S.gauntletStage===3&&S.hp[0]===10&&S.hp[1]===33);
+   const result=win(2),extra=result?.gauntlet?.pathBonusGold;
+   test('First Stormbound clear receives a bounded, one-time path trophy',
+    extra===70&&profile.gauntlet.pathClears.stormbound===1&&
+    profile.gauntlet.pathFirstRewards.stormbound&&
+    profile.gauntlet.clears===1);
+   const oldGold=profile.gold,oldClear=profile.gauntlet.pathClears.stormbound;
+   awardMatch();
+   test('Reload/result repaint cannot repeat path bonus or clear count',
+    profile.gold===oldGold&&profile.gauntlet.pathClears.stormbound===oldClear);
+   startGauntlet('stormbound');win(24);continueGauntlet();
+   win(24);continueGauntlet();const duplicate=win(24);
+   test('Repeating Stormbound increases clears but never repeats its gold bonus',
+    profile.gauntlet.pathClears.stormbound===2&&
+    duplicate.gauntlet.pathBonusGold===undefined);
+   test('Ironbound starts damaged, shields two allies, and fortifies enemies',
+    startGauntlet('ironbound')&&S.hp[0]===20&&S.hp[1]===26&&
+    S.units.filter(u=>u.team===0).slice(0,2).every(u=>u.shield>=1));
+   win(14);continueGauntlet();
+   test('Ironbound restores three Core HP and retains selected path',
+    S.hp[0]===17&&S.gauntletPath==='ironbound'&&S.hp[1]===29);
+   win(7);continueGauntlet();const iron=win(2);
+   test('Ironbound first clear pays its own once-only bonus, not global first-clear again',
+    iron.gauntlet.pathBonusGold===100&&iron.gauntlet.firstClear===false&&
+    profile.gauntlet.pathClears.ironbound===1);
+   // Compatibility: old v4.6.0 profile/run has no path or path records.
+   const old=profile.gauntlet;
+   profile.gauntlet={version:1,attempts:1,clears:0,bestStage:1,
+    firstClearRewarded:false,current:null};
+   const display=gauntletStatus();
+   test('Pre-v4.6.1 profile with no path fields still renders as Wayfinder',
+    display.paths.length===3&&display.paths[0].clears===0&&
+    startGauntlet()&&S.gauntletPath==='wayfinder'&&S.hp[1]===24);
+   profile.gauntlet=old;
+   test('Match saves retain version 4 and 60 original cards remain available',
+    S.version===4&&CARD_KEYS.length===60);
+  }catch(e){checks.push({name:'Unhandled path QA exception',pass:false,detail:String(e.stack||e)})}
+  finally{
+   profile=JSON.parse(before);S=state;mode=savedMode;localSeat=seat;
+   keys.forEach((k,i)=>{if(stored[i]===null)localStorage.removeItem(k);
+    else localStorage.setItem(k,stored[i])});
+  }
+  return{pass:checks.length===14&&checks.every(x=>x.pass),checks};
  },
  // Isolated real v4.6.0 progression tests; all local keys restored.
  qaV46Gauntlet:()=>{
