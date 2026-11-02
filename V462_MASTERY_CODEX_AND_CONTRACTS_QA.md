@@ -25,6 +25,10 @@ The combined account-wide maximum additional contract payout is **615 gold**, ea
 
 Added `profile.masteryContracts` and `profile.masteryVersatilityBest` to the existing `aether-dominion-profile-v21` format, without renaming/resetting keys, modifying `aether-dominion-v04` match snapshots, or changing the three `aether-dominion-loadouts-v452` slots and `aether-dominion-deck-v20` current deck. Old mastery counts and previous path clear records qualify toward new contracts. Existing `profile.claimed[matchId]` and new per-contract claimed flags prevent repeating earned bonuses when results are re-rendered or the same save is restored.
 
+## Verified QA evidence
+
+**Final passing runs:** [real-engine / release safety](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41504616831) and [actual phone-sized browser](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41504581327). The game suite passed all 17 new contracts cases, 20 prior Gauntlet tests, earlier card/campaign regressions, 180 simulated battles without invalid action states, and the release guard for immutable saves and offline assets. The browser test passed after correcting an obsolete Rift Path test selector. Four real Chromium screenshots were captured, including the 390px Forge career contracts and 320px Hall, and manually inspected.
+
 ## QA evidence
 
 - [Game mechanics and legacy regressions](https://github.com/hdog960/aether-tactics-dominion/actions/workflows/v462-rules-qa.yml): 17 new real-engine tests for eligible wins, loss behavior, repeat claims, 8-unique-card threshold, multiple Rift routes, old v21 profile persistence, unchanged online rules, entire 60-card mastery data; plus all previous v4.5.3–v4.6.1 systems, campaign bosses and choices, and 180 simulated normal battles.
