@@ -21,6 +21,10 @@ Open in Safari; Share → Add to Home Screen. Updates to `main` publish through 
 ## Saves
 Commander progression, card upgrades, and campaign completion are stored in the device's local browser storage. Saved solo match snapshots retain the existing v4 format. Private tabs, clearing website data, or changing devices can lose progress. There is no cloud account synchronization yet.
 
+## v4.7.0 — Private Duel reliability (development candidate)
+
+Guest moves now carry host snapshot revisions and cannot be spammed while awaiting confirmation. Host ACKs both accepted and rejected actions; reconnected clients get the original authoritative duel rather than a reshuffled guest deck. The game clearly displays link state on the battlefield. Added simulated two-peer networking tests, phone-sized Chromium checks, and strict release guards. **Real long-distance two-device iPhone Safari testing is still outstanding, so the full v4.7 milestone is not complete.** See `V470_PRIVATE_DUEL_RELIABILITY.md`.
+
 ## Multiplayer caveat
 The Duel Chamber uses experimental peer-to-peer WebRTC and public signaling relays. Real-device, cross-network testing remains necessary. There is no production ranked matchmaking, anti-cheat server, authoritative player account system, or leaderboards.
 
