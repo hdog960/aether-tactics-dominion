@@ -22,7 +22,7 @@ try{
  });
  assert(source.status.complete&&source.status.dimensions.join('x')==='512x96'&&
   source.images===4&&source.distinct===4&&source.painted&&
-  source.checks.pass&&source.checks.checks.length===14,
+  source.checks.pass&&source.checks.checks.length===16,
   'V457 original paintings or gameplay failed '+JSON.stringify(source));
  await qa.evaluate(()=>{
   const overlay=document.createElement('section');
