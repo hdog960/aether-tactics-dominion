@@ -62,8 +62,10 @@ Twelve-entry per-run Chronicle, separated classic/Flux best surviving Core by pa
 ### v4.6 — Further Replayability & Progression (in progress)
 Continue with more varied Gauntlet challenges, longer-term mastery objectives, progression pacing and anti-repeat safeguards. Never reset existing save keys or inflate stat power in private duels.
 
-### v4.7 — Multiplayer Reliability
-First prove private duel between actual devices and network configurations. Only then plan authoritative profiles, matchmaking/ranking, and seasonal rewards. Do not advertise ranked matchmaking as currently available.
+### v4.7 — Multiplayer Reliability (in progress)
+**v4.7.0:** Bounded and sequenced private duel messages, host revision checks, accepted/rejected ACK snapshots, one-order-at-a-time guest controls, immutable opponent decks after handshake, real match reconnect/recovery, stale room callback guards, clearer battlefield link status and automated mock-peer / browser QA. No solo balance or saved-key changes. Details: `V470_PRIVATE_DUEL_RELIABILITY.md`.
+
+**Remaining acceptance gate:** Real two-device iPhone Safari duel across independent Wi-Fi/cellular networks, reconnect test matrix and network failure handling; only after independent human/device verification can v4.7 be called complete. No claim of current production matchmaking, authoritative accounts, anti-cheat or ranked mode. Then **STOP** for creator roadmap review.
 
 ## Mandatory stopping point after v4.7
 **User-approved development boundary:** Complete v4.5 card expansion, v4.6 progression/replayability and v4.7 multiplayer reliability, then **STOP** and ask the creator for fresh direction. Do not begin v5.0, a new expansion, a revised monetization plan, or any post-v4.7 roadmap without the creator's input. This is a future stop condition, **not** a statement that v4.7 is completed.

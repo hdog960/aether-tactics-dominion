@@ -1,0 +1,38 @@
+name: Dominion v4.7.0 real phone-sized host and guest duel QA
+on:
+  push:
+    branches: [dev/v470-duel-reliability, main]
+    paths:
+      - tools/v470_browser_qa.mjs
+      - v45-engine.js
+      - v45-qa-engine.js
+      - v30-net.js
+      - v470-duel.css
+      - index.html
+      - v30.html
+      - .github/workflows/v470-browser-qa.yml
+  pull_request:
+    branches: [main]
+permissions: {contents: read}
+jobs:
+  host-and-guest-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-v470.log 2>&1 &
+      - run: node tools/v470_browser_qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dominion-v470-host-guest-phone-screenshots
+          path: |
+            art/v470-host-linked-390px.png
+            art/v470-host-paused-390px.png
+            art/v470-guest-pending-320px.png
+          if-no-files-found: ignore
+          retention-days: 7

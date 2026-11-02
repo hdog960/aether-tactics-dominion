@@ -1,0 +1,33 @@
+name: Dominion v4.7.0 private-duel peer protocol and prior combat regressions
+on:
+  push:
+    branches: [dev/v470-duel-reliability, main]
+    paths:
+      - v30-net.js
+      - v45-engine.js
+      - v45-qa-engine.js
+      - tools/v470_network_qa.mjs
+      - tools/v470_release_guard.mjs
+      - tools/v464_rules_qa.mjs
+      - index.html
+      - v30.html
+      - sw.js
+      - DOMINION_ROADMAP.md
+      - .github/workflows/v470-rules-qa.yml
+  pull_request:
+    branches: [main]
+permissions: {contents: read}
+jobs:
+  peer-and-game:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/v470_network_qa.mjs
+      - run: node tools/v464_rules_qa.mjs
+      - run: node tools/v470_release_guard.mjs
+      - run: |
+          cmp v45-engine.js v45-qa-engine.js
+          cmp v45-scene.js v45-qa-scene.js

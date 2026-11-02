@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.6.4 — Rift Chronicle and Gauntlet polish**
+**Current source release: v4.7.0 — Private Duel Reliability (experimental; real-device verification pending)**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -9,7 +9,7 @@ A free, iPhone-first illustrated tactical fantasy card battler. Choose what to p
 ## Start here
 - **Play**: Commander's Hall — select Quick Battle, Story Campaign or Private Duel; continue a previously saved solo battle.
 - **Map**: Riftfront Conquest — four illustrated regions with 12 sequential missions and 3 endgame Crown Trials.
-- **Cards**: the Grimoire — browse the 48-card collection or build a custom deck.
+- **Cards**: the Grimoire — browse the 60-card collection or build a custom deck.
 - **Forge**: level, gold, XP, card upgrades and six earnable milestone medallions.
 - **Duel**: experimental peer-to-peer private match invitations.
 
@@ -21,12 +21,16 @@ Open in Safari; Share → Add to Home Screen. Updates to `main` publish through 
 ## Saves
 Commander progression, card upgrades, and campaign completion are stored in the device's local browser storage. Saved solo match snapshots retain the existing v4 format. Private tabs, clearing website data, or changing devices can lose progress. There is no cloud account synchronization yet.
 
+## v4.7.0 — Private Duel reliability (development candidate)
+
+Guest moves now carry host snapshot revisions and cannot be spammed while awaiting confirmation. Host ACKs both accepted and rejected actions; reconnected clients get the original authoritative duel rather than a reshuffled guest deck. The game clearly displays link state on the battlefield. Added simulated two-peer networking tests, phone-sized Chromium checks, and strict release guards. **Real long-distance two-device iPhone Safari testing is still outstanding, so the full v4.7 milestone is not complete.** See `V470_PRIVATE_DUEL_RELIABILITY.md`.
+
 ## Multiplayer caveat
 The Duel Chamber uses experimental peer-to-peer WebRTC and public signaling relays. Real-device, cross-network testing remains necessary. There is no production ranked matchmaking, anti-cheat server, authoritative player account system, or leaderboards.
 
 ## Technical structure
 - `index.html` production entrypoint and `v30.html` alternate entry
-- `v45-engine.js` live v4.5.1 rules, AI, new spells, progression, campaign execution, profile, and persistence (`v30-engine.js` is retained for historical builds)
+- `v45-engine.js` live v4.7.0 combat rules, authoritative duel actions, progression, campaign execution, profile, and persistence (`v30-engine.js` remains historical)
 - `v30-campaign-data.js` campaign and region definitions
 - `v30-shell.js` bottom-tab navigation and campaign selector
 - `v45-scene.js` live battlefield canvas with new effects, `v45-spell-art.js` WebP art adapter, and `v30-net.js` private duel networking

@@ -483,6 +483,9 @@ function profileSummary(){
 
 const rocks=new Set(['0,3','6,3','2,3','4,4']),springs=['1,3','5,4'],high=new Set(['2,2','4,2','3,3','3,4','2,5','4,5']);
 let S=null,localSeat=0,mode='ai',net=null,room='',chosenUnit=null,chosenCard=-1,inspectedTile=null,tributes=[],msg='',hint='',log='',connected=false,revision=0;
+// Reconnect safety: never accept callbacks from a departed room or permit
+// guest orders while an earlier order awaits host confirmation.
+let networkEpoch=0,duelStarted=false,duelOrderPending=false;
 let victoryDelay=null,victoryVisible=false;
 const K=(x,y)=>x+','+y,P=(x,y)=>({x,y}),d=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y),bounds=(x,y)=>x>=0&&x<7&&y>=0&&y<8;
 const entity=(x,y)=>S.units.find(u=>u.x===x&&u.y===y),core=t=>({core:true,team:t,x:3,y:t===0?7:0});
@@ -1650,7 +1653,16 @@ function apply(t,a){
  return true;
 }
 function intent(a){if(!S||S.phase!=='playing'||S.turn!==localSeat){message('<b>Not your turn.</b>','Wait for the opposing commander.');return}
- if(mode==='online'&&localSeat===1){if(net)net.intent(a);message('<b>Order sent.</b>','Waiting for the host to confirm your action.');return}
+ if(mode==='online'&&(!connected||duelOrderPending)){
+  message('<b>Orders paused.</b>',!connected?'Reconnect to your friend first.':'Waiting for the host to confirm your previous move.');return;
+ }
+ if(mode==='online'&&localSeat===1){
+  duelOrderPending=true;
+  if(!net?.intent({rev:revision,cmd:a})){
+   duelOrderPending=false;message('<b>Order not sent.</b>','Check the connection, then try again.');
+  }else message('<b>Order sent.</b>','Waiting for host confirmation.');
+  render();return;
+ }
  if(!apply(localSeat,a)){message('<b>That action is not valid.</b>','Choose a legal highlighted tile.');return}
  chosenUnit=null;chosenCard=-1;inspectedTile=null;tributes=[];revision++;
  if(mode==='online'){publish()}else if(S.phase==='playing'&&S.turn===1){aiTurn()}
@@ -2256,9 +2268,26 @@ function render(){
   $('arena-details').textContent+=' · '+mission.encounter.name.toUpperCase()+
    (S.phase==='playing'?' · NEXT RD '+(event?.nextRound||mission.encounter.first):'');
  }
- $('round').textContent=S.round;$('turnlabel').textContent=S.phase==='over'?'MATCH OVER':S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
+ $('round').textContent=S.round;
+ $('turnlabel').textContent=S.phase==='over'?'MATCH OVER':
+  S.mode==='online'&&!connected?'RECONNECTING':
+  duelOrderPending?'AWAITING HOST':
+  S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
+ const link=$('duel-link-status');
+ if(link){
+  const online=S.mode==='online',lost=online&&!connected,pending=online&&duelOrderPending;
+  link.classList.toggle('hidden',!online);
+  link.dataset.link=lost?'offline':pending?'pending':'linked';
+  link.textContent=lost?'✦ PRIVATE LINK UNAVAILABLE · Commands paused':
+   pending?'✧ ORDER SENT · Waiting for host confirmation':
+   S.phase==='waiting'?'✧ LINKED · Waiting for host to start or restore match':
+   '✦ PRIVATE LINK ACTIVE · Host validates every action';
+ }
  $('aeth').textContent=S.energy[my];$('capacity').textContent=' / '+Math.max(S.cap,S.energy[my]);
- $('deckcount').textContent=S.decks[my].length+' IN DECK';$('profile-open').textContent='LV '+profile.level;$('cycle').disabled=S.cycled[my]||S.turn!==my||S.phase!=='playing';$('end').disabled=S.turn!==my||S.phase!=='playing';
+ $('deckcount').textContent=S.decks[my].length+' IN DECK';$('profile-open').textContent='LV '+profile.level;
+ const ordersLocked=S.mode==='online'&&(!connected||duelOrderPending);
+ $('cycle').disabled=ordersLocked||S.cycled[my]||S.turn!==my||S.phase!=='playing';
+ $('end').disabled=ordersLocked||S.turn!==my||S.phase!=='playing';
  const unit=S.units.find(u=>u.id===chosenUnit),walk=new Set(unit&&!unit.moved&&!unit.rooted?movement(unit).map(z=>K(z.x,z.y)):[]),targets=new Set(unit&&!unit.attacked?[...S.units.filter(u=>u.team!==localSeat),core(enemy)].filter(z=>canAttack(unit,z)).map(z=>K(z.x,z.y)):[]);
  const card=chosenCard>=0?D[S.hands[my][chosenCard]]:null;
  // Spell targets are tile-based too. Make every legal cast square visible
@@ -2366,7 +2395,11 @@ function startAI(){
  if(activeHazards)S.hazards=activeHazards;
  message('<b>Single Player</b> · Rune Valley','Tap a card to summon, or tap an ally to command it.');render();
 }
-function disconnect(){if(net){try{net.leave()}catch(e){}net=null}room='';connected=false}
+function disconnect(){
+ networkEpoch++;duelOrderPending=false;duelStarted=false;
+ if(net){try{net.leave()}catch(e){}net=null}
+ room='';connected=false;
+}
 function startOnline(){
  abandonGauntletOnMatchReplace();
  disconnect();mode='online';localSeat=0;clearSelection();seed('online');setArena('verdant');
@@ -2377,41 +2410,88 @@ function invite(){const text=location.origin+location.pathname+'?room='+room;if(
 function join(code,host){
  if(!window.AetherNet?.ready){$('roomstatus').textContent='Network module is still loading, or unavailable. Try again with internet access.';return}
  disconnect();code=code.replace(/[^A-Z0-9]/g,'').toUpperCase().slice(0,8);if(code.length<5){$('roomstatus').textContent='Enter a room code of at least five characters.';return}
- room=code;localSeat=host?0:1;clearSelection();seed('online');
+ const ticket=networkEpoch;
+ room=code;localSeat=host?0:1;clearSelection();seed('online');revision=0;duelOrderPending=false;
  $('roomid').value=code;$('roomstatus').textContent='Connecting to public signaling relays…';$('invite').classList.toggle('hidden',!host);
  try{net=window.AetherNet.connect(code,host,{
-  join:(peer)=>{
-   connected=true;$('lobby').classList.add('hidden');
+  join:peer=>{
+   if(ticket!==networkEpoch)return;
+   connected=true;duelOrderPending=false;$('lobby').classList.add('hidden');
    if(host){
-    const progressed=S.round>1||S.turn!==0||S.units.length!==4||(S.fxSeq||0)>0;
-    S.phase=progressed?'playing':'waiting';
-    $('roomstatus').textContent=progressed?'Friend reconnected.':'Friend connected; receiving their chosen deck…';
-    if(progressed){revision++;publish()}
+    if(duelStarted){
+     if(S.phase!=='over')S.phase='playing';
+     revision++;publish();
+     $('roomstatus').textContent='Friend reconnected. Battlefield restored from the host.';
+    }else{
+     S.phase='waiting';$('roomstatus').textContent='Friend connected. Verifying their 24-card deck…';
+    }
    }else{
-    $('roomstatus').textContent='Connected. Sending your deck…';
-    net?.sendLoadout(chosenDeck.slice());
+    S.phase='waiting';
+    $('roomstatus').textContent='Connected. Sending your deck and requesting the latest match.';
+    if(!net?.sendLoadout(chosenDeck.slice()))
+     $('roomstatus').textContent='Could not send deck. Rejoin the room to retry.';
    }
-   render()
+   render();
   },
-  loadout:(cards)=>{
-   if(!host||!checkDeck(cards))return;
-   // Host installs the guest's deck before any play. Never replace a live deck.
-   if(S.round>1||S.units.length!==4||(S.fxSeq||0)>0)return;
+  loadout:cards=>{
+   if(ticket!==networkEpoch||!host||!connected||!checkDeck(cards))return;
+   if(duelStarted){publish();return;} // Never rebuild a live or completed rival deck.
+   if(S.round!==1||S.turn!==0||S.units.length!==4||(S.fxSeq||0)>0)return;
    S.decks[1]=shuffle(cards);S.hands[1]=[];S.discards[1]=[];
-   for(const k of ['v','r','a']){const i=S.decks[1].indexOf(k);if(i>=0){S.decks[1].splice(i,1);S.hands[1].push(k)}}
+   for(const k of ['v','r','a']){
+    const i=S.decks[1].indexOf(k);
+    if(i>=0){S.decks[1].splice(i,1);S.hands[1].push(k)}
+   }
    draw(1,Math.max(0,4-S.hands[1].length));
-   S.phase='playing';revision++;
-   $('roomstatus').textContent='Both decks accepted! Battle ready.';
+   duelStarted=true;S.phase='playing';revision++;
+   $('roomstatus').textContent='Both decks accepted. Private battle ready.';
    publish();render();
   },
-  leave:()=>{connected=false;$('roomstatus').textContent='Other player disconnected. Your match is paused for reconnection.';if(host&&S.phase==='playing'){S.phase='waiting';revision++;publish()}render()},
-  state:(p)=>{
-   if(host||!p?.s||p.s.version!==4||p.s.mode!=='online'||!Array.isArray(p.s.units)||p.s.units.length>30)return;
-   if(!Number.isInteger(p.rev)||p.rev<revision)return;
-   S=p.s;revision=p.rev;clearSelection();$('roomstatus').textContent=S.phase==='playing'?'Connected! '+(S.turn===1?'Your turn.':'Waiting for host turn.'):'Waiting for the host…';render()},
-  intent:(a)=>{if(!host||S.phase!=='playing'||S.turn!==1)return;if(apply(1,a)){clearSelection();revision++;publish();render()}},
-  error:(e)=>{$('roomstatus').textContent='Connection issue: '+String(e).slice(0,140)},
-  quality:(ms)=>{$('roomstatus').textContent='Connected · '+ms+' ms ping'}
+  leave:()=>{
+   if(ticket!==networkEpoch)return;
+   connected=false;duelOrderPending=false;
+   $('roomstatus').textContent='Friend disconnected. Orders paused until reconnection.';
+   if(S.phase==='playing'){
+    S.phase='waiting';
+    if(host)revision++;
+   }
+   render();
+  },
+  state:p=>{
+   if(ticket!==networkEpoch||host||!p?.s||p.s.version!==4||
+      p.s.mode!=='online'||!Array.isArray(p.s.units)||p.s.units.length>30||
+      !Array.isArray(p.s.hp)||p.s.hp.length!==2||
+      !Array.isArray(p.s.hands)||p.s.hands.length!==2||
+      !Array.isArray(p.s.decks)||p.s.decks.length!==2||
+      !['playing','waiting','over'].includes(p.s.phase)||
+      ![0,1].includes(p.s.turn))return;
+   if(!Number.isSafeInteger(p.rev)||p.rev<revision)return;
+   const rejected=duelOrderPending&&p.rev===revision;
+   S=p.s;revision=p.rev;duelOrderPending=false;clearSelection();
+   $('roomstatus').textContent=rejected?
+    'Host did not accept that action. Review the current battlefield.':
+    S.phase==='playing'?'Connected. '+(S.turn===1?'Your turn.':'Waiting for your friend.'):
+    S.phase==='over'?'Private duel completed.':'Waiting for the host…';
+   render();
+  },
+  intent:order=>{
+   if(ticket!==networkEpoch||!host||!connected)return;
+   // Host resolves only an action based on the exact accepted state revision.
+   const accepted=duelStarted&&S.phase==='playing'&&S.turn===1&&
+    order?.rev===revision&&apply(1,order.cmd);
+   if(accepted){clearSelection();revision++;}
+   // Even a rejected action gets the current authoritative snapshot as ACK.
+   publish();render();
+  },
+  error:e=>{
+   if(ticket!==networkEpoch)return;
+   if(!host)duelOrderPending=false;
+   $('roomstatus').textContent='Connection issue: '+String(e).slice(0,140);render();
+  },
+  quality:ms=>{
+   if(ticket!==networkEpoch||!connected)return;
+   $('roomstatus').textContent='Private duel linked · '+ms+' ms round-trip ping';
+  }
  });}catch(error){$('roomstatus').textContent='Could not open room: '+String(error.message||error);return}message('<b>Private room '+code+'</b>',host?'Waiting for your friend to join.':'Waiting to receive the battlefield from your friend.');render();
 }
 const board=$('board');board.innerHTML='';for(let y=0;y<8;y++)for(let x=0;x<7;x++){let b=document.createElement('button');b.type='button';b.dataset.x=x;b.dataset.y=y;board.appendChild(b)}
