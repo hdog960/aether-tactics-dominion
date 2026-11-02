@@ -8,10 +8,11 @@ const eng=read('v45-engine.js'),qa=read('v45-qa-engine.js'),
 const results=[],check=(name,pass)=>results.push({name,pass:!!pass});
 // Preserve the historic Chronicle checks when later versioned network releases
 // update the engine and PWA cache without changing Chronicle's own assets.
+const modern472=index.includes('v45-engine.js?v=472')&&secondary.includes('v45-engine.js?v=472');
 const modern471=index.includes('v45-engine.js?v=471')&&secondary.includes('v45-engine.js?v=471');
 const modern470=index.includes('v45-engine.js?v=470')&&secondary.includes('v45-engine.js?v=470');
-const engineAsset=modern471?'v45-engine.js?v=471':modern470?'v45-engine.js?v=470':'v45-engine.js?v=464';
-const cacheName=modern471?'aether-dominion-v471-duel-ack-recovery':
+const engineAsset=modern472?'v45-engine.js?v=472':modern471?'v45-engine.js?v=471':modern470?'v45-engine.js?v=470':'v45-engine.js?v=464';
+const cacheName=modern472?'aether-dominion-v472-peer-handshake':modern471?'aether-dominion-v471-duel-ack-recovery':
  modern470?'aether-dominion-v470-duel-reliability':'aether-dominion-v464-rift-chronicle';
 check('Authoritative and isolated engines stay byte-identical',eng===qa);
 check('Battle renderers stay byte-identical',
