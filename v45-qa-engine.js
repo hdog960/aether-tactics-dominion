@@ -2318,7 +2318,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    }
   }catch(err){checks.push({name:'Runtime exception',pass:false,detail:String(err)})}
   finally{startQuickMatch()}
-  return{pass:checks.length===16&&checks.every(v=>v.pass),checks};
+  return{pass:checks.length===14&&checks.every(v=>v.pass),checks};
  },
  qaV453Creatures:()=>{
   const checks=[],check=(name,ok,detail='')=>
@@ -2560,7 +2560,7 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,ca
    }
   }catch(e){checks.push({name:'Unhandled test exception',pass:false,detail:String(e.stack||e)})}
   finally{startQuickMatch()}
-  return{pass:checks.length===14&&checks.every(v=>v.pass),checks};
+  return{pass:checks.length===16&&checks.every(v=>v.pass),checks};
  },
  // v4.5.5 exact battle-law checks on real engine, isolated from public saves.
  qaV456Creatures:()=>{
