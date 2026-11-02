@@ -13,6 +13,8 @@ on:
       - v45-scene.js
       - v45-qa-scene.js
       - index.html
+      - v30.html
+      - sw.js
       - qa-v39.html
 permissions: {contents: write}
 jobs:
@@ -35,7 +37,7 @@ jobs:
       - name: Real painted Grimoire, game mechanics, Armory and spell FX
         run: node tools/v457_browser_qa.mjs
         env:
-          V457_RELEASE: '0'
+          V457_RELEASE: '1'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
