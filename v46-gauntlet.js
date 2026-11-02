@@ -3,7 +3,7 @@
  const G=window.AetherGame,N=window.DominionNav;
  if(!G?.gauntletStatus||!G?.startGauntlet||!N?.showTab)return;
  const $=id=>document.getElementById(id),title=['Whispering Gate','Frostbound Passage','Crownfall Reckoning'];
- let last='';
+ let last='',selectedPath='wayfinder';
  function render(){
   const g=G.gauntletStatus(),current=g.current,match=G.get();
   let line=current?.status==='ready'?'STAGE '+current.stage+' CLEARED · NEXT '+(current.stage+1)+'/3':
@@ -11,6 +11,20 @@
    current?.status==='cleared'?'FULL GAUNTLET CLEARED · '+g.clears+' RUNS':
    current?.status==='failed'?'RUN ENDED AT STAGE '+current.stage+' · RETRY':
    'THREE STAGES · '+g.bestStage+'/3 BEST';
+  const chosen=current?.status==='active'||current?.status==='ready'?current.path:selectedPath;
+  for(const path of g.paths||[]){
+   const button=document.querySelector('[data-rift-path="'+path.id+'"]');
+   if(button){
+    button.setAttribute('aria-pressed',String(chosen===path.id));
+    button.disabled=['active','ready'].includes(current?.status);
+   }
+   const cleared=$('rift-clear-'+path.id);
+   if(cleared)cleared.textContent=path.clears+' clear'+(path.clears===1?'':'s');
+  }
+  const detail=$('rift-path-detail'),activePath=(g.paths||[]).find(p=>p.id===chosen);
+  if(detail&&activePath)detail.textContent=activePath.description+
+   (activePath.firstGold&&!g.pathFirstRewards[activePath.id]?
+   ' · First clear: +'+activePath.firstGold+' gold':'');
   const status=$('home-gauntlet-status');
   if(status&&status.textContent!==line)status.textContent=line;
   const dots=document.querySelectorAll('#home-gauntlet .rift-progress i');
@@ -37,6 +51,11 @@
    if(markup!==last){masters.innerHTML=markup;last=markup}
   }
  }
+ document.querySelectorAll('button[data-rift-path]').forEach(button=>button.addEventListener('click',()=>{
+  const cur=G.gauntletStatus().current;
+  if(['active','ready'].includes(cur?.status))return;
+  selectedPath=button.dataset.riftPath;render();
+ }));
  $('home-gauntlet')?.addEventListener('click',()=>{
   const g=G.gauntletStatus(),state=G.get(),cur=g.current;
   if(cur?.status==='active'&&state?.gauntletRunId===cur.id&&state.phase==='playing'){
@@ -48,7 +67,7 @@
   }
   if(state?.phase==='playing'&&!state.gauntletRunId&&
    !confirm('Begin a Rift Gauntlet? Your current solo battle will be replaced. Commander, deck, and campaign progression will remain saved.'))return;
-  if(G.startGauntlet()){N.showTab('battle');render()}
+  if(G.startGauntlet(selectedPath)){N.showTab('battle');render()}
  });
  document.addEventListener('click',e=>{
   if(e.target.closest('[data-page],#battle-home,#home-forge,#home-continue,#home-campaign,#home-quick,#again,#result-rewards')){
