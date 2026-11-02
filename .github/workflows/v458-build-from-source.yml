@@ -1,0 +1,53 @@
+name: Dominion v4.5.8 build uploaded original artwork
+on:
+  push:
+    branches: [dev/v458-four-creatures]
+    paths:
+      - art/sources/v458-original-characters.png
+      - .github/workflows/v458-build-from-source.yml
+      - tools/v458_real_art_acceptance.mjs
+      - tools/v458_build_art.py
+      - index.html
+      - qa-v39.html
+      - v45-scene.js
+permissions: {contents: write}
+jobs:
+  validate-uploaded-original-art:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: dev/v458-four-creatures}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -m pip install --disable-pip-version-check numpy==1.26.4 opencv-python-headless==4.10.0.84 pillow==11.3.0
+      - name: Verify original source art exists
+        run: test -s art/sources/v458-original-characters.png
+      - name: Validate real four-figure artwork and build in-game atlases
+        run: python tools/v458_build_art.py
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-v458-local.log 2>&1 &
+      - name: Confirm four genuine character paintings and future 60-card release in Chromium
+        run: node tools/v458_real_art_acceptance.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dominion-v458-identity-and-battlefield-review
+          path: |
+            art/v458-card-sprite-identity-390px.png
+            art/v458-battlefield-four-creatures-390px.png
+            art/v458-future-60-card-grimoire-390px.png
+            art/v458-60-card-narrow-phone-320px.png
+          if-no-files-found: ignore
+      - name: Commit validated painted assets to staging only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add art/cards-creatures-v458.webp art/units-creatures-v458.png art/battlefield-frames-v458.webp art/v458-art-manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Build unique 4-character v4.5.8 painted game assets from original sheet"
+            git push origin HEAD:dev/v458-four-creatures
+          fi
