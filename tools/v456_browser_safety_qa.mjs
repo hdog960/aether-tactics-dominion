@@ -4,6 +4,9 @@ const BUILT_ART=fs.existsSync('art/v456-art-manifest.json')&&
   fs.existsSync('art/battlefield-frames-v456.webp')&&
   fs.existsSync('art/units-creatures-v456.png')&&
   fs.existsSync('art/cards-creatures-v456.webp');
+const RELEASE_CANDIDATE=/window\.DOMINION_V456_ART_RELEASE\s*=\s*true/.
+ test(fs.readFileSync('index.html','utf8'));
+if(RELEASE_CANDIDATE&&!BUILT_ART)throw Error('Cannot enable 52-card game without painted assets');
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const qa=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
 const problems=[];
@@ -92,11 +95,12 @@ try{
   deck:window.AetherGame.deckInfo(),slots:window.AetherGame.loadouts().slots.length,
   art:window.AetherArt.v456ArtStatus().complete
  }));
- assert(cards.count===48&&cards.deck.cards===24&&cards.slots===3&&
+ const newNames=['Gloam Bellkeeper','Cinderjaw Prowler','Oathmoss Devourer','Tidebreak Herald'];
+ assert(cards.count===(RELEASE_CANDIDATE?52:48)&&cards.deck.cards===24&&cards.slots===3&&
   cards.art===BUILT_ART&&
-  !['Gloam Bellkeeper','Cinderjaw Prowler','Oathmoss Devourer','Tidebreak Herald']
-   .some(name=>cards.names.includes(name)),
-  'Production gate exposed four staging creatures before public release');
+  newNames.every(name=>cards.names.includes(name)===RELEASE_CANDIDATE),
+  'Expected safe '+(RELEASE_CANDIDATE?'52-card painted candidate':'48-card staging gate')+
+  ': '+JSON.stringify(cards));
  await real.screenshot({path:'art/v456-staged-public-safety-390px.png',fullPage:false});
 
  // Preview 52-card flag ONLY in disposable browser storage. Source artwork may
@@ -155,8 +159,8 @@ try{
  assert(nav.length===5&&nav.every(b=>b.width>=34&&b.height>=30&&b.left>=-2&&b.right<=322),
   'Bottom game dock clipped at 320px: '+JSON.stringify(nav));
  await small.locator('button[data-page="cards"]').click();
- assert(await small.locator('#codex-list button[data-inspect]').count()>=48,
-  'Narrow phone cannot browse the complete 48-card Grimoire');
+ assert(await small.locator('#codex-list button[data-inspect]').count()>=(RELEASE_CANDIDATE?52:48),
+  'Narrow phone cannot browse the complete staged Grimoire');
  await small.locator('#open-builder').click();
  const armory=await small.evaluate(()=>{
   const panel=document.querySelector('.deck-panel')?.getBoundingClientRect();
