@@ -16,6 +16,16 @@ This is a first multiplayer reliability release candidate, **not** proof of succ
 - `aether-dominion-profile-v21`, `aether-dominion-v04`, `aether-dominion-deck-v20`, `aether-dominion-loadouts-v452` remain identical.
 - Both production HTML entrypoints and offline PWA cache are versioned `v470`. `v45-engine.js` and its isolated `v45-qa-engine.js` remain byte-identical.
 
+## Independent CI verified on November 2, 2026
+
+Four green GitHub Actions runs provide automated evidence:
+- [Two-peer sequence/revision/abuse tests, old 60-card game regressions and strict v4.7 guard](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41534961153) — passed.
+- [Real mobile-sized 390px host and 320px guest Chromium UI and reconnect smoke tests](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41534961145) — passed.
+- [Earlier Gauntlet/Chronicle release guard and full mechanics suite](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41534961135) — passed.
+- [Earlier Chronicle 390px/320px browser regression](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41534961228) — passed.
+
+This is automated testing with mock peers and Chromium. **No actual two-phone different-network duel is claimed or verified.**
+
 ## Verification plan and what we cannot claim
 - `tools/v470_network_qa.mjs` simulates two independent peers, fake relay delivery, a third unwanted sender, duplicate/out-of-order packets, bad revisions, oversized snapshots, disconnects and reconnects.
 - `tools/v470_browser_qa.mjs` uses actual 390px/320px Chromium to exercise host deck handshake, valid guest moves, stale rejection, reconnect preservation, guest awaiting-host UI, same-revision rejection/ACK and disconnection locks.
