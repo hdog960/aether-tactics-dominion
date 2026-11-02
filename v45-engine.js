@@ -425,6 +425,7 @@ function gauntletStatus(){
  return{attempts:g.attempts,clears:g.clears,bestStage:g.bestStage,
    firstClearRewarded:g.firstClearRewarded,
    fluxClears:g.fluxClears||0,fluxFirstRewarded:!!g.fluxFirstRewarded,
+   omenCatalog:Object.values(RIFT_OMENS).map(o=>({...o})),
    nextOmens:riftOmenSchedule(g.attempts).map(id=>({id,name:RIFT_OMENS[id].name,detail:RIFT_OMENS[id].detail})),
    pathClears:{...(g.pathClears||{})},pathFirstRewards:{...(g.pathFirstRewards||{})},
    paths:Object.values(GAUNTLET_PATHS).map(v=>({id:v.id,name:v.name,description:v.description,
