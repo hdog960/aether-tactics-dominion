@@ -35,17 +35,43 @@ try{
  }
  await page.waitForFunction(()=>window.AetherGame.get().phase==='playing',null,{timeout:95000});
  info.joined=true;
- if(role==='host'){
-  await page.locator('#end').click();
-  await page.waitForFunction(()=>window.AetherGame.get().round===2,null,{timeout:30000});
- }else{
-  await page.waitForFunction(()=>window.AetherGame.get().turn===1,null,{timeout:30000});
-  await page.locator('#end').click();
-  await page.waitForFunction(()=>window.AetherGame.get().round===2,null,{timeout:30000});
+ const completed=[];
+ for(let step=1;step<=5;step++){
+  if(role==='host'){
+   await page.waitForFunction(n=>window.AetherGame.get().round===n&&
+    window.AetherGame.get().turn===0&&window.AetherGame.get().phase==='playing',
+    step,{timeout:65000});
+   await page.locator('#end').click();
+   await page.waitForFunction(n=>window.AetherGame.get().round===n+1,step,{timeout:65000});
+  }else{
+   await page.waitForFunction(n=>window.AetherGame.get().round===n&&
+    window.AetherGame.get().turn===1&&window.AetherGame.get().phase==='playing',
+    step,{timeout:65000});
+   await page.locator('#end').click();
+   await page.waitForFunction(n=>window.AetherGame.get().round===n+1,step,{timeout:65000});
+  }
+  completed.push(await page.evaluate(()=>({round:window.AetherGame.get().round,
+   turn:window.AetherGame.get().turn,hp:window.AetherGame.get().hp,
+   units:window.AetherGame.get().units.length})));
+  if(step===3&&role==='guest'){
+   // One participant loses the page and reconnects to the original host session.
+   await page.reload({waitUntil:'load',timeout:45000});
+   await page.waitForFunction(()=>window.AetherGame&&window.DominionNav&&window.AetherNet?.ready,
+    null,{timeout:30000});
+   await page.locator('#home-duel').click();
+   await page.locator('#duel-launch').click();
+   await page.locator('#roomid').fill(code);
+   await page.locator('#join-room').click();
+   await page.waitForFunction(()=>window.AetherGame.get().round===4&&
+    window.AetherGame.get().phase==='playing',null,{timeout:95000});
+   info.rejoined=true;
+  }
  }
  info.round=await page.evaluate(()=>window.AetherGame.get().round);
+ info.completed=completed;
  info.link=await page.locator('#duel-link-status').getAttribute('data-link');
- info.pass=info.round===2&&info.link==='linked'&&!errors.length;
+ info.pass=info.round===6&&completed.length===5&&
+  (role==='host'||info.rejoined===true)&&info.link==='linked'&&!errors.length;
  await page.close();
 }catch(e){info.error=String(e.stack||e).slice(0,700)}
 finally{info.errors=errors;console.log(JSON.stringify(info,null,2));await browser.close()}
