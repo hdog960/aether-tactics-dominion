@@ -2268,7 +2268,21 @@ function render(){
   $('arena-details').textContent+=' · '+mission.encounter.name.toUpperCase()+
    (S.phase==='playing'?' · NEXT RD '+(event?.nextRound||mission.encounter.first):'');
  }
- $('round').textContent=S.round;$('turnlabel').textContent=S.phase==='over'?'MATCH OVER':S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
+ $('round').textContent=S.round;
+ $('turnlabel').textContent=S.phase==='over'?'MATCH OVER':
+  S.mode==='online'&&!connected?'RECONNECTING':
+  duelOrderPending?'AWAITING HOST':
+  S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
+ const link=$('duel-link-status');
+ if(link){
+  const online=S.mode==='online',lost=online&&!connected,pending=online&&duelOrderPending;
+  link.classList.toggle('hidden',!online);
+  link.dataset.link=lost?'offline':pending?'pending':'linked';
+  link.textContent=lost?'✦ PRIVATE LINK UNAVAILABLE · Commands paused':
+   pending?'✧ ORDER SENT · Waiting for host confirmation':
+   S.phase==='waiting'?'✧ LINKED · Waiting for host to start or restore match':
+   '✦ PRIVATE LINK ACTIVE · Host validates every action';
+ }
  $('aeth').textContent=S.energy[my];$('capacity').textContent=' / '+Math.max(S.cap,S.energy[my]);
  $('deckcount').textContent=S.decks[my].length+' IN DECK';$('profile-open').textContent='LV '+profile.level;
  const ordersLocked=S.mode==='online'&&(!connected||duelOrderPending);
