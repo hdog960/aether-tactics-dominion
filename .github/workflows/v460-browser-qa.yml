@@ -1,0 +1,39 @@
+name: Dominion v4.6.0 mobile Rift Gauntlet and mastery QA
+on:
+  push:
+    branches: [dev/v460-rift-gauntlet]
+    paths:
+      - .github/workflows/v460-browser-qa.yml
+      - tools/v460_browser_qa.mjs
+      - v45-engine.js
+      - v45-qa-engine.js
+      - v46-gauntlet.js
+      - v46-gauntlet.css
+      - index.html
+      - v30.html
+      - v30-shell.js
+      - qa-v39.html
+permissions: {contents: read}
+jobs:
+  gauntlet-iphone-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-v460-local.log 2>&1 &
+      - run: node tools/v460_browser_qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dominion-v460-gauntlet-mobile-review
+          path: |
+            art/v460-gauntlet-commander-hall-390px.png
+            art/v460-gauntlet-first-encounter-390px.png
+            art/v460-mastery-forge-390px.png
+            art/v460-gauntlet-narrow-320px.png
+          if-no-files-found: ignore
+          retention-days: 7
