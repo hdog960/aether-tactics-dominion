@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current development candidate: v4.7.0 — Private Duel Reliability (real-device verification pending)**
+**Current source release: v4.7.0 — Private Duel Reliability (experimental; real-device verification pending)**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
