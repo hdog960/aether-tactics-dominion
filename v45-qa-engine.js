@@ -2303,6 +2303,8 @@ function render(){
   duelOrderPending?'AWAITING HOST':
   S.phase==='waiting'?'AWAITING FRIEND':S.turn===my?'YOUR TURN':'RIVAL TURN';
  const link=$('duel-link-status');
+ const refresh=$('duel-refresh-link');
+ if(refresh){refresh.classList.toggle('hidden',S.mode!=='online');refresh.disabled=!connected;}
  if(link){
   const online=S.mode==='online',lost=online&&!connected,pending=online&&duelOrderPending;
   link.classList.toggle('hidden',!online);
