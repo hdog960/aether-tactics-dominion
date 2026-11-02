@@ -24,7 +24,7 @@ try{
   const q453=g.qaV453Creatures(),q454=g.qaV454Creatures(),vault=g.qaDeckVault();
   const bosses=g.missions.all.filter(m=>m.bossKit).map(m=>g.qaBoss(m.id));
   const plans=g.missions.all.flatMap(m=>m.storyScene.choices.map(p=>g.qaPlan(m.id,p.kind)));
-  const deck=['v','v','b','b','r','r','s','f','c','p','k','M','N','O','P','U','V','W','X','a','a','h','H','J'];
+  const deck=['v','v','b','b','r','r','s','f','c','j','k','M','N','O','P','U','V','W','X','a','a','h','e','J'];
   const balance=g.qaBalance(2,null,{testDeck:deck});
   return{spells,oldSpells:{pass:oldSpells.pass,total:oldSpells.results.length},
    creatures:{first:q453.pass,second:q454.pass},vault:vault.pass,
