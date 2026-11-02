@@ -37,7 +37,7 @@ check('Live RTC test exercises actual browser data channel, not mocked transport
  rtc.includes('new RTCPeerConnection')&&rtc.includes("createDataChannel('dominion')")&&
  rtc.includes('for(let round=1;round<=5;round++)')&&rtc.includes('Playwright local SDP exchange'));
 check('Lost-first-deck browser regression and duplicate-freeze QA are present',
- handshake.includes('lost')&&handshake.includes('window.__handshakeProbe.cards.length>=2')&&
+ handshake.includes('handshake loss')&&handshake.includes('window.__handshakeProbe.cards.length>=2')&&
  handshake.includes('Duplicate deck handshake cannot reshuffle live match'));
 check('Original v4 saves, deck keys, ranked combat rules and 60 cards protected',
  ["const PROFILE_STORE='aether-dominion-profile-v21'","DECK_STORE='aether-dominion-deck-v20'",
