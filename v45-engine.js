@@ -2156,6 +2156,7 @@ function render(){
   if(victoryDelay!==null){clearTimeout(victoryDelay);victoryDelay=null}
   victoryVisible=false;$('gameover').classList.add('hidden');
  }
+ if(window.DominionRift?.render)window.DominionRift.render();
 }
 function publish(){if(net&&mode==='online'&&localSeat===0){net.state({s:S,rev:revision});}}
 function startQuickMatch(){
@@ -2240,12 +2241,31 @@ $('hand').addEventListener('click',e=>{
 $('end').addEventListener('click',()=>intent({op:'end'}));
 $('cycle').addEventListener('click',()=>{if(chosenCard<0){message('<b>Select a card to redraw.</b>');return}intent({op:'cycle',idx:chosenCard})});
 $('reset').addEventListener('click',()=>{
+ if(S?.gauntletRunId){
+  if(confirm('Abandon this Rift Gauntlet run and begin a normal skirmish?')){
+   if(profile.gauntlet.current?.id===S.gauntletRunId&&
+     profile.gauntlet.current.status==='active'){
+    profile.gauntlet.current.status='abandoned';saveProfile();
+   }
+   startQuickMatch();
+  }
+  return;
+ }
  if(mode==='online'){if(confirm('Leave this duel and return to solo play?'))startAI()}
  else if(confirm(S.missionId?'Restart this campaign mission?':'Start a fresh solo battle?')){
   if(S.missionId)startMission(S.missionId,false,S.expeditionPlan?.kind||null);else{seed('ai');clearSelection();save();render()}
  }
 });
 $('again').addEventListener('click',()=>{
+ if(S?.gauntletRunId){
+  const status=profile.gauntlet.current;
+  if(status?.id===S.gauntletRunId&&status.status==='ready'){
+   continueGauntlet();return;
+  }
+  if(status?.id===S.gauntletRunId&&['failed','cleared'].includes(status.status)){
+   startGauntlet();return;
+  }
+ }
  if(mode==='online')startOnline();
  else if(S.missionId)startMission(S.missionId,false,S.expeditionPlan?.kind||null);
  else {seed('ai');clearSelection();save();render()}
