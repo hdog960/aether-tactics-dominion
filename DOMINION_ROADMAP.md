@@ -59,8 +59,8 @@ Added **Rift Flux**: an optional three-omen encounter variant for any Gauntlet p
 ### v4.6.4 — Rift Chronicle and honest rematch polish (completed)
 Twelve-entry per-run Chronicle, separated classic/Flux best surviving Core by path, accurate real-time Core in the Commander’s Hall, true path enemy-Core forecasts, and automatic abandonment records when switching game modes. Fixes a results-screen rematch bug that previously reset route/Flux to classic Wayfinder. No new rewards, game-altering ranks, card IDs, save keys or duel advantages. QA and browser evidence: `V464_CHRONICLE_RELEASE_AND_QA.md`.
 
-### v4.6 — Further Replayability & Progression (in progress)
-Continue with more varied Gauntlet challenges, longer-term mastery objectives, progression pacing and anti-repeat safeguards. Never reset existing save keys or inflate stat power in private duels.
+### v4.6 — Replayability & Progression (completed)
+Rift Gauntlet, Rift Paths, Mastery Codex, career contracts, Rift Flux and Chronicle are shipped through v4.6.4. Future expansions remain subject to the creator's post-v4.7 roadmap review. Existing saved progression and equalized private duels remain protected.
 
 ### v4.7 — Multiplayer Reliability (in progress)
 **v4.7.0:** Bounded and sequenced private duel messages, host revision checks, accepted/rejected ACK snapshots, one-order-at-a-time guest controls, immutable opponent decks after handshake, real match reconnect/recovery, stale room callback guards, clearer battlefield link status and automated mock-peer / browser QA. No solo balance or saved-key changes. Details: `V470_PRIVATE_DUEL_RELIABILITY.md`.
