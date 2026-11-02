@@ -5,6 +5,8 @@ on:
     paths:
       - tools/v472_cross_runner_smoke.mjs
       - .github/workflows/v472-cross-runner-smoke.yml
+  pull_request:
+    branches: [main]
 permissions: {contents: read}
 jobs:
   cloud-host:
