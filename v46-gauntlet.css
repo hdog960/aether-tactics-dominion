@@ -1,0 +1,22 @@
+/* Dominion v4.6.0 — Rift Gauntlet and earned mastery */
+.hall-choice.hall-gauntlet{background:linear-gradient(125deg,rgba(26,41,75,.98),rgba(47,34,82,.98) 64%,rgba(67,43,79,.94));border:1px solid rgba(204,162,252,.6);box-shadow:0 5px 28px rgba(84,47,142,.17),inset 0 1px rgba(244,220,255,.15)}
+.hall-gauntlet .hall-symbol{color:#efcfb3;text-shadow:0 0 15px rgba(223,163,255,.65);font-size:30px}
+.hall-gauntlet strong{color:#f6e9ff;letter-spacing:.075em}
+.hall-gauntlet .hall-choice-text small{color:#d2c9e3}
+.hall-gauntlet .hall-choice-text em{color:#eac9ff;font-weight:700;font-style:normal;font-size:11px}
+.rift-progress{display:flex;gap:6px;margin:9px 0 2px}
+.rift-progress i{display:block;flex:1;max-width:47px;height:5px;border-radius:10px;background:#51486d;border:1px solid rgba(212,179,255,.18)}
+.rift-progress i.complete{background:linear-gradient(90deg,#ba8fff,#e9c9fe);box-shadow:0 0 7px rgba(222,173,255,.4)}
+.rift-mastery{margin:14px 0 20px;padding:14px;border-radius:14px;background:linear-gradient(150deg,rgba(38,48,77,.96),rgba(31,36,61,.97));border:1px solid rgba(161,159,212,.29)}
+.rift-mastery-heading{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px;color:#f2d6ff}
+.rift-mastery-heading span{font-size:13px;font-weight:800;letter-spacing:.1em}
+.rift-mastery-heading strong{font-size:10px;color:#bfcee9;letter-spacing:.03em}
+.rift-mastery p{color:#c4c7df;line-height:1.5;font-size:12px;margin:8px 0 13px}
+.rift-mastery-list{display:grid;gap:8px}
+.rift-mastery-row{padding:10px 12px;border-radius:9px;background:rgba(18,26,47,.76);border:1px solid rgba(141,150,199,.18)}
+.rift-mastery-row .rift-mastery-top{display:flex;justify-content:space-between;gap:9px;align-items:center;font-size:12px;color:#f2ecfc}
+.rift-mastery-row .rift-mastery-top span{color:#dab8ff;font-size:11px;font-weight:700;white-space:nowrap}
+.rift-mastery-rail{height:5px;background:#222d4a;border-radius:12px;overflow:hidden;margin:8px 0 4px}
+.rift-mastery-rail i{display:block;height:100%;border-radius:12px;background:linear-gradient(90deg,#789edb,#dbb0fa)}
+.rift-mastery-row small{display:block;color:#bec5da;font-size:10px}
+@media(max-width:370px){.hall-gauntlet .hall-choice-text small{font-size:11px}.rift-mastery{padding:11px}.rift-mastery-heading strong{font-size:9px}}
