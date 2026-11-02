@@ -1,0 +1,32 @@
+name: Dominion v4.6.4 Chronicle, full combat and release integrity
+on:
+  push:
+    branches: [dev/v464-gauntlet-chronicle, main]
+    paths:
+      - v45-engine.js
+      - v45-qa-engine.js
+      - tools/v464_rules_qa.mjs
+      - tools/v464_release_guard.mjs
+      - DOMINION_ROADMAP.md
+      - V464_CHRONICLE_RELEASE_AND_QA.md
+      - .github/workflows/v464-rules-qa.yml
+      - index.html
+      - v30.html
+      - v46-gauntlet.js
+      - sw.js
+  pull_request:
+    branches: [main]
+permissions: {contents: read}
+jobs:
+  chronicle-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/v464_rules_qa.mjs
+      - run: node tools/v464_release_guard.mjs
+      - run: |
+          cmp v45-engine.js v45-qa-engine.js
+          cmp v45-scene.js v45-qa-scene.js

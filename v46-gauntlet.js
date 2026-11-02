@@ -6,8 +6,8 @@
  let last='',lastContracts='',masteryFilter='active',selectedPath='wayfinder',selectedFlux=false;
  function render(){
   const g=G.gauntletStatus(),current=g.current,match=G.get();
-  let line=current?.status==='ready'?'STAGE '+current.stage+' CLEARED · NEXT '+(current.stage+1)+'/3':
-   current?.status==='active'?'IN PROGRESS · STAGE '+current.stage+'/3 · CORE '+current.core+'/24':
+  let line=current?.status==='ready'?'STAGE '+current.stage+' CLEARED · NEXT '+(current.stage+1)+'/3 · CORE '+current.core+'/24':
+   current?.status==='active'?'IN PROGRESS · STAGE '+current.stage+'/3 · CORE '+(current.liveCore??current.core)+'/24':
    current?.status==='cleared'?'FULL GAUNTLET CLEARED · '+g.clears+' RUNS':
    current?.status==='failed'?'RUN ENDED AT STAGE '+current.stage+' · RETRY':
    'THREE STAGES · '+g.bestStage+'/3 BEST';
@@ -46,6 +46,34 @@
     '<span class="v463-omen-step">'+(i+1)+'</span><span><b>'+omen.name+
     '</b><small>'+omen.detail+'</small></span></div>').join(''):'';
    if(forecast.innerHTML!==markup)forecast.innerHTML=markup;
+  }
+  const stageForecast=$('v464-stage-forecast'),numbers=g.stageForecast?.[chosen];
+  if(stageForecast&&numbers)stageForecast.textContent=
+   'CORE START '+numbers.startCore+'/24 · RECOVER +'+numbers.heal+
+   ' BETWEEN STAGES (MAX 24) · ENEMY CORES '+numbers.enemyCores.join(' → ');
+  const best=$('v464-run-best');
+  const record=(showingFlux?g.bestFluxCoreByPath:g.bestCoreByPath)?.[chosen];
+  if(best)best.textContent=(g.attempts||0)+' ATTEMPTS · '+(g.clears||0)+
+   ' CLEARS · '+(record>0?'BEST '+(showingFlux?'FLUX ':'')+
+   ((g.paths||[]).find(p=>p.id===chosen)?.name||'RIFT').toUpperCase()+
+   ' FINISH: '+record+'/24 CORE':
+   'NO '+(showingFlux?'FLUX ':'')+'CLEAR ON THIS PATH YET');
+  const history=$('v464-run-history');
+  if(history){
+   const paths={wayfinder:'WAYFINDER',stormbound:'STORMBOUND',ironbound:'IRONBOUND'};
+   const results={cleared:'CLEARED',failed:'DEFEATED',abandoned:'ABANDONED'};
+   const items=(g.chronicle||[]).slice(0,4).filter(Boolean).map(entry=>{
+    const name=paths[entry.path]||paths.wayfinder;
+    const result=results[entry.result]||'ABANDONED';
+    const stage=Math.max(1,Math.min(3,Math.floor(Number(entry.stage)||1)));
+    const core=Math.max(0,Math.min(24,Number(entry.core)||0));
+    return '<li class="v464-history-entry"><strong>'+name+
+     (entry.flux?' · FLUX':'')+'</strong><span>'+result+' · STAGE '+
+     stage+'/3 · '+core+'/24 CORE</span></li>';
+   });
+   const markup=items.length?items.join(''):
+    '<li class="v464-history-empty">Your next finished attempt will be recorded here.</li>';
+   if(history.innerHTML!==markup)history.innerHTML=markup;
   }
   const status=$('home-gauntlet-status');
   if(status&&status.textContent!==line)status.textContent=line;

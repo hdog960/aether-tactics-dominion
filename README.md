@@ -1,10 +1,10 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.5.5 — Four Painted Tactical Spells**
+**Current source release: v4.6.4 — Rift Chronicle and Gauntlet polish**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
-A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight preset strategies or save three custom 24-card deck loadouts from 48 cards, upgrade your commander and collection, or test experimental private duels.
+A free, iPhone-first illustrated tactical fantasy card battler. Choose what to play from the Commander's Hall, explore a 12-mission campaign across four unique regions, build one of eight preset strategies or save three custom 24-card deck loadouts from 60 cards, upgrade your commander and collection, or test experimental private duels.
 
 ## Start here
 - **Play**: Commander's Hall — select Quick Battle, Story Campaign or Private Duel; continue a previously saved solo battle.
@@ -180,6 +180,10 @@ The Rift Gauntlet now offers three selectable, differentiated rulesets in the Co
 ## v4.6.2 — Full Mastery Codex and Career Contracts
 
 Forge now exposes the entire **60-card** mastery catalogue with Progress, All 60 and Gold filters. Six independent career contracts reward breadth of card usage, deeper specialization, eight different cards in a single winning match, and clearing multiple Rift Gauntlet routes. Each bonus is **one-time gold only**; no competitive stats or paid power. Prior saves, card copies, decks, all three Rift Paths and mastery participation history remain compatible. See `V462_MASTERY_CODEX_AND_CONTRACTS_QA.md`. The next milestone remains further v4.6 replayability/pacing, followed by v4.7 multiplayer reliability, then the creator's mandatory roadmap review.
+
+## v4.6.4 — Rift Chronicle (shipped)
+
+The Commander’s Hall now previews actual enemy Core HP along every Gauntlet route, records the last 12 terminal attempts, and tracks best surviving Core HP for standard and Flux clears separately. On the result screen, replaying a challenge keeps its original path and Flux mode. Switching from a Gauntlet to another battle archives the previous run as abandoned rather than stranding it. No extra currency, cards or competitive power; old saves remain compatible. See `V464_CHRONICLE_RELEASE_AND_QA.md`.
 
 ## v4.6.3 — Optional Rotating Rift Flux
 
