@@ -30,7 +30,7 @@ The Duel Chamber uses experimental peer-to-peer WebRTC and public signaling rela
 
 ## Technical structure
 - `index.html` production entrypoint and `v30.html` alternate entry
-- `v45-engine.js` live v4.5.1 rules, AI, new spells, progression, campaign execution, profile, and persistence (`v30-engine.js` is retained for historical builds)
+- `v45-engine.js` live v4.7.0 combat rules, authoritative duel actions, progression, campaign execution, profile, and persistence (`v30-engine.js` remains historical)
 - `v30-campaign-data.js` campaign and region definitions
 - `v30-shell.js` bottom-tab navigation and campaign selector
 - `v45-scene.js` live battlefield canvas with new effects, `v45-spell-art.js` WebP art adapter, and `v30-net.js` private duel networking
