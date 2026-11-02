@@ -9,7 +9,7 @@ A free, iPhone-first illustrated tactical fantasy card battler. Choose what to p
 ## Start here
 - **Play**: Commander's Hall — select Quick Battle, Story Campaign or Private Duel; continue a previously saved solo battle.
 - **Map**: Riftfront Conquest — four illustrated regions with 12 sequential missions and 3 endgame Crown Trials.
-- **Cards**: the Grimoire — browse the 48-card collection or build a custom deck.
+- **Cards**: the Grimoire — browse the 60-card collection or build a custom deck.
 - **Forge**: level, gold, XP, card upgrades and six earnable milestone medallions.
 - **Duel**: experimental peer-to-peer private match invitations.
 
