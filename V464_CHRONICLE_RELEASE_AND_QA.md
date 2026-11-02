@@ -15,6 +15,14 @@ Finish v4.6 by improving progression feedback and making repeat Gauntlet attempt
 ## Save and cache protection
 The Chronicle and two best-by-path dictionaries are additive fields inside the existing `aether-dominion-profile-v21` key. Missing fields in a saved older profile default safely to empty data. Records are bounded to twelve. The source and QA engines are kept identical. The production HTML entrypoints load versioned v4.6.4 engine, new Hall CSS, and Hall script; the service worker uses a new cache namespace.
 
+## Verified automated release checks
+
+Both real GitHub Actions workflows passed on November 2, 2026:
+- [Full rules, 180 tactical simulations, saved-data and release guard](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41531806676) — passed.
+- [Phone-sized 390px/320px Chromium browser and UI regression](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41531806595) — passed, including Forge/Flux/Chronicle interaction checks and captured browser screenshots.
+
+These verified CI workflows are distinct from, and do not replace, physical iPhone Safari or two-device remote duel tests.
+
 ## Tests and release gates
 - `node tools/v464_rules_qa.mjs`: 12 new real-engine Chronicle tests plus the previous v4.6.3 Flux, v4.6.2 contracts, v4.6.1 paths, v4.6.0 Gauntlet, card releases, bosses, story plan and 180 simulated combat regressions.
 - `node tools/v464_release_guard.mjs`: fails on missing UI/offline dependencies, broken source sync, renamed saves, missing 60-card roster, mode-reset regression or lost mandatory v4.7 stopping point.
