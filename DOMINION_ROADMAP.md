@@ -32,8 +32,11 @@ Expanded the collection **36 → 40** with Zephyr Cartographer, Verdant Bastion,
 ### v4.5.4 — Four Additional Painted Creature Cards (shipped)
 Expanded the collection **40 → 44** with Tideglass Oracle (spell-shield synergy), Ashen Harrier (post-flank movement), Gravebloom Warden (defeat-root control), and Stormvault Artificer (trap disarming). Each has a genuine original painted card image, identity-matched transparent battlefield sprite, 22-frame motion row, authoritative bounded mechanics and mobile-sized Chromium QA. Release candidate passed 14/14 new rule checks, previous spell/boss/story/deck checks and 120 total campaign simulations without invalid states. The normal Codex showed 44 cards and the existing three deck slots remain available. See `V454_RELEASE_AND_QA.md`.
 
-### v4.5.5–v4.5.8 — 16 more cards to reach 60 (planned)
-Grow the current **44-card** library to **60** in four small batches of creatures and spells emphasizing advanced combinations, sacrifice, flyers, terrain, support and counterplay. Preserve matching painted portraits, transparent playable units and animated frames, strategic utility and balance evidence. Keep progression keys, all three deck slots, online-match schema and existing user-owned cards intact.
+### v4.5.5 — Four Painted Tactical Spells (shipped)
+Added **Mirror Breach**, **Gale Step**, **Ember Covenant** and **Crescent Refrain**, expanding the collection **44 → 48**. Four distinct original narrative paintings and matching battlefield VFX support real shield breaking, safe one-tile relocation, team-strengthening voluntary sacrifice and status-based chain attacks. Tests passed 15 new spell cases (including ambiguous-target safety), every prior creature, spell, boss and deck-vault regression, 120 simulated campaigns with zero invalid states and the normal mobile-sized 48-card Grimoire. All prior saved player/deck/campaign keys remain unchanged. See `V455_RELEASE_AND_QA.md`.
+
+### v4.5.6–v4.5.8 — 12 more cards to reach 60 (planned)
+Expand the current **48-card** collection to **60** across three carefully integrated batches of creatures and spells. Continue requiring original painted assets, exact matching battlefield characters/animations for creatures, distinct spells/FX, robust testing and balanced archetype choice. Keep all three saved deck slots and progression keys fully backwards compatible.
 
 ### v4.6 — Progression & Replayability
 Rift Gauntlet, milestone rewards, mastery challenges, progression pacing and long-run variety. Include challenge reset safeguards and migration tests.
