@@ -34,7 +34,7 @@ function createPeer(id){
   intent:msg=>state.intents.push(msg),state:msg=>state.states.push(msg),
   loadout:deck=>state.decks.push(deck),
   error:msg=>state.errors.push(msg),quality:ping=>state.quality.push(ping)};
- const run=new Function('window','document','Event','return '+script);
+ const run=new Function('window','document','Event','return '+script.slice(script.indexOf('(async()=>')));
  return {id,window,document,callbacks,state,load:()=>run(window,document,class Event{
   constructor(type){this.type=type}
  })};
