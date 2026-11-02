@@ -1,0 +1,37 @@
+name: Dominion v4.7.1 lost ACK reliability and full game regression
+on:
+  push:
+    branches: [dev/v471-ack-recovery, main]
+    paths:
+      - v30-net.js
+      - v45-engine.js
+      - v45-qa-engine.js
+      - tools/v471_network_qa.mjs
+      - tools/v471_release_guard.mjs
+      - tools/v470_network_qa.mjs
+      - tools/v470_release_guard.mjs
+      - index.html
+      - v30.html
+      - sw.js
+      - DOMINION_ROADMAP.md
+      - .github/workflows/v471-rules-qa.yml
+  pull_request:
+    branches: [main]
+permissions: {contents: read}
+jobs:
+  ack-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/v471_network_qa.mjs
+      - run: node tools/v470_network_qa.mjs
+      - run: node tools/v464_rules_qa.mjs
+      - run: node tools/v471_release_guard.mjs
+      - run: node tools/v470_release_guard.mjs
+      - run: node tools/v464_release_guard.mjs
+      - run: |
+          cmp v45-engine.js v45-qa-engine.js
+          cmp v45-scene.js v45-qa-scene.js
