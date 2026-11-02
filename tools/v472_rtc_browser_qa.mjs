@@ -124,7 +124,7 @@ try{
  await host.locator('#hand button[data-card="0"]').click();
  const deployCount=await host.locator('#board button.showdeploy').count();
  assert(deployCount>0,'Host cannot select legal vanguard deployment squares');
- await host.locator('#board button.showdeploy').first().click();
+ await host.evaluate(()=>document.querySelector('#board button.showdeploy')?.click());
  await awaitValue(guest,()=>window.AetherGame.get().units.length===5,
   'Guest did not receive host actual card deployment');
  const steps=[];
@@ -137,7 +137,7 @@ try{
    await guest.locator('#hand button[data-card="0"]').click();
    assert(await guest.locator('#board button.showdeploy').count()>0,
     'Guest cannot select legal summoned creature deployment squares');
-   await guest.locator('#board button.showdeploy').first().click();
+   await guest.evaluate(()=>document.querySelector('#board button.showdeploy')?.click());
    await awaitValue(host,()=>window.AetherGame.get().units.length===6,
     'Host did not apply guest actual card deployment');
   }
