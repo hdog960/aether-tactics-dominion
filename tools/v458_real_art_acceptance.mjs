@@ -26,6 +26,10 @@ try{
  await page.goto('http://127.0.0.1:8000/qa-v39.html',{waitUntil:'load',timeout:45000});
  await page.waitForFunction(()=>window.AetherScene?.v458ArtInfo?.()?.framesReady&&
   window.AetherArt?.v458ArtStatus?.()?.complete,null,{timeout:25000});
+ // The legacy QA dashboard schedules showUnits('new') 950ms after load,
+ // resetting the battle and replacing our staged creatures with the old roster.
+ // Let this single initialization finish *before* altering live QA state.
+ await page.waitForTimeout(1550);
  const result=await page.evaluate(()=>{
   const art=window.AetherScene.v458ArtInfo(),status=art.cards,
    portraits=['ag','ah','ai','aj'].map(k=>window.AetherArt.get(k)),
