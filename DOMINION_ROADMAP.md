@@ -69,6 +69,8 @@ Continue with more varied Gauntlet challenges, longer-term mastery objectives, p
 
 **v4.7.2:** First-join deck handshake retries (bounded to five sends), authoritative host-ready snapshots, no reshuffling of an active duel, safe timer cancellation, and a five-round real browser RTCDataChannel test with local signaling. Same-game and UI regressions remain mandatory. See `V472_PEER_HANDSHAKE_AND_RTC_QA.md`.
 
+**v4.7.3 QA milestone:** Two independent cloud hosts connected over real public Trystero WebRTC; each summoned a Vanguard through the **visible painted canvas**, maintained six units and five complete rounds, and the guest reloaded/rejoined after round three. Both hosts reported success without browser errors. This hard release check is tracked in `V473_REMOTE_CARD_PLAY_QA.md`. It strengthens—but does not replace—the physical iPhone requirement.
+
 **Remaining acceptance gate:** Real two-device iPhone Safari duel across independent Wi-Fi/cellular networks, reconnect test matrix and network failure handling; only after independent human/device verification can v4.7 be called complete. No claim of current production matchmaking, authoritative accounts, anti-cheat or ranked mode. Then **STOP** for creator roadmap review.
 
 ## Mandatory stopping point after v4.7
