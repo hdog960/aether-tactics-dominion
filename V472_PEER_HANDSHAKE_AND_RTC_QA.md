@@ -15,6 +15,15 @@ An initial connection could be established successfully while the guest's first 
 - Current `tools/v464_rules_qa.mjs`, `tools/v471_network_qa.mjs`, and the v4.6.4/v4.7.0/v4.7.1 strict release guards remain mandatory; previous phone/browser suites also remain.
 - No play saves, deck IDs, card art, level progression or mission data are migrated. Both production HTML entrypoints use the new engine; the offline PWA cache is versioned to `v472`.
 
+## Independent GitHub Actions evidence — November 2, 2026
+
+- [v4.7.2 full release gate: real Chromium RTCPeerConnection / RTCDataChannel, two creature deployments, five consecutive host-and-guest turns, dropped deck handshake, and all legacy browser/rules checks](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41540766376) — **passed**.
+- [Actual Trystero 0.26.0 public Nostr relay and WebRTC smoke with both clients on one CI runner](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41539725721) — **passed**, with both browsers reaching round two and zero reported page errors.
+- A separate **two-independent-cloud-runner** diagnostic is configured but should not be treated as verified unless its two separate host/guest job logs both show success.
+- Earlier v4.6.4 and v4.7.0/v4.7.1 source, mobile UI, network-replay and 60-card game regressions passed on this release branch.
+
+These checks verify real browser peer transport and public signaling on the tested environment. They do not prove iOS Safari, long-distance cellular NAT, TURN or connection reliability on every network.
+
 ## Limits
 This is stronger evidence than a mock network queue, but two Chromium windows sharing a CI machine **do not prove** independent carrier NAT traversal, iOS Safari's lifecycle behavior, or reliability of Trystero's third-party Nostr signaling relays. It does not prove TURN availability (no production TURN credential service exists).
 
