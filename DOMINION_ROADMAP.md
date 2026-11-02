@@ -47,6 +47,9 @@ Expanded **56 → 60** with Aether Lanternist (affliction cleanse), Vesper Kestr
 ### v4.6.0 — Rift Gauntlet and Card Mastery (first replayability release)
 Added a complete three-stage **Rift Gauntlet**, accessible from the Commander's Hall: Whispering Gate (verdant), Frostbound Passage (real frost hazards) and Crownfall Reckoning (armored final guardian, real arcane hazards). The 24-card deck and ranks are locked for each run; the player's Core HP carries between victories with only +4 reprieve; failure ends an attempt. Resume and stage rewards use additive, replay-safe profile fields, with a once-only 180 gold/210 XP/Aether Lanternist first-clear reward. Card Mastery now awards Bronze/Silver/Gold at 4/12/30 distinct solo match participations, one-time gold rewards on winning matches, and visible Forge progression. Source of truth: `V460_GAUNTLET_AND_MASTERY_QA.md`. Physical iPhone Safari and long-distance two-device testing remain open.
 
+### v4.6.1 — Three Rift Paths (completed)
+Players can select **Wayfinder** (classic +4 recovery), **Stormbound** (+2 Core recovery, tougher enemies, +2 starting Aeth) or **Ironbound** (starts with 20 Core HP, +3 recovery, +1 opening shields, tougher enemies) before starting a new run. Distinct route clears and once-only 70/100-gold challenge trophies persist across reloads, preserve old Wayfinder runs, and never alter competitive PvP rules. The 60-card game and Forge mastery system are unchanged. See `V461_RIFT_PATHS_RELEASE_AND_QA.md`.
+
 ### v4.6 — Further Replayability & Progression (in progress)
 Continue with more varied Gauntlet challenges, longer-term mastery objectives, progression pacing and anti-repeat safeguards. Never reset existing save keys or inflate stat power in private duels.
 
