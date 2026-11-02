@@ -60,7 +60,7 @@ const report={
  stop:fs.readFileSync('DOMINION_ROADMAP.md','utf8').includes('Mandatory stopping point after v4.7')
 };
 console.log(JSON.stringify(report,null,2));
-if(!spells.pass||spells.checks.length!==16||Object.values(previous).some(x=>!x.pass)||
+if(!spells.pass||spells.checks.length!==18||Object.values(previous).some(x=>!x.pass)||
  report.bosses.pass!==report.bosses.total||
  report.plans.pass!==report.plans.total||
  report.battles.some(x=>x.games!==60||x.errors.length)||
