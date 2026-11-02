@@ -1,7 +1,7 @@
 name: Dominion diagnostic — independent cloud host WebRTC public relay
 on:
   push:
-    branches: [dev/v472-peer-handshake]
+    branches: [dev/v472-peer-handshake, main]
     paths:
       - tools/v472_cross_runner_smoke.mjs
       - .github/workflows/v472-cross-runner-smoke.yml
