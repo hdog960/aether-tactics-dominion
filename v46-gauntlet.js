@@ -43,7 +43,8 @@
    N.showTab('battle');return;
   }
   if(cur?.status==='ready'){
-   if(G.continueGauntlet()){N.showTab('battle');render()}return;
+   if(G.continueGauntlet()){N.showTab('battle');render();return}
+   if(!confirm('Your previous Gauntlet stage is no longer the saved match. Begin a new run from stage one?'))return;
   }
   if(state?.phase==='playing'&&!state.gauntletRunId&&
    !confirm('Begin a Rift Gauntlet? Your current solo battle will be replaced. Commander, deck, and campaign progression will remain saved.'))return;
