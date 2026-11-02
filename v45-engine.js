@@ -235,6 +235,11 @@ let profile=loadProfile();
 if(!profile.campaign||!Array.isArray(profile.campaign.completed))profile.campaign={completed:[],stars:{},best:{}};
 if(!profile.mastery||typeof profile.mastery!=='object')profile.mastery={};
 if(!profile.achievements||typeof profile.achievements!=='object')profile.achievements={};
+// v4.6: additive only. Do not migrate or erase saved v21 profiles.
+if(!profile.masteryClaims||typeof profile.masteryClaims!=='object')profile.masteryClaims={};
+if(!profile.gauntlet||profile.gauntlet.version!==1)profile.gauntlet={
+ version:1,attempts:0,clears:0,bestStage:0,firstClearRewarded:false,current:null
+};
 function saveProfile(){try{localStorage.setItem(PROFILE_STORE,JSON.stringify(profile))}catch(e){}}
 function xpNeeded(level){return 90+(level-1)*45}
 function cardLevel(k){return Math.max(1,Math.min(MAX_CARD_LEVEL,profile.levels[k]||1))}
@@ -284,7 +289,47 @@ function awardMatch(){
   }
  }
  const played=S.usedCards?.[0]||[];
- for(const k of played)if(D[k])profile.mastery[k]=(profile.mastery[k]||0)+1;
+ const masteryRewards=[];
+ const tiers=[{uses:4,gold:30},{uses:12,gold:65},{uses:30,gold:125}];
+ for(const k of new Set(played)){
+  if(!D[k])continue;
+  profile.mastery[k]=(Number(profile.mastery[k])||0)+1;
+  // A mastery bonus is one-time per card/tier and only unlocks on a WIN.
+  if(!victory)continue;
+  let claimed=Math.max(0,Math.min(3,Number(profile.masteryClaims[k])||0));
+  for(let tier=claimed;tier<tiers.length;tier++){
+   if(profile.mastery[k]<tiers[tier].uses)break;
+   profile.gold+=tiers[tier].gold;coins+=tiers[tier].gold;
+   masteryRewards.push({card:k,tier:tier+1,gold:tiers[tier].gold});
+   claimed=tier+1;
+  }
+  profile.masteryClaims[k]=claimed;
+ }
+ // The current run/stage and won match ID must match. Never grant stage
+ // rewards for a stale saved match, an abandoned run, or a repeat render.
+ let gauntletResult=null;
+ const run=profile.gauntlet.current;
+ if(S.gauntletRunId&&run&&S.gauntletRunId===run.id&&
+    S.gauntletStage===run.stage&&run.status==='active'){
+  run.core=Math.max(0,Math.min(24,Number(S.hp[0])||0));
+  if(victory){
+   run.status='ready';run.wins++;profile.gauntlet.bestStage=Math.max(profile.gauntlet.bestStage,run.stage);
+   if(run.stage===3){
+    run.status='cleared';profile.gauntlet.clears++;
+    if(!profile.gauntlet.firstClearRewarded){
+     profile.gauntlet.firstClearRewarded=true;
+     profile.gold+=180;profile.xp+=210;xp+=210;coins+=180;
+     const copy='ag';
+     profile.copies[copy]=(profile.copies[copy]||0)+1;rewards.push(copy);
+     gauntletResult={status:'cleared',stage:3,firstClear:true,bonusGold:180,bonusXP:210,copy};
+    }else gauntletResult={status:'cleared',stage:3,firstClear:false};
+   }else gauntletResult={status:'ready',stage:run.stage};
+  }else{
+   run.status='failed';
+   gauntletResult={status:'failed',stage:run.stage};
+  }
+ }
+
  const achievementChecks={
   firstVictory:profile.wins>=1,fieldTactician:new Set(played).size>=5,
   pathfinder:profile.campaign.completed.length>=4,
@@ -297,7 +342,7 @@ function awardMatch(){
   if(unlocked&&!profile.achievements[key]){profile.achievements[key]=1;newlyEarned.push(key)}
  while(profile.xp>=xpNeeded(profile.level)&&profile.level<100){profile.xp-=xpNeeded(profile.level);profile.level++}
  const record={matchId:S.matchId,victory,drawn,xp,gold:coins,rewards,
-   missionTitle,storyClear,stars,newlyEarned,
+   missionTitle,storyClear,stars,newlyEarned,gauntlet:gauntletResult,masteryRewards,
    levelUp:profile.level>oldLevel,level:profile.level};
  profile.claimed[S.matchId]=record;profile.last=record;
  // Keep a limited anti-duplicate history across reloads.
@@ -305,9 +350,26 @@ function awardMatch(){
  if(ids.length>200)for(const id of ids.slice(0,ids.length-200))delete profile.claimed[id];
  saveProfile();return record;
 }
+function masteryStatus(){
+ const tiers=[4,12,30];
+ return CARD_KEYS.map(k=>{
+  const uses=Math.max(0,Number(profile.mastery[k])||0);
+  const claimed=Math.max(0,Math.min(3,Number(profile.masteryClaims[k])||0));
+  return{key:k,name:D[k].name,uses,rank:tiers.filter(n=>uses>=n).length,
+   claimed,next:tiers.find(n=>uses<n)||null};
+ }).sort((a,b)=>b.rank-a.rank||b.uses-a.uses||a.name.localeCompare(b.name));
+}
+function gauntletStatus(){
+ const g=profile.gauntlet,run=g.current;
+ return{attempts:g.attempts,clears:g.clears,bestStage:g.bestStage,
+   firstClearRewarded:g.firstClearRewarded,
+   current:run?{id:run.id,stage:run.stage,wins:run.wins,core:run.core,
+    status:run.status,deckSize:run.deck?.length||0}:null};
+}
 function profileSummary(){
  return {level:profile.level,xp:profile.xp,xpNext:xpNeeded(profile.level),gold:profile.gold,
- wins:profile.wins,matches:profile.matches,last:profile.last,achievements:{...profile.achievements}}
+ wins:profile.wins,matches:profile.matches,last:profile.last,achievements:{...profile.achievements},
+ gauntlet:gauntletStatus(),masteryTop:masteryStatus().slice(0,8)}
 }
 
 const rocks=new Set(['0,3','6,3','2,3','4,4']),springs=['1,3','5,4'],high=new Set(['2,2','4,2','3,3','3,4','2,5','4,5']);
@@ -589,6 +651,75 @@ function startMission(id,qa=false,planKind=null){
  save();render();return true;
 }
 
+// Rift Gauntlet v4.6.0: three consecutive autonomous solo battles.
+// A run snapshots the deck and ranks and uses only additive profile fields.
+const GAUNTLET_STAGES=[
+ {name:'Whispering Gate',region:'verdant',style:'Skirmish',enemyHP:24,tier:1,
+  detail:'The green breach tests the mobility of your 24-card deck.'},
+ {name:'Frostbound Passage',region:'frost',style:'Arcane',enemyHP:27,tier:2,
+  detail:'Carry your wounded Core into a frostglass ambush.'},
+ {name:'Crownfall Reckoning',region:'ruins',style:'Fortress',enemyHP:30,tier:3,
+  detail:'An armored guardian protects the final Core.'}
+];
+function buildGauntletStage(run){
+ const stage=GAUNTLET_STAGES[run.stage-1];
+ if(!stage||!checkDeck(run.deck)||run.status!=='active')return false;
+ disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
+ seed('ai');
+ const frozen=run.ranks||{};
+ S.cardRanks=Object.fromEntries(CARD_KEYS.map(k=>[k,Math.max(1,Math.min(8,frozen[k]||1))]));
+ S.rewardPool=run.deck.slice();S.decks[0]=shuffle(run.deck);S.hands[0]=[];S.discards[0]=[];
+ for(const k of ['v','r','a']){
+  const idx=S.decks[0].indexOf(k);
+  if(idx>=0){S.decks[0].splice(idx,1);S.hands[0].push(k)}
+ }
+ draw(0,Math.max(0,4-S.hands[0].length));
+ S.aiStyle=stage.style;S.aiTier=Math.max(1,Math.min(8,(run.tier||1)+run.stage-1));
+ S.decks[1]=shuffle(PACKS[stage.style]||PACKS.Balanced);S.hands[1]=[];S.discards[1]=[];
+ for(const k of ['v','r','a']){
+  const idx=S.decks[1].indexOf(k);
+  if(idx>=0){S.decks[1].splice(idx,1);S.hands[1].push(k)}
+ }
+ draw(1,Math.max(0,4-S.hands[1].length));
+ S.gauntletRunId=run.id;S.gauntletStage=run.stage;S.gauntletName=stage.name;
+ S.gauntletDetail=stage.detail;
+ S.hp[0]=run.stage===1?24:Math.min(24,Math.max(1,run.core+4));
+ S.hp[1]=stage.enemyHP;S.coreMax=[24,stage.enemyHP];
+ setArena(stage.region);
+ if(run.stage===3){
+  const guard=unit('aj',1,3,2,true);
+  guard.hp=guard.max=11;guard.atk=2;guard.boss=true;
+  S.units.push(guard);
+ }
+ $('mode-ai').classList.add('active');$('mode-online').classList.remove('active');
+ $('lobby').classList.add('hidden');
+ message('<b>RIFT GAUNTLET · '+run.stage+'/3 · '+stage.name+'</b>',stage.detail+
+  ' · CORE '+S.hp[0]+'/24. Each victory restores only 4 health before the next stage.');
+ save();render();return true;
+}
+function startGauntlet(){
+ const current=profile.gauntlet.current;
+ if(current?.status==='active'&&S?.gauntletRunId===current.id&&
+  S.gauntletStage===current.stage&&S.phase==='playing')return true;
+ if(current?.status==='ready')return continueGauntlet();
+ if(current?.status==='active')current.status='abandoned';
+ const run={id:'rift-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
+  stage:1,wins:0,core:24,status:'active',deck:chosenDeck.slice(),
+  ranks:Object.fromEntries(chosenDeck.map(k=>[k,cardLevel(k)])),
+  tier:Math.max(1,Math.min(5,Math.floor(chosenDeck.reduce((n,k)=>n+cardLevel(k),0)/24)))};
+ profile.gauntlet.attempts++;profile.gauntlet.current=run;
+ saveProfile();
+ return buildGauntletStage(run);
+}
+function continueGauntlet(){
+ const run=profile.gauntlet.current;
+ if(!run||run.status!=='ready'||run.stage>=3||S?.phase!=='over'||
+  S.gauntletRunId!==run.id||S.gauntletStage!==run.stage||
+  S.winner!==0||!profile.claimed[S.matchId]?.victory)return false;
+ run.stage++;run.status='active';
+ saveProfile();
+ return buildGauntletStage(run);
+}
 function save(){if(mode!=='ai'||!S)return;try{localStorage.setItem('aether-dominion-v04',JSON.stringify(S))}catch(e){}}
 function load(){try{let x=JSON.parse(localStorage.getItem('aether-dominion-v04'));if(x?.version===4&&x?.mode==='ai'&&Array.isArray(x.units)&&x.units.length<30){S=x;let migrated=false;if(!S.matchId){S.matchId='legacy-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);migrated=true}if(!Array.isArray(S.traps)){S.traps=[];migrated=true}for(const u of S.units){if((u.shield||0)>5){u.shield=5;migrated=true}}for(let t=0;t<2;t++){if(S.hands?.[t]?.length>5){const excess=S.hands[t].splice(5);S.decks[t].push(...excess);migrated=true}}if(migrated)save();return true}}catch(e){}return false}
 const onSpring=t=>springs.filter(k=>{let [x,y]=k.split(',').map(Number);return entity(x,y)?.team===t}).length;
@@ -1913,7 +2044,7 @@ function renderLabels(){
 function render(){
  if(!S)return;
  const my=localSeat,enemy=1-my,mirror=my===1;
- if($('battle-mode-tag'))$('battle-mode-tag').textContent=S.mode==='online'?'♜ PRIVATE DUEL':S.missionId?'🗺 CAMPAIGN':'⚔ SOLO BATTLE';
+ if($('battle-mode-tag'))$('battle-mode-tag').textContent=S.mode==='online'?'♜ PRIVATE DUEL':S.gauntletRunId?'✦ RIFT GAUNTLET '+S.gauntletStage+'/3':S.missionId?'🗺 CAMPAIGN':'⚔ SOLO BATTLE';
  const coreMax=[Math.max(24,S.coreMax?.[0]||24),Math.max(24,S.coreMax?.[1]||24)];
  $('selfhp').innerHTML=S.hp[my]+' <small>/ '+coreMax[my]+'</small>';
  $('rivalhp').innerHTML=S.hp[enemy]+' <small>/ '+coreMax[enemy]+'</small>';
@@ -1928,12 +2059,14 @@ function render(){
   if($('battle-warning-text').textContent!==detail)$('battle-warning-text').textContent=detail;
  }
  const mission=MISSION_BY_ID[S.missionId];
- if($('arena-label'))$('arena-label').textContent=mission?'✦ '+mission.name.toUpperCase():'✦ RIFTFRONT';
+ if($('arena-label'))$('arena-label').textContent=S.gauntletName?'✦ '+S.gauntletName.toUpperCase():mission?'✦ '+mission.name.toUpperCase():'✦ RIFTFRONT';
  if($('arena-details'))$('arena-details').textContent=mission?
   mission.objective==='capture'?'HOLD BOTH SPRINGS · '+onSpring(0)+'/2 CONTROL · '+(S.missionProgress||0)+'/'+mission.needed+' TURNS':
   mission.objective==='defend'?'SURVIVE · ROUND '+S.round+'/'+mission.needed+' · CORE '+S.hp[0]+' HP':
   mission.objective==='hunt'? 'SLAY CHAMPION · '+(S.units.find(u=>u.id===S.championId)?.hp||0)+'/'+(S.units.find(u=>u.id===S.championId)?.max||0)+' HP':
   'BREAK ENEMY CORE · '+S.hp[1]+' HP LEFT':'BLUE MOVE · RED ATTACK · VIOLET SPELL';
+ if(S.gauntletRunId&&$('arena-details'))
+  $('arena-details').textContent='GAUNTLET '+S.gauntletStage+'/3 · CORE '+S.hp[0]+'/24 · '+S.gauntletDetail;
  if(mission?.encounter&&$('arena-details')){
   const event=S.encounterState;
   $('arena-details').textContent+=' · '+mission.encounter.name.toUpperCase()+
@@ -2026,6 +2159,12 @@ function render(){
 }
 function publish(){if(net&&mode==='online'&&localSeat===0){net.state({s:S,rev:revision});}}
 function startQuickMatch(){
+ // A fresh skirmish intentionally ends any unresolved Gauntlet; never
+ // leave an apparently resumable run pointing to a different match.
+ if(profile.gauntlet.current?.status==='active'&&S?.gauntletRunId===
+    profile.gauntlet.current.id){
+  profile.gauntlet.current.status='abandoned';saveProfile();
+ }
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
  seed('ai');setArena('verdant');
  $('mode-ai').classList.add('active');$('mode-online').classList.remove('active');$('lobby').classList.add('hidden');
@@ -2196,7 +2335,7 @@ window.addEventListener('aether-card-art-ready',()=>{
  if(!$('deck-builder').classList.contains('hidden'))deckStatus();
  render();
 });
-window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
+window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,startGauntlet,continueGauntlet,gauntletStatus,masteryStatus,campaign:campaignStatus,missions:CONQUEST,apply,publish,profile:profileSummary,upgradeCard,cardLevel,
  campaignCounsel,
  loadouts:()=>({active:deckSlots.active,selected:selectedSlot,
   slots:deckSlots.slots.map(slot=>slot?
