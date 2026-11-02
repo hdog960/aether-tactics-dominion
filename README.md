@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.7.2 — Reliable Peer Handshake (experimental; real-device verification pending)**
+**Current source release: v4.7.2 — Reliable Peer Handshake (experimental; physical iPhone validation pending)**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
