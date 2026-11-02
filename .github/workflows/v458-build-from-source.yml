@@ -39,6 +39,7 @@ jobs:
           path: |
             art/v458-card-sprite-identity-390px.png
             art/v458-battlefield-four-creatures-390px.png
+            art/v458-raw-battle-canvas-720px.png
             art/v458-future-60-card-grimoire-390px.png
             art/v458-60-card-narrow-phone-320px.png
           if-no-files-found: ignore
