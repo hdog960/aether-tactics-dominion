@@ -19,7 +19,7 @@ An initial connection could be established successfully while the guest's first 
 
 - [v4.7.2 full release gate: real Chromium RTCPeerConnection / RTCDataChannel, two creature deployments, five consecutive host-and-guest turns, dropped deck handshake, and all legacy browser/rules checks](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41540766376) — **passed**.
 - [Actual Trystero 0.26.0 public Nostr relay and WebRTC smoke with both clients on one CI runner](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41539725721) — **passed**, with both browsers reaching round two and zero reported page errors.
-- A separate **two-independent-cloud-runner** diagnostic is configured but should not be treated as verified unless its two separate host/guest job logs both show success.
+- [Two independent GitHub cloud runners using real public Nostr signaling and WebRTC](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41541144829) — **passed independently on host and guest**: both reported `pass:true`, same room, `linked` connection, round two and no page errors. This proves remote cloud-to-cloud browser networking in that test configuration, but not physical iPhone/cellular NAT.
 - Earlier v4.6.4 and v4.7.0/v4.7.1 source, mobile UI, network-replay and 60-card game regressions passed on this release branch.
 
 These checks verify real browser peer transport and public signaling on the tested environment. They do not prove iOS Safari, long-distance cellular NAT, TURN or connection reliability on every network.
