@@ -49,3 +49,14 @@ These pose frames are mechanically deformed from the actual hand-painterly origi
 ## Subsequent milestones and mandatory stopping boundary
 
 After v4.5.6 releases 52 cards, v4.5.7 and v4.5.8 add the final eight toward 60. Then v4.6 progression/replayability and v4.7 multiplayer reliability. **STOP after v4.7 for the creator to decide the future roadmap; do not start v5.0 or any new product direction.**
+
+## Latest development session — save compatibility and actual Grimoire/Armory interactions
+
+The developer resumed work on the original `dev/v456-four-creatures` branch, with no public release or real player save changes.
+
+- [Real game-engine and save-compatibility GitHub CI](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41384197095) **passed**. It reran all existing v4.5.6 combat/legacy regressions and added **15 independent persistence checks**, including the ordinary 48-card artwork gate, three named decks, mixed 24-card loadouts with both two-letter IDs `aa` and `ab`, card rank persistence, fresh v4 match snapshot, save/reload into the same match, and preserving legacy storage when the v4.5.6 art flag is disabled. See `tools/v456_save_compatibility_qa.mjs`.
+- [Isolated 390px Chromium interaction QA](https://github.com/hdog960/aether-tactics-dominion/actions/runs/41384351847) **passed**. The regular player UI remains 48 cards. A **disposable in-memory/browser-only preview**, with the future 52-card flag set specifically inside that test page, browsed all four new card details, then removed two existing cards, added both `aa` and `ab` through the actual Armory buttons, saved the valid 24-card deck, and verified the canonical saved key. The test never publishes or displays fake artwork in public. See `tools/v456_browser_safety_qa.mjs`.
+- Art acceptance **remains blocked**. No `art/sources/v456-original-characters.png` source exists on this branch yet. Do **not** claim the painted 52-card release is complete, enable `DOMINION_V456_ART_RELEASE` on production, merge staging, or count passing interaction tests as substitute for original-image/actual-battlefield-image review.
+- In-chat promotional mockups are **not** production image files, do not match the required 2x2 figure source, and must never be uploaded or represented as validated game art.
+
+**Next step:** transfer the genuine four-figure source sheet to `art/sources/v456-original-characters.png` on the staging branch through the [GitHub upload form](https://github.com/hdog960/aether-tactics-dominion/upload/dev/v456-four-creatures/art/sources), then inspect the source-conversion workflow and its three actual screenshot artifacts. Any failure in matte extraction should be fixed in the builder against the real art, not bypassed. Continue to require manual quality approval before any public release. The v4.7 stopping boundary remains unchanged.
