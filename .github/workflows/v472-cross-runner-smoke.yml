@@ -1,0 +1,25 @@
+name: Dominion diagnostic — independent cloud host WebRTC public relay
+on:
+  push:
+    branches: [dev/v472-peer-handshake]
+    paths:
+      - tools/v472_cross_runner_smoke.mjs
+      - .github/workflows/v472-cross-runner-smoke.yml
+permissions: {contents: read}
+jobs:
+  cloud-host:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix: {role: [host, guest]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-cross-runner.log 2>&1 &
+      - name: Attempt cross-runner public-relay duel
+        continue-on-error: true
+        run: node tools/v472_cross_runner_smoke.mjs ${{ matrix.role }}
