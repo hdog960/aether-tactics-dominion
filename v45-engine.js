@@ -703,7 +703,11 @@ function startGauntlet(){
  const current=profile.gauntlet.current;
  if(current?.status==='active'&&S?.gauntletRunId===current.id&&
   S.gauntletStage===current.stage&&S.phase==='playing')return true;
- if(current?.status==='ready')return continueGauntlet();
+ if(current?.status==='ready'){
+  if(S?.gauntletRunId===current.id&&S.gauntletStage===current.stage&&
+     S.phase==='over'&&profile.claimed[S.matchId]?.victory)return continueGauntlet();
+  current.status='abandoned';
+ }
  if(current?.status==='active')current.status='abandoned';
  const run={id:'rift-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),
   stage:1,wins:0,core:24,status:'active',deck:chosenDeck.slice(),
@@ -2171,8 +2175,8 @@ function publish(){if(net&&mode==='online'&&localSeat===0){net.state({s:S,rev:re
 function startQuickMatch(){
  // A fresh skirmish intentionally ends any unresolved Gauntlet; never
  // leave an apparently resumable run pointing to a different match.
- if(profile.gauntlet.current?.status==='active'&&S?.gauntletRunId===
-    profile.gauntlet.current.id){
+ if(['active','ready'].includes(profile.gauntlet.current?.status)&&
+    S?.gauntletRunId===profile.gauntlet.current.id){
   profile.gauntlet.current.status='abandoned';saveProfile();
  }
  disconnect();mode='ai';localSeat=0;connected=false;clearSelection();
@@ -2728,13 +2732,18 @@ window.AetherGame={get:()=>S,startAI,startQuickMatch,startOnline,startMission,st
    test('Losing a stage ends the run without a bonus or continuation',
      retry.status==='failed'&&continueGauntlet()===false&&
      profile.gauntlet.clears===1&&profile.gauntlet.firstClearRewarded);
+   const newTry=startGauntlet(),newId=profile.gauntlet.current?.id;
+   test('New attempt can start after a completed failed run',newTry&&newId!==retry.id);
+   startQuickMatch();
+   test('Switching to normal skirmish abandons active run rather than leaving orphan stages',
+     profile.gauntlet.current.status==='abandoned'&&S.gauntletRunId===undefined);
   }catch(e){checks.push({name:'Unhandled QA exception',pass:false,detail:String(e.stack||e)})}
   finally{
    profile=JSON.parse(before);S=beforeState;mode=beforeMode;localSeat=beforeSeat;
    keys.forEach((k,i)=>{if(storage[i]===null)localStorage.removeItem(k);
     else localStorage.setItem(k,storage[i])});
   }
-  return{pass:checks.length===18&&checks.every(c=>c.pass),checks};
+  return{pass:checks.length===20&&checks.every(c=>c.pass),checks};
  },
  // v4.5.8 final four creatures. Exercises actual unit and combat state.
  qaV458Creatures:()=>{
