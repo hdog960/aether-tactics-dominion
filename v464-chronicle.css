@@ -1,0 +1,13 @@
+/* Dominion v4.6.4 — clear replayability records without extra reward farming. */
+.v464-chronicle{margin-top:12px;border-top:1px solid rgba(198,168,227,.27);padding-top:12px}
+.v464-heading{display:flex;align-items:baseline;flex-wrap:wrap;justify-content:space-between;gap:5px}
+.v464-heading strong{color:#f4d7ff;font:800 11px/1.4 system-ui;letter-spacing:.08em}
+.v464-heading span{color:#b5bfd5;font:500 10px/1.4 system-ui}
+#v464-stage-forecast{margin:10px 0 5px;padding:9px 11px;background:#1d304c;border-left:3px solid #bd99ed;border-radius:6px;color:#e4e5fa;font:600 11px/1.55 system-ui;overflow-wrap:anywhere}
+#v464-run-best{margin:8px 0;color:#efc6ec;font:750 10px/1.6 system-ui;letter-spacing:.03em}
+#v464-run-history{display:grid;gap:5px;padding:0;margin:8px 0 0;list-style:none}
+.v464-history-entry{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 8px;padding:8px 9px;background:rgba(21,31,54,.7);border:1px solid rgba(171,153,210,.2);border-radius:8px}
+.v464-history-entry strong{color:#f1d2ff;font:800 10px/1.4 system-ui}
+.v464-history-entry span{color:#cdd8ed;font:550 10px/1.4 system-ui}
+.v464-history-empty{color:#aebcd6;font:500 11px/1.5 system-ui;padding:6px 2px}
+@media(max-width:370px){.v464-history-entry{display:block}.v464-history-entry span{display:block;margin-top:3px}#v464-stage-forecast{font-size:10px}}
