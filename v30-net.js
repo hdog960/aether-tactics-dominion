@@ -23,9 +23,10 @@
   const actions={
    intent:room.makeAction('act'),
    state:room.makeAction('sync'),
-   loadout:room.makeAction('loadout')
+   loadout:room.makeAction('loadout'),
+   resync:room.makeAction('resync')
   };
-  let peer=null,closed=false,lastInboundSeq=0,outboundSeq=0;
+  let peer=null,closed=false,lastInboundSeq=0,outboundSeq=0,lastResyncAt=0;
   const error=e=>{if(!closed)callbacks.error?.(String(e?.message||e).slice(0,140))};
   const send=(channel,payload)=>{
    if(closed||!peer)return false;
@@ -35,7 +36,7 @@
   room.onPeerJoin=id=>{
    if(closed||!id||(peer&&peer!==id))return;
    if(peer===id)return;
-   peer=id;lastInboundSeq=0;
+   peer=id;lastInboundSeq=0;lastResyncAt=0;
    callbacks.join?.(id);
    if(typeof room.ping==='function')Promise.resolve(room.ping(id)).then(ms=>{
     if(!closed&&peer===id&&Number.isFinite(ms)&&ms>=0)callbacks.quality?.(Math.round(ms))
@@ -43,17 +44,30 @@
   };
   room.onPeerLeave=id=>{
    if(closed||id!==peer)return;
-   peer=null;lastInboundSeq=0;callbacks.leave?.();
+   peer=null;lastInboundSeq=0;lastResyncAt=0;callbacks.leave?.();
   };
   actions.intent.onMessage=(payload,meta)=>{
    if(!host||closed||senderOf(meta)!==peer||!peer||!payload||!small(payload,2048))return;
    const seq=payload.seq;
-   if(!Number.isSafeInteger(seq)||seq<=lastInboundSeq||seq<1||seq>1000000000)return;
+   if(!Number.isSafeInteger(seq)||seq<1||seq>1000000000)return;
+   if(seq<=lastInboundSeq){
+    if(seq===lastInboundSeq)callbacks.duplicate?.(seq);
+    return; // Replay ACK only; NEVER re-apply a movement, card or turn.
+   }
    if(!Number.isSafeInteger(payload.rev)||payload.rev<0||!payload.cmd||
       typeof payload.cmd!=='object'||Array.isArray(payload.cmd)||
       typeof payload.cmd.op!=='string')return;
    lastInboundSeq=seq;
    callbacks.intent?.({rev:payload.rev,cmd:payload.cmd,seq});
+  };
+  // Guest requests a host snapshot if an ACK is lost or after Safari wake.
+  // Rate-limit untrusted requests; no remote state mutation is permitted.
+  actions.resync.onMessage=(payload,meta)=>{
+   if(!host||closed||!peer||senderOf(meta)!==peer||!payload||
+      payload.ask!=='snapshot'||!small(payload,80))return;
+   const now=Date.now();
+   if(now-lastResyncAt<700)return;
+   lastResyncAt=now;callbacks.syncRequest?.();
   };
   actions.loadout.onMessage=(payload,meta)=>{
    if(!host||closed||senderOf(meta)!==peer||!peer||!payload||
@@ -72,8 +86,18 @@
    intent:order=>{
     if(!order||!Number.isSafeInteger(order.rev)||order.rev<0||
        !order.cmd||!small(order,1500))return false;
-    return send(actions.intent,{seq:++outboundSeq,rev:order.rev,cmd:order.cmd});
+    const seq=outboundSeq+1;
+    if(seq>1000000000)return false;
+    if(!send(actions.intent,{seq,rev:order.rev,cmd:order.cmd}))return false;
+    outboundSeq=seq;return seq;
    },
+   retryIntent:order=>{
+    if(!order||!Number.isSafeInteger(order.seq)||order.seq<1||
+       order.seq>outboundSeq||!Number.isSafeInteger(order.rev)||
+       order.rev<0||!order.cmd||!small(order,1500))return false;
+    return send(actions.intent,{seq:order.seq,rev:order.rev,cmd:order.cmd});
+   },
+   requestState:()=>send(actions.resync,{ask:'snapshot'}),
    state:s=>s&&Number.isSafeInteger(s.rev)&&s.rev>=0&&small(s,75000)?
     send(actions.state,s):false,
    connected:()=>!closed&&!!peer,

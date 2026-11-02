@@ -4,7 +4,7 @@ const assert=(ok,msg)=>{if(!ok)throw Error(msg)};
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const problems=[],results=[];
 const fakeTransport=`window.AetherNet={ready:true,connect:(code,host,callbacks)=>{
-  const probe={code,host,callbacks,snapshots:[],orders:[],decks:[],closed:false,
+  const probe={code,host,callbacks,snapshots:[],orders:[],decks:[],closed:false,seqCounter:0,
    join(){callbacks.join?.('peer-47')},leavePeer(){callbacks.leave?.()},
    loadout(cards){callbacks.loadout?.(cards)},
    action(order){callbacks.intent?.(order)},
@@ -13,7 +13,7 @@ const fakeTransport=`window.AetherNet={ready:true,connect:(code,host,callbacks)=
   };
   window.__duelProbe=probe;
   return {state:s=>{probe.snapshots.push(s);return true},
-   intent:a=>{probe.orders.push(a);return true},
+   intent:a=>{probe.orders.push(a);return ++probe.seqCounter},
    sendLoadout:cards=>{probe.decks.push(cards);return true},
    leave:()=>{probe.closed=true},connected:()=>!probe.closed};
  }};
@@ -22,7 +22,7 @@ async function createPage(width,height){
  const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:2,isMobile:true,hasTouch:true});
  page.on('pageerror',e=>problems.push(width+'px '+e.message));
  page.on('dialog',d=>d.accept());
- await page.route(/v30-net\.js\?v=470/,route=>route.fulfill({status:200,contentType:'text/javascript',body:fakeTransport}));
+ await page.route(/v30-net\.js\?v=471/,route=>route.fulfill({status:200,contentType:'text/javascript',body:fakeTransport}));
  await page.goto('http://127.0.0.1:8000/index.html',{waitUntil:'load',timeout:45000});
  await page.waitForFunction(()=>window.AetherGame&&window.DominionNav&&window.AetherNet?.ready,null,{timeout:30000});
  await page.locator('#home-duel').click();
@@ -116,7 +116,7 @@ try{
   window.__duelProbe.orders[0].rev===10),
   'Guest action must carry exact host revision');
  await guest.screenshot({path:'art/v470-guest-pending-320px.png',fullPage:true});
- await guest.evaluate(s=>window.__duelProbe.snapshot({rev:10,s}),snap);
+ await guest.evaluate(s=>window.__duelProbe.snapshot({rev:10,s,ackSeq:1}),snap);
  assert(await guest.locator('#end').isEnabled(),
   'Same-revision host rejection should unlock controls');
  await guest.locator('#end').click();

@@ -65,6 +65,8 @@ Continue with more varied Gauntlet challenges, longer-term mastery objectives, p
 ### v4.7 — Multiplayer Reliability (in progress)
 **v4.7.0:** Bounded and sequenced private duel messages, host revision checks, accepted/rejected ACK snapshots, one-order-at-a-time guest controls, immutable opponent decks after handshake, real match reconnect/recovery, stale room callback guards, clearer battlefield link status and automated mock-peer / browser QA. No solo balance or saved-key changes. Details: `V470_PRIVATE_DUEL_RELIABILITY.md`.
 
+**v4.7.1:** Lost acknowledgment recovery: original-sequence bounded retransmissions, host-specific `ackSeq` receipts on accepted/rejected moves, safe read-only snapshot requests, 700ms transport throttling, manual **SYNC DUEL** action, Safari wake resync, and matching-ACK guest controls. Designed to prevent repeated combat effects and stuck awaiting-host states. Automated QA: `V471_LOST_ACK_RECOVERY_QA.md`.
+
 **Remaining acceptance gate:** Real two-device iPhone Safari duel across independent Wi-Fi/cellular networks, reconnect test matrix and network failure handling; only after independent human/device verification can v4.7 be called complete. No claim of current production matchmaking, authoritative accounts, anti-cheat or ranked mode. Then **STOP** for creator roadmap review.
 
 ## Mandatory stopping point after v4.7

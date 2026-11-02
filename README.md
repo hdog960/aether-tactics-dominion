@@ -1,6 +1,6 @@
 # Aether Tactics: Dominion
 
-**Current source release: v4.7.0 — Private Duel Reliability (experimental; real-device verification pending)**
+**Current source release: v4.7.1 — Duel ACK Recovery (experimental; real-device verification pending)**
 
 **Play:** https://hdog960.github.io/aether-tactics-dominion/
 
@@ -21,6 +21,10 @@ Open in Safari; Share → Add to Home Screen. Updates to `main` publish through 
 ## Saves
 Commander progression, card upgrades, and campaign completion are stored in the device's local browser storage. Saved solo match snapshots retain the existing v4 format. Private tabs, clearing website data, or changing devices can lose progress. There is no cloud account synchronization yet.
 
+## v4.7.1 — Safe Private Duel recovery (shipped)
+
+The host now includes an action-specific acknowledgment with each guest command result. A guest with an unconfirmed command retries **that exact command ID**, with a finite watchdog, rather than accidentally submitting a second move. A compact **SYNC DUEL** control and Safari background recovery request the latest host snapshot. The full 60-card game, save keys and combat rules stay intact. Real cross-network iPhone tests are still required. See `V471_LOST_ACK_RECOVERY_QA.md`.
+
 ## v4.7.0 — Private Duel reliability (development candidate)
 
 Guest moves now carry host snapshot revisions and cannot be spammed while awaiting confirmation. Host ACKs both accepted and rejected actions; reconnected clients get the original authoritative duel rather than a reshuffled guest deck. The game clearly displays link state on the battlefield. Added simulated two-peer networking tests, phone-sized Chromium checks, and strict release guards. **Real long-distance two-device iPhone Safari testing is still outstanding, so the full v4.7 milestone is not complete.** See `V470_PRIVATE_DUEL_RELIABILITY.md`.
@@ -30,7 +34,7 @@ The Duel Chamber uses experimental peer-to-peer WebRTC and public signaling rela
 
 ## Technical structure
 - `index.html` production entrypoint and `v30.html` alternate entry
-- `v45-engine.js` live v4.7.0 combat rules, authoritative duel actions, progression, campaign execution, profile, and persistence (`v30-engine.js` remains historical)
+- `v45-engine.js` live v4.7.1 combat rules, authoritative duel actions, progression, campaign execution, profile, and persistence (`v30-engine.js` remains historical)
 - `v30-campaign-data.js` campaign and region definitions
 - `v30-shell.js` bottom-tab navigation and campaign selector
 - `v45-scene.js` live battlefield canvas with new effects, `v45-spell-art.js` WebP art adapter, and `v30-net.js` private duel networking

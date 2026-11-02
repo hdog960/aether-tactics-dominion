@@ -5,15 +5,18 @@ const engine=read('v45-engine.js'),qa=read('v45-qa-engine.js'),
  net=read('v30-net.js'),ui=read('index.html'),alternate=read('v30.html'),
  cache=read('sw.js'),road=read('DOMINION_ROADMAP.md');
 const checks=[],check=(name,pass)=>checks.push({name,pass:!!pass});
+const v471=ui.includes('v45-engine.js?v=471')&&alternate.includes('v45-engine.js?v=471');
+const suffix=v471?'471':'470';
+const cacheName=v471?'aether-dominion-v471-duel-ack-recovery':'aether-dominion-v470-duel-reliability';
 check('Production and isolated engine remain identical',engine===qa);
 check('Production and isolated renderer remain identical',
  read('v45-scene.js')===read('v45-qa-scene.js'));
 check('Both entrypoints version the same duel transport, combat engine and ribbon',
- [ui,alternate].every(s=>['src="./v30-net.js?v=470"','v45-engine.js?v=470',
+ [ui,alternate].every(s=>['src="./v30-net.js?v='+suffix+'"','v45-engine.js?v='+suffix,
   'v470-duel.css?v=470','id="duel-link-status"','id="roomstatus"'].every(v=>s.includes(v))));
 check('iPhone PWA precaches the updated duel networking and UI',
- ['aether-dominion-v470-duel-reliability','v30-net.js?v=470',
-  'v45-engine.js?v=470','v470-duel.css?v=470'].every(v=>cache.includes(v)));
+ [cacheName,'v30-net.js?v='+suffix,
+  'v45-engine.js?v='+suffix,'v470-duel.css?v=470'].every(v=>cache.includes(v)));
 check('Local profile, deck and v4 match keys preserved',
  ["const PROFILE_STORE='aether-dominion-profile-v21'",
   "DECK_STORE='aether-dominion-deck-v20'",
@@ -27,10 +30,12 @@ check('Guest submissions carry the host revision and are locked until ACK',
  engine.includes('duelOrderPending=true;')&&
  engine.includes("net?.intent({rev:revision,cmd:a})")&&
  engine.includes("const ordersLocked=S.mode==='online'")&&
- engine.includes('S=p.s;revision=p.rev;duelOrderPending=false;'));
+ (v471?engine.includes('S=p.s;revision=p.rev;clearDuelAck();'):
+ engine.includes('S=p.s;revision=p.rev;duelOrderPending=false;')));
 check('Host rejects stale revision then sends an authoritative snapshot',
  engine.includes("order?.rev===revision&&apply(1,order.cmd)")&&
- engine.includes("publish();render();"));
+ (v471?engine.includes('publish(order.seq);render();'):
+ engine.includes('publish();render();')));
 check('Host never rebuilds decks after an initialized duel',
  engine.includes('if(duelStarted){publish();return;}')&&
  engine.includes("duelStarted=true;S.phase='playing';revision++;"));
