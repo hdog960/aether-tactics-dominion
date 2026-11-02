@@ -4,6 +4,25 @@ const issue=[];
 try{
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
  page.on('pageerror',e=>issue.push(e.message));
+
+ // Instrument the actual 2D renderer before any game scripts run. This
+ // records which 120px rows of the *new* animated atlas reach drawImage.
+ // Loading a sprite file or drawing a promotional preview is insufficient.
+ await page.addInitScript(()=>{
+  const draw=CanvasRenderingContext2D.prototype.drawImage;
+  window.__dominionV456DrawRows=[];
+  CanvasRenderingContext2D.prototype.drawImage=function(img,...args){
+   if(typeof img?.src==='string'&&img.src.includes('battlefield-frames-v456.webp')&&
+      args.length===8&&Number.isFinite(args[1])&&
+      [0,120,240,360].includes(args[1])){
+    const row=args[1];
+    if(!window.__dominionV456DrawRows.includes(row))
+     window.__dominionV456DrawRows.push(row);
+   }
+   return draw.call(this,img,...args);
+  };
+ });
+
  await page.goto('http://127.0.0.1:8000/qa-v39.html',{waitUntil:'load',timeout:45000});
  await page.waitForFunction(()=>window.AetherScene?.v456ArtInfo?.()?.framesReady&&
   window.AetherArt?.v456ArtStatus?.()?.complete,null,{timeout:25000});
@@ -53,7 +72,10 @@ try{
   window.AetherScene.sync(g,0,{unit:null,card:-1,tributes:[]});
   const panel=document.querySelector('#qa-panel');if(panel)panel.style.display='none';
  });
- await page.waitForTimeout(550);
+ await page.waitForFunction(()=>
+  [0,120,240,360].every(row=>window.__dominionV456DrawRows?.includes(row)),
+  null,{timeout:15000});
+ const paintedRows=await page.evaluate(()=>window.__dominionV456DrawRows.slice());
  await page.screenshot({path:'art/v456-battlefield-four-creatures-390px.png'});
  const game=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
  game.on('pageerror',e=>issue.push(e.message));
@@ -75,5 +97,5 @@ try{
  console.log(JSON.stringify({pass:true,painted:result.status.complete,
   distinctPaintingCount:result.uniquePaintings,distinctSpriteCount:result.uniqueSprites,
   frameAtlas:result.frameDimensions,mechanicChecks:result.rules.checks.length,
-  candidateCards:count.total,preservedDeck:count.deck,slots:count.slots,errors:issue},null,2));
+  battlefieldPaintedRows:paintedRows,candidateCards:count.total,preservedDeck:count.deck,slots:count.slots,errors:issue},null,2));
 }finally{await browser.close()}
