@@ -2063,7 +2063,10 @@ function render(){
   if($('battle-warning-text').textContent!==detail)$('battle-warning-text').textContent=detail;
  }
  const mission=MISSION_BY_ID[S.missionId];
- if($('arena-label'))$('arena-label').textContent=S.gauntletName?'✦ '+S.gauntletName.toUpperCase():mission?'✦ '+mission.name.toUpperCase():'✦ RIFTFRONT';
+ if($('arena-label')){
+  $('arena-label').textContent=S.gauntletName?'✦ '+S.gauntletName.toUpperCase():mission?'✦ '+mission.name.toUpperCase():'✦ RIFTFRONT';
+  $('arena-label').classList.toggle('rift-label',!!S.gauntletRunId);
+ }
  if($('arena-details'))$('arena-details').textContent=mission?
   mission.objective==='capture'?'HOLD BOTH SPRINGS · '+onSpring(0)+'/2 CONTROL · '+(S.missionProgress||0)+'/'+mission.needed+' TURNS':
   mission.objective==='defend'?'SURVIVE · ROUND '+S.round+'/'+mission.needed+' · CORE '+S.hp[0]+' HP':
