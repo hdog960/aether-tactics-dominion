@@ -20,3 +20,5 @@
 .rift-mastery-rail i{display:block;height:100%;border-radius:12px;background:linear-gradient(90deg,#789edb,#dbb0fa)}
 .rift-mastery-row small{display:block;color:#bec5da;font-size:10px}
 @media(max-width:370px){.hall-gauntlet .hall-choice-text small{font-size:11px}.rift-mastery{padding:11px}.rift-mastery-heading strong{font-size:9px}}
+
+#game .vista-top #arena-label.rift-label{font:850 clamp(10px,2.6vw,12px)/1.25 system-ui!important;letter-spacing:.05em!important;max-width:55%;white-space:normal;overflow:visible;text-overflow:clip}
