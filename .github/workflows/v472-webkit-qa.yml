@@ -1,0 +1,22 @@
+name: Dominion Safari-family WebKit live private duel compatibility
+on:
+  push:
+    branches: [dev/v472-webkit-qa, main]
+    paths:
+      - tools/v472_webkit_smoke.mjs
+      - .github/workflows/v472-webkit-qa.yml
+  pull_request:
+    branches: [main]
+permissions: {contents: read}
+jobs:
+  safari-engine-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps webkit
+      - run: python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/dominion-webkit.log 2>&1 &
+      - run: node tools/v472_webkit_smoke.mjs
