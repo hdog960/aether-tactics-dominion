@@ -1,0 +1,109 @@
+name: Build complete Claude transfer ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - CLAUDE_HANDOFF.md
+      - CLAUDE_PACKAGE_README.md
+      - .github/workflows/claude-transfer-package.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out complete repository snapshot
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build and verify full source/assets/docs ZIP
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os, subprocess, zipfile
+          repo='aether-tactics-dominion'
+          paths=[Path(p.decode()) for p in subprocess.check_output(['git','ls-files','-z']).split(b'\0') if p]
+          paths.sort(key=str)
+          assert paths and Path('CLAUDE_HANDOFF.md') in paths, 'Handoff missing'
+          assert Path('V47_REAL_IPHONE_ACCEPTANCE.md') in paths, 'iPhone QA document missing'
+          assert Path('DOMINION_ROADMAP.md') in paths, 'Roadmap missing'
+          assert Path('index.html') in paths and Path('v45-engine.js') in paths and Path('v30-net.js') in paths
+          assert Path('art/battlefield-frames-v458.webp') in paths, 'Painted battlefield art missing'
+          assert any(str(p).startswith('.github/workflows/') for p in paths), 'QA workflows missing'
+          assert any(str(p).startswith('tools/') for p in paths), 'QA tools missing'
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          inventory=[]
+          for p in paths:
+            assert p.is_file() and not p.is_symlink(),f'Expected tracked regular file: {p}'
+            buf=p.read_bytes()
+            inventory.append({'path':p.as_posix(),'size':len(buf),'sha256':hashlib.sha256(buf).hexdigest()})
+          manifest={
+           'package':'Aether Tactics: Dominion — Complete Claude Transfer',
+           'repository':'https://github.com/hdog960/aether-tactics-dominion',
+           'source_ref':'main',
+           'source_commit':sha,
+           'generated_utc':__import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+           'file_count':len(inventory),
+           'source_bytes':sum(a['size'] for a in inventory),
+           'file_manifest':inventory,
+           'notes':'Full tracked repository including game, artwork, history docs, QA scripts and workflows. No private Safari local saves or .git history.'
+          }
+          dist=Path('dist');dist.mkdir(exist_ok=True)
+          filename='Aether_Tactics_Dominion_FULL_Claude_Handoff_2026-11-06.zip'
+          target=dist/filename
+          with zipfile.ZipFile(target,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=7,allowZip64=True) as z:
+            for p in paths:
+              z.write(p,arcname=f'{repo}/{p.as_posix()}')
+            z.writestr(f'{repo}/TRANSFER_MANIFEST.json',json.dumps(manifest,indent=2)+'\n')
+            z.writestr(f'{repo}/SOURCE_COMMIT.txt',sha+'\n')
+          with zipfile.ZipFile(target) as z:
+            names=set(z.namelist())
+            assert z.testzip() is None,'ZIP CRC error'
+            assert all(f'{repo}/{p.as_posix()}' in names for p in paths),'Missing ZIP file'
+            assert len(names)==len(paths)+2,'Missing or duplicate paths'
+            assert json.loads(z.read(f'{repo}/TRANSFER_MANIFEST.json'))['file_count']==len(paths)
+          checksum=hashlib.sha256(target.read_bytes()).hexdigest()
+          (dist/'SHA256SUMS.txt').write_text(f'{checksum}  {filename}\n')
+          (dist/'release-notes.md').write_text(
+            f'Complete Dominion game, all tracked code, 60-card art assets, documentation and QA tools at commit `{sha}`. '
+            f'{len(paths)} tracked files plus a per-file SHA-256 transfer manifest. '
+            f'Includes `CLAUDE_HANDOFF.md` and `V47_REAL_IPHONE_ACCEPTANCE.md`. '
+            'Real two-iPhone cross-network Safari testing remains outstanding; do not begin v5.0 without creator approval.\n'
+          )
+          print(json.dumps({'source_commit':sha,'file_count':len(paths),'source_bytes':manifest['source_bytes'],
+            'archive':str(target),'zip_bytes':target.stat().st_size,'sha256':checksum},indent=2))
+          PY
+
+      - name: Keep downloadable ZIP as Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dominion-FULL-Claude-Handoff-2026-11-06
+          path: dist/Aether_Tactics_Dominion_FULL_Claude_Handoff_2026-11-06.zip
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish single-file GitHub Release download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ZIP_PATH: dist/Aether_Tactics_Dominion_FULL_Claude_Handoff_2026-11-06.zip
+          TAG: claude-handoff-2026-11-06
+        shell: bash
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ZIP_PATH" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$ZIP_PATH" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Dominion — complete Claude transfer (2026-11-06)" \
+              --notes-file dist/release-notes.md
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName,assets \
+            --jq '{tag:.tagName,files:[.assets[].name]}'
